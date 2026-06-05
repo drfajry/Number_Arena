@@ -1,22 +1,16 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/firebase-config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>تحدي الأرقام — المنصة التنافسية للأرقام</title>
 <link rel="icon" href="logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
-<script>
-(function(){
-  function ls(src,cb){var s=document.createElement('script');s.src=src;s.async=false;s.onload=cb;s.onerror=cb;document.head.appendChild(s);}
-  window._fbReady=false;
-  ls('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',function(){
-    ls('https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js',function(){
-      window._fbReady=true;if(window._fbInitCb)window._fbInitCb();
-    });
-  });
-})();
-</script>
+
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
@@ -347,6 +341,7 @@ select.inp option{background:#0C1440;}
 
 </style>
 <script src="js/affiliate.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 </head>
 <body>
 
@@ -391,6 +386,16 @@ select.inp option{background:#0C1440;}
           <div class="hero-stat"><div class="val">10</div><div class="lbl">مجالات</div></div>
           <div class="hero-stat"><div class="val">20</div><div class="lbl">خلية</div></div>
           <div class="hero-stat"><div class="val">4</div><div class="lbl">فرق</div></div>
+        </div>
+        <!-- Affiliate teaser -->
+        <div onclick="scrollToAffiliate()" style="cursor:pointer;margin-top:.75rem;
+          background:linear-gradient(135deg,rgba(255,208,70,.1),rgba(0,229,255,.07));
+          border:1px solid rgba(255,208,70,.25);border-radius:11px;
+          padding:.62rem .95rem;display:inline-flex;align-items:center;gap:.55rem;
+          font-size:.78rem;font-weight:700;color:var(--gold);transition:all .2s"
+          onmouseover="this.style.background='linear-gradient(135deg,rgba(255,208,70,.18),rgba(0,229,255,.12))'"
+          onmouseout="this.style.background='linear-gradient(135deg,rgba(255,208,70,.1),rgba(0,229,255,.07))'">
+          💸 سوّق وكسب 15% عمولة على كل اشتراك ←
         </div>
       </div>
       <div class="hero-preview">
@@ -533,15 +538,44 @@ select.inp option{background:#0C1440;}
 </section>
 
 <!-- ══ AFFILIATE SECTION ══ -->
-<section id="affiliate-section" style="display:none;padding:3rem 0;border-top:1px solid rgba(255,255,255,.06)">
+<section id="affiliate-section" style="padding:4rem 0;border-top:1px solid rgba(255,255,255,.06)">
   <div class="container">
-    <div class="sec-badge">💸 برنامج المسوّقين</div>
-    <h2 class="sec-title">اكسب <span class="hl2">15%</span> من كل اشتراك تُحيله</h2>
+    <div class="sec-badge">💸 برنامج التسويق بالعمولة</div>
+    <h2 class="sec-title">سوّق وكسب <span class="hl2">15%</span> من كل اشتراك</h2>
     <p class="sec-sub" style="margin-bottom:1.5rem">
-      شارك رابطك الخاص — كل مستخدم يشترك عبرك تحصل على 15% من قيمة اشتراكه.
-      الحد الأدنى للسحب 100 ريال عبر STC Pay أو تحويل بنكي.
+      احصل على رابط إحالة خاص بك — كل مستخدم يشترك عبر رابطك
+      تحصل على <strong style="color:var(--gold)">15%</strong> من قيمة اشتراكه.
+      الحد الأدنى للسحب <strong>100 ريال</strong> عبر STC Pay أو تحويل بنكي.
     </p>
+    <!-- Affiliate features -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem;margin-bottom:2rem" id="affFeats">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:13px;padding:1.1rem;text-align:center">
+        <div style="font-size:1.6rem;margin-bottom:.4rem">💰</div>
+        <div style="font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:900;color:var(--gold)">15% عمولة</div>
+        <div style="font-size:.72rem;color:var(--dim);margin-top:.25rem">من كل اشتراك مدفوع</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:13px;padding:1.1rem;text-align:center">
+        <div style="font-size:1.6rem;margin-bottom:.4rem">🔗</div>
+        <div style="font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:900;color:var(--cyan)">رابط خاص بك</div>
+        <div style="font-size:.72rem;color:var(--dim);margin-top:.25rem">شارك في أي مكان</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:13px;padding:1.1rem;text-align:center">
+        <div style="font-size:1.6rem;margin-bottom:.4rem">💳</div>
+        <div style="font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:900;color:var(--green)">سحب من 100 ر.س</div>
+        <div style="font-size:.72rem;color:var(--dim);margin-top:.25rem">STC Pay أو بنكي</div>
+      </div>
+    </div>
+    <!-- Logged-in: show dashboard | Logged-out: show login prompt -->
     <div id="affiliate-box"></div>
+    <div id="affiliate-login-prompt" style="background:var(--card);border:1.5px dashed rgba(0,229,255,.25);
+      border-radius:14px;padding:2rem;text-align:center">
+      <div style="font-size:1.4rem;margin-bottom:.6rem">🔐</div>
+      <div style="font-size:.92rem;font-weight:700;margin-bottom:.4rem">سجّل دخولك للحصول على رابط إحالتك</div>
+      <div style="font-size:.78rem;color:var(--dim);margin-bottom:1.1rem">مجاني تماماً — فقط بريدك الإلكتروني</div>
+      <button class="btn-p" onclick="showAuthModal()" style="max-width:220px;margin:0 auto;padding:.65rem 1.4rem">
+        👤 تسجيل الدخول للبدء
+      </button>
+    </div>
   </div>
 </section>
 
@@ -607,8 +641,7 @@ const CL={cyan:{l:"سماوي",h:"#00E5FF"},red:{l:"أحمر",h:"#FF3D5A"},green
 const OFC=["cyan","red","green","yellow"];
 let cC="cyan",jC="red",fbDB=null,ntout=null,navOpen=false;
 
-function initFB(){try{if(typeof firebase==="undefined")return;if(firebase.apps.length===0)firebase.initializeApp(FB_CFG);fbDB=firebase.database();}catch(e){fbDB=null;}}
-if(window._fbReady)initFB();else window._fbInitCb=initFB;
+
 
 (function(){
   const p=new URLSearchParams(location.search);
@@ -672,7 +705,7 @@ async function doCreate(){
   if(!name){ntf("❗ أدخل اسم فريقك","#FF3D5A");return;}
   const code=Math.random().toString(36).slice(2,8).toUpperCase();
   const room={code,tc,status:"waiting",createdAt:Date.now(),
-    teams:[{id:"t"+Date.now(),name,color:cC,points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{audience:false,remove:false,change:false,freeze:false,yehaq:false}}],
+    teams:[{id:"t"+Date.now(),name,color:cC,points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{remove:false,change:false,luck:false,audience:false,resetTime:false,freeze:false,shield:false,flip:false}}],
     ci:0,qi:0,phase:"sel",board:null,qs:null,cc:null,cq:null};
   if(fbDB)await fbDB.ref("rooms/"+code).set(room);
   else localStorage.setItem("tahadi_v7_"+code,JSON.stringify(room));
@@ -695,7 +728,7 @@ async function doJoin(){
   if(room.teams.length>=room.tc){err.textContent="❌ الغرفة ممتلئة";err.style.display="block";return;}
   if(room.status!=="waiting"){err.textContent="❌ اللعبة بدأت";err.style.display="block";return;}
   if(room.teams.some(t=>t.color===jC)){err.textContent="❗ اللون محجوز، اختر آخر";err.style.display="block";return;}
-  const t={id:"t"+Date.now(),name,color:jC,points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{audience:false,remove:false,change:false,freeze:false,yehaq:false}};
+  const t={id:"t"+Date.now(),name,color:jC,points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{remove:false,change:false,luck:false,audience:false,resetTime:false,freeze:false,shield:false,flip:false}};
   room.teams.push(t);
   if(fbDB)await fbDB.ref("rooms/"+code+"/teams").set(room.teams);
   else localStorage.setItem("tahadi_v7_"+code,JSON.stringify(room));
@@ -711,7 +744,7 @@ function buildOff(){
 }
 function doOff(){
   const n=parseInt(document.getElementById("offCount").value),teams=[];
-  for(let i=0;i<n;i++){const nm=(document.getElementById(`ofn${i}`)?.value||`فريق ${i+1}`).trim();teams.push({id:`t${i}`,name:nm,color:OFC[i],points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{audience:false,remove:false,change:false,freeze:false,yehaq:false}});}
+  for(let i=0;i<n;i++){const nm=(document.getElementById(`ofn${i}`)?.value||`فريق ${i+1}`).trim();teams.push({id:`t${i}`,name:nm,color:OFC[i],points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{remove:false,change:false,luck:false,audience:false,resetTime:false,freeze:false,shield:false,flip:false}});}
   localStorage.setItem("tahadi_offline_state",JSON.stringify({code:"OFFLINE",tc:n,status:"playing",teams,ci:0,qi:0,phase:"sel",board:null,qs:null,cc:null,cq:null}));
   closeM("offMo");window.location.href="game.html?mode=offline";
 }
@@ -786,12 +819,18 @@ function doSubscribe(plan){
     var adminKey="tahadi_admin_v1";
     var data=JSON.parse(localStorage.getItem(adminKey)||'{"users":[],"subscriptions":[],"grants":[],"settings":{}}');
     var days=plan.includes("yearly")?365:30;
-    data.subscriptions.push({
-      phone:phone,plan:plan,amount:plan.includes("yearly")?(plan.includes("elite")?149:69):(plan.includes("elite")?19:9),
+    var sub={
+      phone:phone,uid:(_u.uid||""),plan:plan,
+      amount:plan.includes("yearly")?(plan.includes("elite")?149:69):(plan.includes("elite")?19:9),
       note:"دفع إلكتروني",createdAt:new Date().toISOString(),
       expiresAt:new Date(Date.now()+days*86400000).toISOString()
-    });
+    };
+    data.subscriptions.push(sub);
     localStorage.setItem(adminKey,JSON.stringify(data));
+    // Save to Firebase
+    if(window.TahadiDB&&_u.uid){
+      TahadiDB.saveSubscription(Object.assign({},sub,{uid:_u.uid})).catch(function(){});
+    }
     // Affiliate: record commission
     if(window.Affiliate){
       try{
@@ -812,7 +851,7 @@ function doSubscribe(plan){
 /* ══════════════════════════════════
    AUTH SYSTEM — جوال + OTP
 ══════════════════════════════════ */
-var _otpTimer=null, _otpPhone="", _otpDemo="";
+var _otpTimer=null, _otpPhone="", _otpDemo="", _otpCode="123456", _otpEmail="", _otpName="";
 
 function showAuthModal(){
   authShowStep(1);
@@ -830,40 +869,66 @@ function authShowStep(n){
 }
 
 function authSendOTP(){
-  var phone=document.getElementById("authPhone").value.trim();
   var email=document.getElementById("authEmail").value.trim();
+  var name =(document.getElementById("authName")&&document.getElementById("authName").value.trim())||"";
   var err  =document.getElementById("authS1Err");
   err.style.display="none";
-  if(!phone||phone.length!==9||!phone.startsWith("5")){
-    err.textContent="❗ أدخل رقم الجوال صحيحاً (9 أرقام تبدأ بـ5)";
+  if(!email||!email.includes("@")||!email.includes(".")){
+    err.textContent="❗ أدخل بريدك الإلكتروني صحيحاً";
     err.style.display="block";return;
   }
-  if(email&&(!email.includes("@")||!email.includes("."))){
-    err.textContent="❗ البريد الإلكتروني غير صحيح";
-    err.style.display="block";return;
-  }
-  _otpPhone="+966"+phone;
-  _otpDemo="123456";
-  document.getElementById("demoHint").style.display="block";
-  document.getElementById("authPhoneDisp").textContent=_otpPhone;
-  authShowStep(2);
-  // Clear OTP cells
-  for(var i=0;i<6;i++) document.getElementById("otp"+i).value="";
-  // Start timer
-  clearInterval(_otpTimer);
-  var s=120;
-  document.getElementById("otpSec").textContent=s;
-  document.getElementById("otpTimerTxt").style.display="block";
-  document.getElementById("resendBtn").disabled=true;
-  _otpTimer=setInterval(function(){
-    s--;document.getElementById("otpSec").textContent=s;
-    if(s<=0){clearInterval(_otpTimer);document.getElementById("otpTimerTxt").style.display="none";document.getElementById("resendBtn").disabled=false;}
-  },1000);
-  setTimeout(function(){document.getElementById("otp0").focus();},300);
+  _otpEmail=email;_otpName=name;
+  // Generate 6-digit OTP
+  _otpCode=String(Math.floor(100000+Math.random()*900000));
+  // Store in _otpPhone for backward compat (using email as identifier)
+  _otpPhone=email;
+  document.getElementById("authPhoneDisp").textContent=email;
+  // Send via EmailJS
+  var btn=document.getElementById("authSendBtn");
+  btn.disabled=true;btn.textContent="جارٍ الإرسال...";
+  sendOTPEmail(email,name,_otpCode,function(ok){
+    btn.disabled=false;btn.textContent="إرسال رمز التحقق →";
+    if(ok){
+      document.getElementById("demoHint").style.display="none";
+    } else {
+      _otpCode="123456";// fallback demo
+      document.getElementById("demoHint").style.display="block";
+    }
+    authShowStep(2);
+    for(var i=0;i<6;i++) document.getElementById("otp"+i).value="";
+    clearInterval(_otpTimer);
+    var s=120;
+    document.getElementById("otpSec").textContent=s;
+    document.getElementById("otpTimerTxt").style.display="block";
+    document.getElementById("resendBtn").disabled=true;
+    _otpTimer=setInterval(function(){
+      s--;document.getElementById("otpSec").textContent=s;
+      if(s<=0){clearInterval(_otpTimer);document.getElementById("otpTimerTxt").style.display="none";document.getElementById("resendBtn").disabled=false;}
+    },1000);
+    setTimeout(function(){document.getElementById("otp0").focus();},300);
+  });
+}
+
+function sendOTPEmail(email,name,code,cb){
+  // EmailJS — أضف بياناتك من emailjs.com
+  var SVC = localStorage.getItem("tahadi_emailjs_svc") || "YOUR_SERVICE_ID";
+  var TPL = localStorage.getItem("tahadi_emailjs_tpl") || "YOUR_TEMPLATE_ID";
+  var PUB = localStorage.getItem("tahadi_emailjs_pub") || "YOUR_PUBLIC_KEY";
+
+  if(SVC.startsWith("YOUR")){cb(false);return;}// demo mode
+
+  if(!window.emailjs){cb(false);return;}
+  emailjs.init(PUB);
+  emailjs.send(SVC, TPL, {
+    to_email: email,
+    to_name:  name||"مستخدم",
+    otp_code: code,
+    app_name: "تحدي الأرقام"
+  }).then(function(){cb(true);}).catch(function(){cb(false);});
 }
 
 function authResend(){
-  _otpDemo="123456";
+  _otpCode="123456";// fallback
   for(var i=0;i<6;i++) document.getElementById("otp"+i).value="";
   document.getElementById("authS2Err").style.display="none";
   clearInterval(_otpTimer);
@@ -897,21 +962,33 @@ function authVerify(){
   var err=document.getElementById("authS2Err");
   err.style.display="none";
   if(otp.length!==6){err.textContent="❗ أدخل الرمز كاملاً";err.style.display="block";return;}
-  if(otp!==_otpDemo){
+  if(otp!==_otpCode){
     err.textContent="❌ رمز غير صحيح — جرّب: 123456";
     err.style.display="block";return;
   }
   clearInterval(_otpTimer);
   // Create user session
-  var user={name:"مستخدم "+_otpPhone.slice(-4),phone:_otpPhone};
-  var uid="u_"+_otpPhone.replace(/[^0-9]/g,"");
+  var displayName=_otpName||("مستخدم "+_otpEmail.split("@")[0].slice(0,8));
+  var uid="u_"+btoa(_otpEmail).replace(/[^a-zA-Z0-9]/g,"").slice(0,16);
+  var user={name:displayName,email:_otpEmail,phone:"",uid:uid};
   localStorage.setItem("tahadi_token","tok_"+Date.now());
-  localStorage.setItem("tahadi_user",JSON.stringify(Object.assign(user,{uid:uid})));
-  // Affiliate: attach referral if new user, init if existing
+  localStorage.setItem("tahadi_user",JSON.stringify(user));
+  // Save to Firebase
+  if(window.TahadiDB){
+    TahadiDB.saveUser(user).then(function(){
+      // Check active subscription from Firebase
+      TahadiDB.getActiveSubscription(uid).then(function(plan){
+        if(plan){
+          if(plan.plan&&plan.plan.startsWith("elite")) localStorage.setItem("tahadi_elite","1");
+          if(plan.plan) localStorage.setItem("tahadi_pro","1");
+          renderUserBar();
+        }
+      }).catch(function(){});
+    }).catch(function(){});
+  }
+  // Affiliate
   if(window.Affiliate){
-    try{
-      Affiliate.attachReferralOnSignup(uid).catch(function(){});
-    }catch(e){}
+    try{ Affiliate.attachReferralOnSignup(uid).catch(function(){}); }catch(e){}
   }
   // Check if there's a pending subscription
   var pendingPlan=localStorage.getItem("tahadi_subscribe_plan");
@@ -949,7 +1026,12 @@ function renderUserBar(){
   if(!container) return;
 
   if(!token||!user){
-    container.innerHTML="<div style=\"width:100%;margin-bottom:.8rem\">"
+    // Show affiliate login prompt
+  var prompt=document.getElementById("affiliate-login-prompt");
+  var box=document.getElementById("affiliate-box");
+  if(prompt){prompt.style.display="block";}
+  if(box){box.style.display="none";box.innerHTML="";}
+  container.innerHTML="<div style=\"width:100%;margin-bottom:.8rem\">"
       +"<button class=\"btn-s full\" onclick=\"showAuthModal()\" style=\"padding:.6rem;font-size:.84rem\">"
       +"👤 تسجيل الدخول للحفظ والاشتراك"
       +"</button></div>";
@@ -984,9 +1066,11 @@ function renderUserBar(){
     else             expiryNote="<span style=\"color:var(--dim);font-size:.62rem\"> — "+days+" يوم متبقي</span>";
   }
 
-  // Show/hide affiliate section
-  var affSec=document.getElementById("affiliate-section");
-  if(affSec) affSec.style.display="block";
+  // Show affiliate dashboard, hide login prompt
+  var prompt=document.getElementById("affiliate-login-prompt");
+  var box=document.getElementById("affiliate-box");
+  if(prompt) prompt.style.display="none";
+  if(box) box.style.display="block";
   // Load affiliate dashboard
   if(window.Affiliate&&token&&user){
     var _uid2=user.uid||("u_"+(user.phone||"").replace(/[^0-9]/g,""));
@@ -1010,6 +1094,8 @@ function renderUserBar(){
     +"</div>"
     +"</div>";
 }
+
+function scrollToAffiliate(){document.getElementById("affiliate-section").scrollIntoView({behavior:"smooth"});}
 
 function doLogout(){
   localStorage.removeItem("tahadi_token");
@@ -1051,23 +1137,20 @@ function showUserMenu(){
 <div class="mo" id="authModal">
   <div class="mb" style="max-width:380px">
 
-    <!-- Step 1: رقم الجوال -->
+    <!-- Step 1: البريد الإلكتروني -->
     <div id="authS1">
       <div class="mt_">👤 تسجيل الدخول</div>
+      <p style="text-align:center;font-size:.78rem;color:var(--dim);margin-bottom:.85rem">
+        أدخل بريدك الإلكتروني وسنرسل لك رمز التحقق
+      </p>
       <div class="fg">
-        <label>رقم الجوال *</label>
-        <div style="display:flex;align-items:center;gap:.5rem">
-          <div style="background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.17);
-            border-radius:9px;padding:.65rem .75rem;color:var(--dim);font-size:.88rem;white-space:nowrap">
-            🇸🇦 +966
-          </div>
-          <input type="tel" id="authPhone" class="inp" placeholder="5XXXXXXXX" maxlength="9"
-            style="flex:1;direction:ltr" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-        </div>
+        <label>البريد الإلكتروني *</label>
+        <input type="email" id="authEmail" class="inp" placeholder="name@example.com"
+          oninput="this.value=this.value.trim()" onkeydown="if(event.key==='Enter')authSendOTP()">
       </div>
       <div class="fg">
-        <label>البريد الإلكتروني <span style="color:var(--dim);font-size:.64rem">(اختياري)</span></label>
-        <input type="email" id="authEmail" class="inp" placeholder="name@example.com">
+        <label>الاسم <span style="color:var(--dim);font-size:.64rem">(اختياري)</span></label>
+        <input type="text" id="authName" class="inp" placeholder="اسمك...">
       </div>
       <div id="authS1Err" style="color:var(--red);font-size:.78rem;margin-bottom:.5rem;display:none"></div>
       <button class="btn-p full" id="authSendBtn" onclick="authSendOTP()">إرسال رمز التحقق →</button>
@@ -1078,7 +1161,7 @@ function showUserMenu(){
     <div id="authS2" style="display:none">
       <div class="mt_">🔐 رمز التحقق</div>
       <p style="text-align:center;font-size:.8rem;color:var(--dim);margin-bottom:.9rem">
-        رمز مكوّن من 6 أرقام أُرسل إلى<br>
+        تم إرسال رمز التحقق إلى بريدك<br>
         <strong id="authPhoneDisp" style="color:var(--text)"></strong>
       </p>
       <div class="otp-grid">
@@ -1100,7 +1183,7 @@ function showUserMenu(){
       </div>
       <div id="demoHint" style="background:rgba(255,208,70,.08);border:1px solid rgba(255,208,70,.2);
         border-radius:8px;padding:.45rem .75rem;font-size:.74rem;color:var(--gold);margin-bottom:.5rem;display:none">
-        💡 وضع تجريبي — استخدم: <strong>123456</strong>
+        💡 تحقق من بريدك — إذا لم يصل جرّب: <strong>123456</strong>
       </div>
       <div id="authS2Err" style="color:var(--red);font-size:.78rem;margin-bottom:.5rem;display:none"></div>
       <button class="btn-p full" id="authVerifyBtn" onclick="authVerify()">تحقق وتسجيل الدخول</button>

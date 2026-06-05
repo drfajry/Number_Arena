@@ -4551,13 +4551,13 @@ document.addEventListener("click",function(){if(SFX._init)SFX._init();},{once:tr
    🔥 غيّر بقيمك من console.firebase.google.com
 ════════════════════════════════════════ */
 var FB_CFG={
-  apiKey:            "AIzaSyBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-  authDomain:        "tahadi-arqam.firebaseapp.com",
-  databaseURL:       "https://tahadi-arqam-default-rtdb.firebaseio.com",
-  projectId:         "tahadi-arqam",
-  storageBucket:     "tahadi-arqam.appspot.com",
-  messagingSenderId: "123456789012",
-  appId:             "1:123456789012:web:xxxxxxxxxxxxxxxxxxxx"
+  apiKey:"AIzaSyBeLF_kjOqZXa7X9E8XQUF1zPDK1IMwyhM",
+  authDomain:"numberarena-26cf0.firebaseapp.com",
+  databaseURL:"https://numberarena-26cf0-default-rtdb.firebaseio.com",
+  projectId:"numberarena-26cf0",
+  storageBucket:"numberarena-26cf0.firebasestorage.app",
+  messagingSenderId:"406993992036",
+  appId:"1:406993992036:web:f32f8af3b397ea40096271"
 };
 
 /* ════════════════════════════════════════
@@ -4758,12 +4758,17 @@ function saveState(){
 
 function initRoomState(){
   if(!G._roomState)G._roomState={};
-  // usedFlip: has flip been used this game?
-  // frozenTeams: {teamId: roundsLeft}
-  // shieldTeams: {teamId: true}
   if(!G._roomState.frozenTeams)G._roomState.frozenTeams={};
   if(!G._roomState.shieldTeams)G._roomState.shieldTeams={};
   if(!G._roomState.usedFlip)G._roomState.usedFlip=false;
+  // ضمان أن كل فريق لديه جميع مفاتيح وسائل المساعدة الـ8 بشكل مستقل
+  var allLL=["remove","change","luck","audience","resetTime","freeze","shield","flip"];
+  if(G.teams) G.teams.forEach(function(t){
+    if(!t.ll) t.ll={};
+    allLL.forEach(function(k){
+      if(!(k in t.ll)) t.ll[k]=false;
+    });
+  });
 }
 
 function updateUI(prev){
@@ -4924,12 +4929,18 @@ function rBoard(){
 function selCell(i){
   if(G.phase!=="sel")return;
   if(!iM()){ntf("⏳ دور "+ct().name,COLORS[ct().color].h);return;}
-  // Check if frozen
+  // Check if frozen — skip WITHOUT incrementing qi
   initRoomState();
   if(G._roomState.frozenTeams[ct().id]>0){
-    ntf("❄️ فريقك مجمّد هذه الجولة!","#8AB8FF");
-    // Auto skip
-    setTimeout(function(){nextT();},1500);
+    ntf("❄️ فريق "+ct().name+" مجمّد هذه الجولة! ⏭️","#8AB8FF");
+    G._roomState.frozenTeams[ct().id]--;
+    // Move to next TEAM only, don't increment question counter
+    G.ci=(G.ci+1)%G.teams.length;
+    G.phase="sel";G.cc=null;G.cq=null;
+    saveState();updH();rBar();rBoard();showBoard();rBanner();
+    setTimeout(function(){
+      ntf("دور: "+ct().name,COLORS[ct().color].h);
+    },1600);
     return;
   }
   var cell=G.board[i];if(!cell||cell.used)return;
@@ -5194,11 +5205,8 @@ function nextT(){
   dblPts=false;frozen=false;
   document.getElementById("fchip").style.display="none";
   document.getElementById("dblChip").style.display="none";
-  // Decrement frozen turns
   initRoomState();
-  Object.keys(G._roomState.frozenTeams).forEach(function(tid){
-    if(G._roomState.frozenTeams[tid]>0)G._roomState.frozenTeams[tid]--;
-  });
+  // Frozen teams are decremented in selCell when they try to play
   // Remove expired shields
   G.teams.forEach(function(t){
     // shields last 1 turn and are removed after the team's turn

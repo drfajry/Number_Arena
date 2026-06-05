@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/firebase-config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>تحدي الأرقام — لوحة الأدمن</title>
@@ -272,6 +276,25 @@ select.inp option{background:#0C1440;}
       <button class="btn-primary" onclick="saveSettings()">💾 حفظ الإعدادات</button>
     </div>
     <div class="form-card">
+      <div class="section-title">📧 إعداد EmailJS (رمز التحقق على الإيميل)</div>
+      <p style="font-size:.78rem;color:var(--dim);margin-bottom:.85rem">
+        أنشئ حساباً مجانياً على <a href="https://emailjs.com" target="_blank" style="color:var(--cyan)">emailjs.com</a>
+        ثم أضف Service ID و Template ID و Public Key هنا.
+      </p>
+      <div class="form-row">
+        <div class="form-group"><label>Service ID</label><input type="text" id="sEmailSvc" class="inp" placeholder="service_xxxxxxx"></div>
+        <div class="form-group"><label>Template ID</label><input type="text" id="sEmailTpl" class="inp" placeholder="template_xxxxxxx"></div>
+        <div class="form-group"><label>Public Key</label><input type="text" id="sEmailPub" class="inp" placeholder="xxxxxxxxxxxxxxxxxxxx"></div>
+      </div>
+      <p style="font-size:.73rem;color:var(--dim);margin-bottom:.7rem">
+        المتغيرات في Template: <code style="color:var(--cyan)">{{to_email}}</code>
+        <code style="color:var(--cyan)">{{to_name}}</code>
+        <code style="color:var(--cyan)">{{otp_code}}</code>
+        <code style="color:var(--cyan)">{{app_name}}</code>
+      </p>
+      <button class="btn-primary" onclick="saveEmailJS()">💾 حفظ إعدادات EmailJS</button>
+    </div>
+    <div class="form-card">
       <div class="section-title">🔐 تغيير كلمة مرور الأدمن</div>
       <div class="form-row">
         <div class="form-group"><label>كلمة المرور الحالية</label><input type="password" id="oldPwd" class="inp"></div>
@@ -352,7 +375,7 @@ if(localStorage.getItem("tahadi_admin_session")==="1"){
   document.getElementById("loginScreen").style.display="none";
   document.getElementById("appScreen").style.display="block";
   document.getElementById("adminEmail").textContent=ADMIN_EMAIL;
-  setTimeout(function(){loadDashboard();loadSettings();},100);
+  setTimeout(function(){loadDashboard();loadSettings();loadEmailJS();},100);
 }
 
 /* ── PAGES ── */
@@ -434,16 +457,32 @@ function loadDashboard(){
 
 /* ── USERS ── */
 function renderUsers(){
-  var data=db();
   var q=(document.getElementById("userSearch").value||"").toLowerCase();
-  var users=data.users.filter(function(u){
-    return !q||(u.name||"").toLowerCase().includes(q)||(u.phone||"").includes(q);
-  });
+  // Try TahadiDB (Firebase) first
+  if(window.TahadiDB){
+    TahadiDB.getAllUsers().then(function(fbUsers){
+      // Merge with localStorage users
+      var localData=db();
+      var merged=fbUsers.slice();
+      localData.users.forEach(function(u){
+        if(!merged.find(function(x){return x.uid===u.id||x.email===u.email;}))
+          merged.push(u);
+      });
+      renderUsersTable(merged,q);
+    }).catch(function(){
+      renderUsersTable(db().users,q);
+    });
+    return;
+  }
+  renderUsersTable(db().users,q);
+}
+function renderUsersTable(users,q){
+  var data=db();
   var tbody=document.getElementById("usersTable");tbody.innerHTML="";
   if(!users.length){tbody.innerHTML="<tr><td colspan=\"5\" class=\"empty-state\">لا يوجد مستخدمون</td></tr>";return;}
   users.forEach(function(u){
     var now=new Date();
-    var sub=data.subscriptions.filter(function(s){return s.phone===u.phone&&new Date(s.expiresAt)>now;}).pop();
+    var sub=data.subscriptions.filter(function(s){return (s.phone===u.phone||s.uid===u.uid)&&new Date(s.expiresAt)>now;}).pop();
     var planBadge=sub?"<span class=\"badge badge-"+(sub.plan.startsWith("elite")?"elite":"pro")+"\">"+sub.plan+"</span>":"<span class=\"badge badge-free\">مجاني</span>";
     tbody.innerHTML+="<tr><td>"+u.name+"</td><td dir=\"ltr\">"+u.phone+"</td><td>"+planBadge+"</td><td>"+fmtDate(u.createdAt)+"</td><td><button class=\"btn-danger\" onclick=\"deleteUser(\'"+u.id+"\')\">حذف</button></td></tr>";
   });
@@ -458,11 +497,27 @@ function deleteUser(id){
 
 /* ── SUBSCRIPTIONS ── */
 function renderSubs(){
-  var data=db();
   var q=(document.getElementById("subSearch").value||"").toLowerCase();
+  if(window.TahadiDB){
+    TahadiDB.getAllSubscriptions().then(function(fbSubs){
+      var data=db();
+      // Merge Firebase subs with localStorage
+      var localSubs=data.subscriptions||[];
+      var merged=fbSubs.slice();
+      localSubs.forEach(function(s){
+        if(!merged.find(function(x){return x.id===s.id;})) merged.push(s);
+      });
+      renderSubsTable(merged,q);
+    }).catch(function(){renderSubsTable(db().subscriptions,q);});
+    return;
+  }
+  renderSubsTable(db().subscriptions,q);
+}
+function renderSubsTable(allSubs,q){
+  var data=db();
   var f=document.getElementById("subFilter").value;
   var now=new Date();
-  var subs=data.subscriptions.filter(function(s){
+  var subs=allSubs.filter(function(s){
     var match=!q||(s.phone||"").includes(q);
     var planMatch=!f||(f==="expired"?new Date(s.expiresAt)<=now:s.plan.startsWith(f));
     return match&&planMatch;
@@ -558,6 +613,15 @@ function saveSettings(){
   var pk=document.getElementById("sMoyasarPK").value.trim();
   if(pk) localStorage.setItem("tahadi_moyasar_pk",pk);
   // Original:
+  // TahadiDB sync:
+  if(window.TahadiDB){
+    TahadiDB.saveSettings({
+      priceProM:   parseInt(document.getElementById("sPriceProM").value)||9,
+      priceEliteM: parseInt(document.getElementById("sPriceEliteM").value)||19,
+      discount:    parseInt(document.getElementById("sDiscount").value)||35,
+      moyasarPK:   pk||""
+    }).catch(function(){});
+  }
   var data=db();
   data.settings={
     priceProM:   parseInt(document.getElementById("sPriceProM").value)||9,
@@ -759,6 +823,27 @@ async function affReject(id){
     ntf("تم رفض الطلب وإعادة المبلغ للرصيد","#FFD046");
     loadAffiliatePage();
   }catch(e){ntf("❌ خطأ: "+e.message,"#FF3D5A");}
+}
+
+function saveEmailJS(){
+  var svc=document.getElementById("sEmailSvc").value.trim();
+  var tpl=document.getElementById("sEmailTpl").value.trim();
+  var pub=document.getElementById("sEmailPub").value.trim();
+  if(!svc||!tpl||!pub){ntf("❗ أكمل جميع الحقول","#FF3D5A");return;}
+  localStorage.setItem("tahadi_emailjs_svc",svc);
+  localStorage.setItem("tahadi_emailjs_tpl",tpl);
+  localStorage.setItem("tahadi_emailjs_pub",pub);
+  ntf("✅ تم حفظ إعدادات EmailJS","#00E676");
+}
+
+function loadEmailJS(){
+  var svc=localStorage.getItem("tahadi_emailjs_svc")||"";
+  var tpl=localStorage.getItem("tahadi_emailjs_tpl")||"";
+  var pub=localStorage.getItem("tahadi_emailjs_pub")||"";
+  var e1=document.getElementById("sEmailSvc");
+  var e2=document.getElementById("sEmailTpl");
+  var e3=document.getElementById("sEmailPub");
+  if(e1)e1.value=svc;if(e2)e2.value=tpl;if(e3)e3.value=pub;
 }
 </script>
 
