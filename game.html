@@ -4601,12 +4601,15 @@ var LLS=[
 ];
 
 /* Subscription tiers */
-var TIERS={free:true, pro:true, elite:false}; // change based on user subscription
+var TIERS={free:true, pro:true, elite:false};
 (function(){
   var isPro  =localStorage.getItem("tahadi_pro")==="1";
   var isElite=localStorage.getItem("tahadi_elite")==="1";
   TIERS.pro  =isPro||isElite;
   TIERS.elite=isElite;
+  // في وضع الأوفلاين: جميع الوسائل متاحة لجميع الفرق
+  var p=new URLSearchParams(location.search);
+  if(p.get("mode")==="offline"){ TIERS.pro=true; TIERS.elite=true; }
 })();
 
 /* ════════════════════════════════════════
@@ -5225,6 +5228,10 @@ function nextT(){
 function rLL(){
   var el=document.getElementById("llrow");el.innerHTML="";
   var t=ct(),can=iM();
+  // In offline mode show team name above lifelines
+  var lbl=document.getElementById("lllbl");
+  if(lbl&&isOff) lbl.textContent="🆘 وسائل "+t.name;
+  else if(lbl)   lbl.textContent="🆘 وسائل المساعدة";
   LLS.forEach(function(ll){
     var hasTier=(ll.tier==="free")||(ll.tier==="pro"&&TIERS.pro)||(ll.tier==="elite"&&TIERS.elite);
     var used=t.ll&&t.ll[ll.id];
