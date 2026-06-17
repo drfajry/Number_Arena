@@ -4763,7 +4763,6 @@ function initRoomState(){
   if(!G._roomState)G._roomState={};
   if(!G._roomState.frozenTeams)G._roomState.frozenTeams={};
   if(!G._roomState.shieldTeams)G._roomState.shieldTeams={};
-  if(!G._roomState.usedFlip)G._roomState.usedFlip=false;
   // ضمان أن كل فريق لديه جميع مفاتيح وسائل المساعدة الـ8 بشكل مستقل
   var allLL=["remove","change","luck","audience","resetTime","freeze","shield","flip"];
   if(G.teams) G.teams.forEach(function(t){
@@ -5384,7 +5383,7 @@ function doShield(){
 
 function doFlipPick(){
   initRoomState();
-  if(G._roomState.usedFlip){ntf("❌ قلب النقاط استُخدم مرة في هذه اللعبة","#FF3D5A");return;}
+  // قلب النقاط حق مستقل لكل فريق (مثل بقية الوسائل) — لا يوجد قيد على مستوى المباراة
   var others=G.teams.filter(function(t){return t.id!==ct().id;});
   if(!others.length)return;
   var list=document.getElementById("flipList");list.innerHTML="";
@@ -5397,7 +5396,6 @@ function doFlipPick(){
     b.onclick=function(){
       if(shielded){ntf("🛡️ "+t.name+" محمي من القلب!","#00E676");return;}
       SFX.flip();
-      G._roomState.usedFlip=true;
       var myPts=ct().points,theirPts=t.points;
       ct().points=theirPts;t.points=myPts;
       bump(ct());bump(t);
