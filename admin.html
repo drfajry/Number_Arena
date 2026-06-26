@@ -331,6 +331,9 @@ select.inp option{background:#0C1440;}
         <button class="btn-danger" onclick="clearData('grants')" style="padding:.6rem 1.2rem;text-align:right">
           📋 مسح سجل المنح اليدوي فقط
         </button>
+        <button class="btn-primary" onclick="dedupData()" style="padding:.6rem 1.2rem;text-align:right">
+          🧹 تنظيف السجلات المكررة <span style="color:rgba(0,0,0,.5);font-size:.7rem">(يبقي الأحدث)</span>
+        </button>
         <button class="btn-danger" onclick="clearData('all')" style="padding:.6rem 1.2rem;text-align:right;background:rgba(255,61,90,.2)">
           🗑️ مسح كل شيء
         </button>
@@ -549,6 +552,13 @@ function renderSubs(){
 }
 function renderSubsTable(allSubs,q){
   var data=db();
+  // عرض أحدث اشتراك فقط لكل بريد (تجنب التكرار)
+  var byKey={};
+  (allSubs||[]).forEach(function(s){
+    var key=s.email||s.phone||s.uid||s.id;
+    if(!byKey[key]||new Date(s.createdAt||0)>new Date(byKey[key].createdAt||0))byKey[key]=s;
+  });
+  allSubs=Object.keys(byKey).map(function(k){return byKey[k];});
   var f=document.getElementById("subFilter").value;
   var now=new Date();
   var subs=allSubs.filter(function(s){
@@ -953,6 +963,31 @@ function checkPlan(){
     res.style.background="rgba(255,61,90,.1)";res.style.color="var(--red)";
     res.textContent="❌ خطأ: "+e.message;
   });
+}
+
+function dedupData(){
+  if(!confirm("تنظيف السجلات المكررة؟ سيبقى أحدث اشتراك لكل بريد"))return;
+  var data=db();
+  // اجمع أحدث اشتراك لكل بريد
+  var byEmail={};
+  data.subscriptions.forEach(function(s){
+    var key=s.email||s.phone||s.uid;
+    if(!key)return;
+    if(!byEmail[key]||new Date(s.createdAt||0)>new Date(byEmail[key].createdAt||0)){
+      byEmail[key]=s;
+    }
+  });
+  data.subscriptions=Object.keys(byEmail).map(function(k){return byEmail[k];});
+  // نظّف المنح المكررة (أبقِ الأحدث لكل بريد+خطة)
+  var grantSeen={};
+  data.grants=data.grants.filter(function(g){
+    var key=(g.email||g.phone)+"_"+g.plan;
+    if(grantSeen[key])return false;
+    grantSeen[key]=true;return true;
+  });
+  saveDB(data);
+  loadDashboard();renderUsers();renderSubs();renderGrantLog();
+  ntf("✅ تم تنظيف المكررات","#00E676");
 }
 </script>
 
