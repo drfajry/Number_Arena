@@ -396,7 +396,7 @@ function loadDashboard(){
   var activeSubs=data.subscriptions.filter(function(s){return new Date(s.expiresAt)>now;});
   var proCount  =activeSubs.filter(function(s){return s.plan.startsWith("pro");}).length;
   var eliteCount=activeSubs.filter(function(s){return s.plan.startsWith("elite");}).length;
-  var revenue   =data.subscriptions.reduce(function(a,s){return a+(s.amount||0);},0);
+  var revenue=data.subscriptions.filter(function(s){return !s.manual&&s.amount>0;}).reduce(function(a,s){return a+(s.amount||0);},0);
 
   // ── Expiry alerts
   var alerts=[];

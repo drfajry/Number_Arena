@@ -352,6 +352,8 @@ select.inp option{background:#0C1440;}
   text-align:center;}
 .otp-cell:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,229,255,.12);}
 
+
+.logged-in .guest-only{display:none!important;}
 </style>
 <script src="js/affiliate.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -440,7 +442,7 @@ select.inp option{background:#0C1440;}
 </section>
 
 <!-- FEATURES -->
-<section id="features" class="sec-divider" style="padding:5rem 0">
+<section id="features" class="guest-only sec-divider" style="padding:5rem 0">
   <div class="container">
     <div class="sec-badge">✨ المميزات</div>
     <h2 class="sec-title">كل ما تحتاجه في <span class="hl">مكان واحد</span></h2>
@@ -457,7 +459,7 @@ select.inp option{background:#0C1440;}
 </section>
 
 <!-- HOW IT WORKS -->
-<section id="how" class="sec-divider" style="padding:5rem 0;text-align:center">
+<section id="how" class="guest-only sec-divider" style="padding:5rem 0;text-align:center">
   <div class="container">
     <div class="sec-badge">⚡ كيف تعمل اللعبة</div>
     <h2 class="sec-title">٣ خطوات نحو <span class="hl2">القمة</span></h2>
@@ -470,7 +472,7 @@ select.inp option{background:#0C1440;}
 </section>
 
 <!-- CELLS -->
-<section id="cells" class="sec-divider" style="padding:4.5rem 0">
+<section id="cells" class="guest-only sec-divider" style="padding:4.5rem 0">
   <div class="container">
     <div class="sec-badge">🔒 الخلايا المميزة</div>
     <h2 class="sec-title">المكافآت المخفية في <span class="hl">اللوحة</span></h2>
@@ -485,7 +487,7 @@ select.inp option{background:#0C1440;}
 </section>
 
 <!-- LIFELINES -->
-<section id="lifelines" class="sec-divider" style="padding:4.5rem 0">
+<section id="lifelines" class="guest-only sec-divider" style="padding:4.5rem 0">
   <div class="container">
     <div class="sec-badge">🆘 وسائل المساعدة</div>
     <h2 class="sec-title">٨ وسائل — استخدمها في <span class="hl">اللحظة المناسبة</span></h2>
@@ -522,7 +524,7 @@ select.inp option{background:#0C1440;}
 </section>
 
 <!-- FAQ -->
-<section id="faq" class="sec-divider" style="padding:5rem 0;text-align:center">
+<section id="faq" class="guest-only sec-divider" style="padding:5rem 0;text-align:center">
   <div class="container">
     <div class="sec-badge">❓ الأسئلة الشائعة</div>
     <h2 class="sec-title">كل ما تريد <span class="hl">معرفته</span></h2>
@@ -537,7 +539,7 @@ select.inp option{background:#0C1440;}
 </section>
 
 <!-- CTA -->
-<section id="cta" class="sec-divider" style="padding:4.5rem 0">
+<section id="cta" class="guest-only sec-divider" style="padding:4.5rem 0">
   <div class="container">
     <div class="cta-box">
       <h2 class="cta-title">جاهز للتحدي؟ 🏆</h2>
@@ -892,10 +894,11 @@ function authSubmit(){
     _pendingEmail=email;
     _pendingPass=pass;
     _pendingName=(document.getElementById("authName").value||"").trim();
+    var emailName=_pendingName||email.split("@")[0];
     _otpCode=String(Math.floor(100000+Math.random()*900000));
     var btn=document.getElementById("authSubmitBtn");
     btn.disabled=true;btn.textContent="جارٍ الإرسال...";
-    sendOTPEmail(email,_pendingName,_otpCode,function(ok){
+    sendOTPEmail(email,emailName,_otpCode,function(ok){
       btn.disabled=false;btn.textContent="دخول / تسجيل →";
       document.getElementById("demoHint").style.display=ok?"none":"block";
       document.getElementById("authEmailDisp").textContent=email;
@@ -951,7 +954,7 @@ function authVerify(){
   clearInterval(_otpTimer);
   // أنشئ الحساب
   var uid="u_"+btoa(_pendingEmail).replace(/[^a-zA-Z0-9]/g,"").slice(0,16);
-  var displayName=_pendingName||("مستخدم "+_pendingEmail.split("@")[0].slice(0,8));
+  var displayName=_pendingName||_pendingEmail.split("@")[0];
   var user={name:displayName,email:_pendingEmail,phone:"",uid:uid,pass:hashPass(_pendingPass)};
   var users=getUsers();
   users[_pendingEmail]=user;
@@ -1005,8 +1008,51 @@ function sendOTPEmail(email,name,code,cb){
 }
 
 /* ── Render user bar ── */
+function syncPlanFromDB(cb){
+  var user=JSON.parse(localStorage.getItem("tahadi_user")||"null");
+  if(!user||!user.uid){if(cb)cb();return;}
+  // 1) من Firebase
+  if(window.TahadiDB){
+    TahadiDB.getActiveSubscription(user.uid).then(function(plan){
+      if(plan&&plan.plan){
+        localStorage.setItem("tahadi_pro","1");
+        if(plan.plan.indexOf("elite")>-1)localStorage.setItem("tahadi_elite","1");
+        else localStorage.removeItem("tahadi_elite");
+      } else {
+        localStorage.removeItem("tahadi_pro");
+        localStorage.removeItem("tahadi_elite");
+      }
+      if(cb)cb();
+    }).catch(function(){syncFromAdminLocal(user);if(cb)cb();});
+  } else {
+    syncFromAdminLocal(user);
+    if(cb)cb();
+  }
+}
+function syncFromAdminLocal(user){
+  // 2) fallback: قاعدة الأدمن المحلية
+  try{
+    var adminData=JSON.parse(localStorage.getItem("tahadi_admin_v1")||"{}");
+    var now=new Date();
+    var sub=(adminData.subscriptions||[]).filter(function(s){
+      return (s.email===user.email||s.uid===user.uid)&&new Date(s.expiresAt)>now;
+    }).sort(function(a,b){return new Date(b.expiresAt)-new Date(a.expiresAt);})[0];
+    if(sub){
+      localStorage.setItem("tahadi_pro","1");
+      if(sub.plan.indexOf("elite")>-1)localStorage.setItem("tahadi_elite","1");
+      else localStorage.removeItem("tahadi_elite");
+    } else {
+      localStorage.removeItem("tahadi_pro");
+      localStorage.removeItem("tahadi_elite");
+    }
+  }catch(e){}
+}
+
 function renderUserBar(){
   var token=localStorage.getItem("tahadi_token");
+  // إظهار/إخفاء الأقسام التسويقية حسب حالة الدخول
+  if(token) document.body.classList.add("logged-in");
+  else document.body.classList.remove("logged-in");
   var user =JSON.parse(localStorage.getItem("tahadi_user")||"null");
   var isPro   =localStorage.getItem("tahadi_pro")==="1";
   var isElite =localStorage.getItem("tahadi_elite")==="1";
@@ -1125,6 +1171,8 @@ function showUserMenu(){
 (function(){
   // Capture referral code from URL (?ref=CODE)
   if(window.Affiliate) Affiliate.captureReferralFromURL();
+  // مزامنة الخطة من قاعدة البيانات ثم عرض الشريط
+  syncPlanFromDB(function(){ renderUserBar(); });
   renderUserBar();
   // Close modals on backdrop
   document.getElementById("authModal").addEventListener("click",function(e){
