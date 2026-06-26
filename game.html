@@ -4727,31 +4727,12 @@ function markUsed(ids){
   sessionStorage.setItem("tahadi_used",JSON.stringify([...new Set(prev.concat(ids))]));
 }
 
-function getFreePool(){
-  // المجاني: 200 سؤال عشوائية من البنك كامل، ثابتة لكل جهاز
-  var k="tahadi_free_pool";
-  var saved=localStorage.getItem(k);
-  if(saved){
-    try{
-      var ids=JSON.parse(saved);
-      var idSet=new Set(ids);
-      var pool=QB.filter(function(q){return idSet.has(q.id);});
-      if(pool.length>=FM) return pool;
-    }catch(e){}
-  }
-  // اختر 200 عشوائية بناءً على بذرة الجهاز
-  var shuffled=shuf(QB, getBrowserSeed());
-  var pool=shuffled.slice(0,FM);
-  localStorage.setItem(k, JSON.stringify(pool.map(function(q){return q.id;})));
-  return pool;
-}
-
 function pickQs(catFilter){
   var pool;
   if(TIERS.elite||TIERS.pro){
-    pool=QB.slice(); // المشترك: البنك كامل
+    pool=QB.slice(); // المشترك: البنك كامل (4000)
   } else {
-    pool=getFreePool(); // المجاني: 200 عشوائية ثابتة للجهاز
+    pool=QB.slice(0,FM); // المجاني: نفس أول 200 سؤال لكل الأجهزة دائماً
   }
   if(catFilter)pool=pool.filter(function(q){return q.cat===catFilter;});
   var used=new Set(getUsed());
