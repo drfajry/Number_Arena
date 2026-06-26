@@ -761,18 +761,33 @@ function openSubscribe(plan){
 }
 
 function doSubscribe(plan){
+  var isPro=localStorage.getItem("tahadi_pro")==="1";
+  var isElite=localStorage.getItem("tahadi_elite")==="1";
+
+  // إذا مشترك Elite بالفعل
+  if(isElite){ntf("✅ أنت مشترك Elite بالفعل!","#00E676");return;}
+  // إذا مشترك Pro ويريد Pro
+  if(isPro&&plan==="pro"){ntf("✅ أنت مشترك Pro بالفعل!","#00E676");return;}
+
   var prices={
-    pro:  {amount:900,  label:"Pro سنوي — تحدي الأرقام",   days:365},
-    elite:{amount:1900, label:"Elite سنوي — تحدي الأرقام", days:365}
+    pro:  {amount:900,  label:"Pro سنوي — تحدي الأرقام"},
+    elite:{amount:1900, label:"Elite سنوي — تحدي الأرقام"}
   };
   var info=prices[plan];
   if(!info){ntf("خطة غير صحيحة","#FF3D5A");return;}
+
+  // ترقية من Pro إلى Elite: ادفع الفرق فقط (19 - 9 = 10 ر.س)
+  if(isPro&&plan==="elite"){
+    info={amount:1000, label:"ترقية إلى Elite — تحدي الأرقام"};
+    ntf("ترقية إلى Elite — تدفع الفرق فقط (10 ر.س)","#FFD046");
+  }
+
   var pk=localStorage.getItem("tahadi_moyasar_pk")||"";
   if(!pk||pk.length<20){
     alert("للاشتراك تواصل مع الدعم أو أضف مفتاح Moyasar في لوحة الأدمن");return;
   }
   ntf("جارٍ التحويل لصفحة الدفع...","#00E5FF");
-  var phone="";try{phone=JSON.parse(localStorage.getItem("tahadi_user")||"{}").phone||"";}catch(e){}
+  var email="";try{email=JSON.parse(localStorage.getItem("tahadi_user")||"{}").email||"";}catch(e){}
   var cbUrl=window.location.origin+window.location.pathname+"?paid=1&plan="+plan+"_yearly";
   var params=[
     "publishable_api_key="+encodeURIComponent(pk),
@@ -781,7 +796,7 @@ function doSubscribe(plan){
     "description="+encodeURIComponent(info.label),
     "callback_url="+encodeURIComponent(cbUrl)
   ];
-  if(phone) params.push("metadata[phone]="+encodeURIComponent(phone));
+  if(email) params.push("metadata[email]="+encodeURIComponent(email));
   setTimeout(function(){window.location.href="https://checkout.moyasar.com/?"+params.join("&");},800);
 }
 
@@ -807,8 +822,10 @@ function doSubscribe(plan){
     data.subscriptions.push(sub);
     localStorage.setItem(adminKey,JSON.stringify(data));
     // Save to Firebase
-    if(window.TahadiDB&&_u.uid){
-      TahadiDB.saveSubscription(Object.assign({},sub,{uid:_u.uid})).catch(function(){});
+    if(window.TahadiDB&&_u.email){
+      var planName=plan.indexOf("elite")>-1?"elite_yearly":"pro_yearly";
+      var exp=new Date(Date.now()+365*86400000).toISOString();
+      TahadiDB.setUserPlan(_u.email,planName,exp).catch(function(){});
     }
     // Affiliate: record commission
     if(window.Affiliate){
@@ -971,7 +988,7 @@ function loginUser(user,skipStep){
   // Firebase
   if(window.TahadiDB){
     TahadiDB.saveUser({name:user.name,email:user.email,uid:uid}).then(function(){
-      TahadiDB.getActiveSubscription(uid).then(function(plan){
+      TahadiDB.getPlanByEmail(user.email).then(function(plan){
         if(plan&&plan.plan){
           localStorage.setItem("tahadi_pro","1");
           if(plan.plan.indexOf("elite")>-1)localStorage.setItem("tahadi_elite","1");
@@ -1010,10 +1027,9 @@ function sendOTPEmail(email,name,code,cb){
 /* ── Render user bar ── */
 function syncPlanFromDB(cb){
   var user=JSON.parse(localStorage.getItem("tahadi_user")||"null");
-  if(!user||!user.uid){if(cb)cb();return;}
-  // 1) من Firebase
+  if(!user||!user.email){if(cb)cb();return;}
   if(window.TahadiDB){
-    TahadiDB.getActiveSubscription(user.uid).then(function(plan){
+    TahadiDB.getPlanByEmail(user.email).then(function(plan){
       if(plan&&plan.plan){
         localStorage.setItem("tahadi_pro","1");
         if(plan.plan.indexOf("elite")>-1)localStorage.setItem("tahadi_elite","1");
@@ -1464,18 +1480,33 @@ function openSubscribe(plan){
 }
 
 function doSubscribe(plan){
+  var isPro=localStorage.getItem("tahadi_pro")==="1";
+  var isElite=localStorage.getItem("tahadi_elite")==="1";
+
+  // إذا مشترك Elite بالفعل
+  if(isElite){ntf("✅ أنت مشترك Elite بالفعل!","#00E676");return;}
+  // إذا مشترك Pro ويريد Pro
+  if(isPro&&plan==="pro"){ntf("✅ أنت مشترك Pro بالفعل!","#00E676");return;}
+
   var prices={
-    pro:  {amount:900,  label:"Pro سنوي — تحدي الأرقام",   days:365},
-    elite:{amount:1900, label:"Elite سنوي — تحدي الأرقام", days:365}
+    pro:  {amount:900,  label:"Pro سنوي — تحدي الأرقام"},
+    elite:{amount:1900, label:"Elite سنوي — تحدي الأرقام"}
   };
   var info=prices[plan];
   if(!info){ntf("خطة غير صحيحة","#FF3D5A");return;}
+
+  // ترقية من Pro إلى Elite: ادفع الفرق فقط (19 - 9 = 10 ر.س)
+  if(isPro&&plan==="elite"){
+    info={amount:1000, label:"ترقية إلى Elite — تحدي الأرقام"};
+    ntf("ترقية إلى Elite — تدفع الفرق فقط (10 ر.س)","#FFD046");
+  }
+
   var pk=localStorage.getItem("tahadi_moyasar_pk")||"";
   if(!pk||pk.length<20){
     alert("للاشتراك تواصل مع الدعم أو أضف مفتاح Moyasar في لوحة الأدمن");return;
   }
   ntf("جارٍ التحويل لصفحة الدفع...","#00E5FF");
-  var phone="";try{phone=JSON.parse(localStorage.getItem("tahadi_user")||"{}").phone||"";}catch(e){}
+  var email="";try{email=JSON.parse(localStorage.getItem("tahadi_user")||"{}").email||"";}catch(e){}
   var cbUrl=window.location.origin+window.location.pathname+"?paid=1&plan="+plan+"_yearly";
   var params=[
     "publishable_api_key="+encodeURIComponent(pk),
@@ -1484,7 +1515,7 @@ function doSubscribe(plan){
     "description="+encodeURIComponent(info.label),
     "callback_url="+encodeURIComponent(cbUrl)
   ];
-  if(phone) params.push("metadata[phone]="+encodeURIComponent(phone));
+  if(email) params.push("metadata[email]="+encodeURIComponent(email));
   setTimeout(function(){window.location.href="https://checkout.moyasar.com/?"+params.join("&");},800);
 }
 
@@ -1510,8 +1541,10 @@ function doSubscribe(plan){
     data.subscriptions.push(sub);
     localStorage.setItem(adminKey,JSON.stringify(data));
     // Save to Firebase
-    if(window.TahadiDB&&_u.uid){
-      TahadiDB.saveSubscription(Object.assign({},sub,{uid:_u.uid})).catch(function(){});
+    if(window.TahadiDB&&_u.email){
+      var planName=plan.indexOf("elite")>-1?"elite_yearly":"pro_yearly";
+      var exp=new Date(Date.now()+365*86400000).toISOString();
+      TahadiDB.setUserPlan(_u.email,planName,exp).catch(function(){});
     }
     // Affiliate: record commission
     if(window.Affiliate){
@@ -1661,7 +1694,7 @@ function authVerify(){
   if(window.TahadiDB){
     TahadiDB.saveUser(user).then(function(){
       // Check active subscription from Firebase
-      TahadiDB.getActiveSubscription(uid).then(function(plan){
+      TahadiDB.getPlanByEmail(user.email).then(function(plan){
         if(plan){
           if(plan.plan&&plan.plan.startsWith("elite")) localStorage.setItem("tahadi_elite","1");
           if(plan.plan) localStorage.setItem("tahadi_pro","1");

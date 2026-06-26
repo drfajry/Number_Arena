@@ -302,6 +302,29 @@ select.inp option{background:#0C1440;}
       </div>
       <button class="btn-primary" onclick="changePwd()">🔐 تغيير كلمة المرور</button>
     </div>
+    <div class="form-card" style="border-color:rgba(255,61,90,.2)">
+      <div class="section-title" style="color:var(--red)">🗑️ مسح البيانات</div>
+      <p style="font-size:.78rem;color:var(--dim);margin-bottom:1rem">
+        امسح كل نوع بيانات على حدة (لا يمكن التراجع)
+      </p>
+      <div style="display:flex;flex-direction:column;gap:.6rem">
+        <button class="btn-danger" onclick="clearData('revenue')" style="padding:.6rem 1.2rem;text-align:right">
+          💰 مسح المبالغ/الإيرادات فقط <span style="color:var(--dim);font-size:.7rem">(يبقي المشتركين)</span>
+        </button>
+        <button class="btn-danger" onclick="clearData('subscriptions')" style="padding:.6rem 1.2rem;text-align:right">
+          💳 مسح الاشتراكات فقط <span style="color:var(--dim);font-size:.7rem">(يبقي المستخدمين)</span>
+        </button>
+        <button class="btn-danger" onclick="clearData('users')" style="padding:.6rem 1.2rem;text-align:right">
+          👥 مسح المستخدمين فقط
+        </button>
+        <button class="btn-danger" onclick="clearData('grants')" style="padding:.6rem 1.2rem;text-align:right">
+          📋 مسح سجل المنح اليدوي فقط
+        </button>
+        <button class="btn-danger" onclick="clearData('all')" style="padding:.6rem 1.2rem;text-align:right;background:rgba(255,61,90,.2)">
+          🗑️ مسح كل شيء
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -548,20 +571,25 @@ function renderSubsTable(allSubs,q){
 }
 
 function revokeSubByPhone(identifier){
+  identifier=identifier.toLowerCase();
   if(!confirm("إلغاء اشتراك "+identifier+"؟"))return;
   var data=db();
-  var now=new Date();
-  data.subscriptions.forEach(function(s){
-    if((s.email===identifier||s.phone===identifier||s.uid===identifier)&&new Date(s.expiresAt)>now)
-      s.expiresAt=new Date().toISOString();
+  var u=data.users.find(function(x){return x.email===identifier||x.phone===identifier||x.uid===identifier;});
+  var email=u?u.email:identifier;
+  // إزالة كل الاشتراكات
+  data.subscriptions=data.subscriptions.filter(function(s){
+    return s.email!==email&&s.email!==identifier;
   });
-  saveDB(data);renderSubs();loadDashboard();
+  if(u)u.plan="free";
+  saveDB(data);
+  if(window.TahadiDB&&email.includes("@")){TahadiDB.clearUserPlan(email).catch(function(){});}
+  renderSubs();loadDashboard();
   ntf("تم إلغاء الاشتراك","#FF3D5A");
 }
 
 /* ── GRANT ── */
 function doGrant(){
-  var email=document.getElementById("grantEmail").value.trim();
+  var email=document.getElementById("grantEmail").value.trim().toLowerCase();
   var plan =document.getElementById("grantPlan").value;
   var days =parseInt(document.getElementById("grantDays").value)||365;
   var note =document.getElementById("grantNote").value.trim();
@@ -569,24 +597,30 @@ function doGrant(){
 
   var data=db();
   var uid="u_"+btoa(email).replace(/[^a-zA-Z0-9]/g,"").slice(0,16);
-  var prices={pro_yearly:9,elite_yearly:19};
   var expiresAt=new Date(Date.now()+days*86400000).toISOString();
+
+  // إزالة أي اشتراك سابق لنفس الإيميل (مصدر واحد)
+  data.subscriptions=data.subscriptions.filter(function(s){return s.email!==email;});
   var sub={uid:uid,email:email,phone:"",plan:plan,amount:0,
-    note:"منح يدوي"+(note?" - "+note:""),
-    createdAt:new Date().toISOString(),expiresAt:expiresAt,manual:true};
+    note:"منح يدوي"+(note?" - "+note:""),manual:true,
+    createdAt:new Date().toISOString(),expiresAt:expiresAt};
   data.subscriptions.push(sub);
-  if(!data.users.find(function(u){return u.email===email;})){
-    data.users.push({id:uid,uid:uid,name:email.split("@")[0],
-      email:email,phone:"",plan:plan,createdAt:new Date().toISOString()});
-  }
+
+  // تحديث/إضافة المستخدم
+  var u=data.users.find(function(x){return x.email===email;});
+  if(u){u.plan=plan;}
+  else{data.users.push({id:uid,uid:uid,name:email.split("@")[0],email:email,phone:"",plan:plan,createdAt:new Date().toISOString()});}
+
   data.grants.push({email:email,uid:uid,plan:plan,days:days,note:note,date:new Date().toISOString()});
   saveDB(data);
-  // Firebase
-  if(window.TahadiDB){TahadiDB.saveSubscription(sub).catch(function(){});}
-  renderGrantLog();loadDashboard();
+
+  // Firebase — مصدر الحقيقة الوحيد
+  if(window.TahadiDB){TahadiDB.setUserPlan(email,plan,expiresAt).catch(function(){});}
+
+  renderGrantLog();loadDashboard();renderSubs();
   document.getElementById("grantEmail").value="";
   document.getElementById("grantNote").value="";
-  ntf("✅ تم منح الاشتراك لـ "+email,"#00E676");
+  ntf("✅ تم منح "+plan+" لـ "+email,"#00E676");
 }
 
 function renderGrantLog(){
@@ -707,38 +741,36 @@ function editSub(identifier){
 }
 
 function saveEditSub(){
-  var identifier=document.getElementById("editSubPhone").value;
+  var identifier=document.getElementById("editSubPhone").value.toLowerCase();
   var plan   =document.getElementById("editSubPlan").value;
   var expiry =document.getElementById("editSubExpiry").value;
   if(!expiry){ntf("❗ اختر تاريخ الانتهاء","#FF3D5A");return;}
 
   var data=db();
-  var now=new Date();
-  // إنهاء الاشتراكات النشطة القديمة لنفس المستخدم
-  data.subscriptions.forEach(function(s){
-    if((s.email===identifier||s.phone===identifier||s.uid===identifier)&&new Date(s.expiresAt)>now){
-      s.expiresAt=new Date().toISOString();
-      s.note=(s.note||"")+" (عُدِّل)";
-    }
-  });
-  // إيجاد بيانات المستخدم
   var u=data.users.find(function(x){return x.email===identifier||x.phone===identifier||x.uid===identifier;});
-  var prices={pro_yearly:9,elite_yearly:19};
+  var email=u?u.email:identifier;
+  var expiresAt=new Date(expiry+"T23:59:59").toISOString();
+
+  // إزالة كل الاشتراكات القديمة لنفس الإيميل (مصدر واحد)
+  data.subscriptions=data.subscriptions.filter(function(s){
+    return s.email!==email&&s.email!==identifier;
+  });
   var newSub={
-    uid:(u?u.uid:""),email:(u?u.email:identifier),phone:(u?u.phone:""),
-    plan:plan,amount:prices[plan]||0,
-    note:"تعديل يدوي من الأدمن",manual:true,
-    createdAt:new Date().toISOString(),
-    expiresAt:new Date(expiry+"T23:59:59").toISOString()
+    uid:(u?u.uid:""),email:email,phone:(u?u.phone:""),
+    plan:plan,amount:0,note:"تعديل يدوي",manual:true,
+    createdAt:new Date().toISOString(),expiresAt:expiresAt
   };
   data.subscriptions.push(newSub);
   if(u)u.plan=plan;
   saveDB(data);
-  // Firebase
-  if(window.TahadiDB&&u&&u.uid){TahadiDB.saveSubscription(newSub).catch(function(){});}
+
+  // Firebase — مصدر الحقيقة
+  if(window.TahadiDB&&email.includes("@")){
+    TahadiDB.setUserPlan(email,plan,expiresAt).catch(function(){});
+  }
   closeEditSub();
   renderSubs();loadDashboard();
-  ntf("✅ تم تعديل الاشتراك","#00E676");
+  ntf("✅ تم تعديل الاشتراك إلى "+plan,"#00E676");
 }
 
 function closeEditSub(){
@@ -851,6 +883,39 @@ function loadEmailJS(){
   var e2=document.getElementById("sEmailTpl");
   var e3=document.getElementById("sEmailPub");
   if(e1)e1.value=svc;if(e2)e2.value=tpl;if(e3)e3.value=pub;
+}
+
+function clearData(type){
+  var labels={
+    revenue:"المبالغ/الإيرادات",
+    subscriptions:"الاشتراكات",
+    users:"المستخدمين",
+    grants:"سجل المنح",
+    all:"كل البيانات"
+  };
+  if(!confirm("⚠️ مسح "+labels[type]+"؟ لا يمكن التراجع"))return;
+  var data=db();
+  if(type==="revenue"){
+    // صفّر المبالغ فقط، أبقِ الاشتراكات والمشتركين
+    data.subscriptions.forEach(function(s){s.amount=0;s.manual=true;});
+    ntf("✅ تم تصفير المبالغ — المشتركون باقون","#00E676");
+  } else if(type==="subscriptions"){
+    data.subscriptions=[];
+    data.users.forEach(function(u){u.plan="free";});
+    ntf("✅ تم مسح الاشتراكات — المستخدمون باقون","#00E676");
+  } else if(type==="users"){
+    data.users=[];
+    ntf("✅ تم مسح المستخدمين","#00E676");
+  } else if(type==="grants"){
+    data.grants=[];
+    ntf("✅ تم مسح سجل المنح","#00E676");
+  } else if(type==="all"){
+    if(!confirm("تأكيد أخير — مسح كل شيء نهائياً؟"))return;
+    data.users=[];data.subscriptions=[];data.grants=[];
+    ntf("✅ تم مسح كل البيانات","#00E676");
+  }
+  saveDB(data);
+  loadDashboard();renderUsers();renderSubs();renderGrantLog();
 }
 </script>
 
