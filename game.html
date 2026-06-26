@@ -335,6 +335,7 @@ select.inp option{background:#0C1440;}
 @media(max-width:390px){.opts{grid-template-columns:1fr;}.bgrd{max-width:min(252px,80vw);}}
 @media(max-height:660px){#game{gap:.28rem;padding:.38rem;}.qwrap{padding:.55rem;}}
 </style>
+<script src="js/capacitor-bridge.js"></script>
 </head>
 <body>
 
@@ -4597,20 +4598,19 @@ var LLS=[
   /* ── ELITE (8 = +3) ── */
   {id:"freeze",  ico:"❄️", lbl:"تجميد فريق",cost:0,  tier:"elite", desc:"يجمّد فريقاً جولة كاملة"},
   {id:"shield",  ico:"🛡️", lbl:"الدرع",     cost:0,  tier:"elite", desc:"يحميك من الخصم والقلب"},
-  {id:"flip",    ico:"🔀", lbl:"قلب النقاط",cost:0,  tier:"elite", desc:"يبدّل نقاطك مع منافس!"},
+  {id:"flip",    ico:"🔀", lbl:"قلب النقاط",cost:15,  tier:"elite", desc:"يبدّل نقاطك مع منافس!"},
 ];
 
 /* Subscription tiers */
-var TIERS={free:true, pro:true, elite:false};
-(function(){
+var TIERS={free:true, pro:false, elite:false};
+function refreshTiers(){
+  // الوسائل تتبع اشتراك صاحب الجهاز — أونلاين وأوفلاين على حدٍ سواء
   var isPro  =localStorage.getItem("tahadi_pro")==="1";
   var isElite=localStorage.getItem("tahadi_elite")==="1";
   TIERS.pro  =isPro||isElite;
   TIERS.elite=isElite;
-  // في وضع الأوفلاين: جميع الوسائل متاحة لجميع الفرق
-  var p=new URLSearchParams(location.search);
-  if(p.get("mode")==="offline"){ TIERS.pro=true; TIERS.elite=true; }
-})();
+}
+refreshTiers();
 
 /* ════════════════════════════════════════
    STATE
@@ -4727,14 +4727,37 @@ function markUsed(ids){
   sessionStorage.setItem("tahadi_used",JSON.stringify([...new Set(prev.concat(ids))]));
 }
 
+function getFreePool(){
+  // المجاني: 200 سؤال عشوائية من البنك كامل، ثابتة لكل جهاز
+  var k="tahadi_free_pool";
+  var saved=localStorage.getItem(k);
+  if(saved){
+    try{
+      var ids=JSON.parse(saved);
+      var idSet=new Set(ids);
+      var pool=QB.filter(function(q){return idSet.has(q.id);});
+      if(pool.length>=FM) return pool;
+    }catch(e){}
+  }
+  // اختر 200 عشوائية بناءً على بذرة الجهاز
+  var shuffled=shuf(QB, getBrowserSeed());
+  var pool=shuffled.slice(0,FM);
+  localStorage.setItem(k, JSON.stringify(pool.map(function(q){return q.id;})));
+  return pool;
+}
+
 function pickQs(catFilter){
-  var limit=TIERS.elite?QB.length:TIERS.pro?QB.length:FM;
-  var pool=QB.slice(0,limit);
+  var pool;
+  if(TIERS.elite||TIERS.pro){
+    pool=QB.slice(); // المشترك: البنك كامل
+  } else {
+    pool=getFreePool(); // المجاني: 200 عشوائية ثابتة للجهاز
+  }
   if(catFilter)pool=pool.filter(function(q){return q.cat===catFilter;});
   var used=new Set(getUsed());
   var avail=pool.filter(function(q){return!used.has(q.id);});
   if(avail.length<TOT){avail=pool;sessionStorage.removeItem("tahadi_used");}
-  var result=shuf(avail,getBrowserSeed()).slice(0,TOT);
+  var result=shuf(avail).slice(0,TOT);
   markUsed(result.map(function(q){return q.id;}));
   return result;
 }
@@ -5225,6 +5248,7 @@ function nextT(){
    LIFELINES
 ════════════════════════════════════════ */
 function rLL(){
+  refreshTiers();
   var el=document.getElementById("llrow");el.innerHTML="";
   var t=ct(),can=iM();
   // In offline mode show team name above lifelines
@@ -5249,10 +5273,14 @@ function rLL(){
 
 function useLL(id){
   if(!iM())return;
+  refreshTiers();
   var t=ct();
   if(!t.ll)t.ll={};
   if(t.ll[id]){ntf("❌ استخدمت هذه الوسيلة","#FF3D5A");return;}
   var ll=LLS.find(function(l){return l.id===id;});if(!ll)return;
+  // تحقق من توفر الوسيلة حسب الاشتراك (الأوفلاين يفتح الكل)
+  var hasTier=(ll.tier==="free")||(ll.tier==="pro"&&TIERS.pro)||(ll.tier==="elite"&&TIERS.elite);
+  if(!hasTier){ntf("🔒 هذه الوسيلة تتطلب اشتراك "+(ll.tier==="elite"?"Elite":"Pro"),"#FFD046");return;}
   if(ll.cost>0&&t.points<ll.cost){ntf("❌ نقاطك غير كافية ("+ll.cost+" مطلوبة)","#FFD046");return;}
   if(ll.cost>0){t.points=Math.max(0,t.points-ll.cost);bump(t);}
   t.ll[id]=true;

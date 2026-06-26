@@ -355,6 +355,7 @@ select.inp option{background:#0C1440;}
 </style>
 <script src="js/affiliate.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script src="js/capacitor-bridge.js"></script>
 </head>
 <body>
 
@@ -496,7 +497,7 @@ select.inp option{background:#0C1440;}
       <div class="ll-item"><div class="ll-ico">⏰</div><div class="ll-info"><div class="ll-name">إعادة الوقت</div><div class="ll-desc">يُعيد العداد إلى 10 ثواني إذا أوشك على الانتهاء</div></div><div class="ll-tags"><div class="tag tag-pro">Pro</div></div></div>
       <div class="ll-item"><div class="ll-ico">❄️</div><div class="ll-info"><div class="ll-name">تجميد فريق</div><div class="ll-desc">تختار فريقاً يُجمَّد جولة كاملة ولا يستطيع الإجابة</div></div><div class="ll-tags"><div class="tag tag-pro" style="color:#C084FC;border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.1)">Elite</div></div></div>
       <div class="ll-item"><div class="ll-ico">🛡️</div><div class="ll-info"><div class="ll-name">الدرع</div><div class="ll-desc">يحمي فريقك من خصم يحق لك وقلب النقاط لجولة واحدة</div></div><div class="ll-tags"><div class="tag tag-pro" style="color:#C084FC;border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.1)">Elite</div></div></div>
-      <div class="ll-item" class="ll-full"><div class="ll-ico">🔀</div><div class="ll-info"><div class="ll-name">قلب النقاط</div><div class="ll-desc">يبدّل نقاطك مع نقاط منافس — مرة واحدة لكل فريق</div></div><div class="ll-tags"><div class="tag tag-pro" style="color:#C084FC;border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.1)">Elite</div></div></div>
+      <div class="ll-item" class="ll-full"><div class="ll-ico">🔀</div><div class="ll-info"><div class="ll-name">قلب النقاط</div><div class="ll-desc">يبدّل نقاطك مع نقاط منافس — تكلف 15 نقطة</div></div><div class="ll-tags"><div class="tag tag-pro" style="color:#C084FC;border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.1)">Elite</div></div></div>
     </div>
     <div style="background:rgba(255,208,70,.06);border:1px solid rgba(255,208,70,.2);border-radius:12px;padding:.82rem 1.1rem;margin-top:.85rem;font-size:.76rem;color:var(--gold)">
       💡 <strong>نقاط السرعة:</strong> 10 في أول 3 ث · 9 في 3-6 ث · 8 في 6-9 ث · ... · حد أدنى 1 نقطة
@@ -512,14 +513,10 @@ select.inp option{background:#0C1440;}
   <div class="container">
     <div class="sec-badge">💳 الأسعار</div>
     <h2 class="sec-title">ابدأ مجاناً، <span class="hl2">ارقَ متى ما أردت</span></h2>
-    <div class="ptog">
-      <button class="ptog-btn" id="togM" onclick="setP('m')">شهري</button>
-      <button class="ptog-btn on" id="togY" onclick="setP('y')"><span class="save-bdg">وفّر 35%</span>سنوي</button>
-    </div>
-    <div class="price-grid">
+        <div class="price-grid">
       <div class="price-card"><div class="price-ico">🌱</div><div class="price-plan">مجاني</div><div class="price-amt">مجاناً</div><div class="price-per">للأبد</div><button class="price-btn gh" onclick="openOffline()">ابدأ مجاناً</button><ul class="price-feats"><li>200 سؤال شهرياً</li><li>لعب أوفلاين على نفس الجهاز</li><li>3 وسائل مساعدة</li><li>2-4 فرق</li></ul></div>
-      <div class="price-card"><div class="price-ico">⚡</div><div class="price-plan">متقدم</div><div class="price-amt" id="pAmt">69 <span style="font-size:.9rem">ر.س</span></div><div class="price-per" id="pPer">/ سنة (35% خصم)</div><button class="price-btn c" onclick="openSubscribe('pro')">اشترك الآن</button><ul class="price-feats"><li>4000+ سؤال</li><li>أونلاين مع أجهزة مختلفة</li><li>5 وسائل مساعدة كاملة</li><li>تجميد + يحق لك</li></ul></div>
-      <div class="price-card feat"><div class="feat-badge">⭐ الأكثر شعبية</div><div class="price-ico">👑</div><div class="price-plan feat-txt">نخبة</div><div class="price-amt" id="eAmt" style="color:var(--gold)">149 <span style="font-size:.9rem">ر.س</span></div><div class="price-per" id="ePer">/ سنة (35% خصم)</div><button class="price-btn g" onclick="openSubscribe('elite')">اشترك الآن</button><ul class="price-feats"><li>كل ما في المتقدم</li><li>دعم أولوية</li><li>أسئلة حصرية</li><li>إحصائيات متقدمة</li></ul></div>
+      <div class="price-card"><div class="price-ico">⚡</div><div class="price-plan">متقدم</div><div class="price-amt" id="pAmt">9 <span style="font-size:.9rem">ر.س</span></div><div class="price-per" id="pPer">/ سنة</div><button class="price-btn c" onclick="openSubscribe('pro')">اشترك الآن</button><ul class="price-feats"><li>4000+ سؤال</li><li>أونلاين مع أجهزة مختلفة</li><li>5 وسائل مساعدة كاملة</li><li>تجميد + يحق لك</li></ul></div>
+      <div class="price-card feat"><div class="feat-badge">⭐ الأكثر شعبية</div><div class="price-ico">👑</div><div class="price-plan feat-txt">نخبة</div><div class="price-amt" id="eAmt" style="color:var(--gold)">19 <span style="font-size:.9rem">ر.س</span></div><div class="price-per" id="ePer">/ سنة</div><button class="price-btn g" onclick="openSubscribe('elite')">اشترك الآن</button><ul class="price-feats"><li>كل ما في المتقدم</li><li>دعم أولوية</li><li>أسئلة حصرية</li><li>إحصائيات متقدمة</li></ul></div>
     </div>
   </div>
 </section>
@@ -686,23 +683,7 @@ function buildCpk(id,mode){
   });
 }
 
-function setP(mode){
-  document.getElementById("togM").classList.toggle("on",mode==="m");
-  document.getElementById("togY").classList.toggle("on",mode==="y");
-  var pAmt=document.getElementById("pAmt"),pPer=document.getElementById("pPer");
-  var eAmt=document.getElementById("eAmt"),ePer=document.getElementById("ePer");
-  if(mode==="m"){
-    pAmt.innerHTML='9 <span style="font-size:.9rem">ر.س</span>';
-    pPer.textContent="/ شهر";
-    eAmt.innerHTML='19 <span style="font-size:.9rem">ر.س</span>';
-    ePer.textContent="/ شهر";
-  }else{
-    pAmt.innerHTML='69 <span style="font-size:.9rem">ر.س</span>';
-    pPer.textContent="/ سنة (35% خصم)";
-    eAmt.innerHTML='149 <span style="font-size:.9rem">ر.س</span>';
-    ePer.textContent="/ سنة (35% خصم)";
-  }
-}
+// yearly only — no toggle needed
 
 function faq(idx){
   document.querySelectorAll(".faq-item").forEach((item,i)=>{
@@ -767,17 +748,11 @@ function ntf(msg,color="#00E5FF"){
   el.classList.add("on");clearTimeout(ntout);ntout=setTimeout(()=>el.classList.remove("on"),3000);
 }
 function openSubscribe(plan){
-  // Must be logged in to subscribe
-  var user=TAHADI&&TAHADI.getUser?TAHADI.getUser():null;
   var token=localStorage.getItem("tahadi_token");
   if(!token){
-    // Save intended plan and open auth first
+    // غير مسجّل — احفظ الخطة وافتح تسجيل الدخول
     localStorage.setItem("tahadi_subscribe_plan", plan);
-    // Open auth modal if available, else show auth inline
-    if(window.Auth) Auth.open(function(){
-      setTimeout(function(){doSubscribe(plan);},600);
-    });
-    else ntf("يرجى تسجيل الدخول أولاً","#FFD046");
+    showAuthModal();
     return;
   }
   doSubscribe(plan);
@@ -785,38 +760,27 @@ function openSubscribe(plan){
 
 function doSubscribe(plan){
   var prices={
-    pro_monthly: {amount:900,  label:"Pro شهري — تحدي الأرقام"},
-    pro_yearly:  {amount:6900, label:"Pro سنوي — تحدي الأرقام"},
-    elite_monthly:{amount:1900, label:"Elite شهري — تحدي الأرقام"},
-    elite_yearly: {amount:14900,label:"Elite سنوي — تحدي الأرقام"}
+    pro:  {amount:900,  label:"Pro سنوي — تحدي الأرقام",   days:365},
+    elite:{amount:1900, label:"Elite سنوي — تحدي الأرقام", days:365}
   };
-  var mode=document.getElementById("togM")&&document.getElementById("togM").classList.contains("on")?"monthly":"yearly";
-  var key=plan+"_"+mode;
-  var info=prices[key]||prices[plan+"_monthly"];
-
-  // Get Moyasar PK from admin settings or hardcoded
+  var info=prices[plan];
+  if(!info){ntf("خطة غير صحيحة","#FF3D5A");return;}
   var pk=localStorage.getItem("tahadi_moyasar_pk")||"";
   if(!pk||pk.length<20){
-    // Show manual payment instructions
-    var msg="للاشتراك، تواصل عبر:\nواتساب أو البريد للدفع اليدوي\n\nأو أضف مفتاح Moyasar في لوحة الأدمن";
-    alert(msg);return;
+    alert("للاشتراك تواصل مع الدعم أو أضف مفتاح Moyasar في لوحة الأدمن");return;
   }
-
-  // Build Moyasar Payment Page URL
-  var phone=localStorage.getItem("tahadi_user");
-  try{phone=JSON.parse(phone).phone;}catch(e){phone="";}
-
-  var cbUrl=window.location.origin+window.location.pathname+"?paid=1&plan="+key;
+  ntf("جارٍ التحويل لصفحة الدفع...","#00E5FF");
+  var phone="";try{phone=JSON.parse(localStorage.getItem("tahadi_user")||"{}").phone||"";}catch(e){}
+  var cbUrl=window.location.origin+window.location.pathname+"?paid=1&plan="+plan+"_yearly";
   var params=[
     "publishable_api_key="+encodeURIComponent(pk),
     "amount="+info.amount,
     "currency=SAR",
     "description="+encodeURIComponent(info.label),
-    "callback_url="+encodeURIComponent(cbUrl),
-    "source_type=creditcard",
+    "callback_url="+encodeURIComponent(cbUrl)
   ];
   if(phone) params.push("metadata[phone]="+encodeURIComponent(phone));
-  window.location.href="https://checkout.moyasar.com/?"+params.join("&");
+  setTimeout(function(){window.location.href="https://checkout.moyasar.com/?"+params.join("&");},800);
 }
 
 // Handle payment return
@@ -831,7 +795,7 @@ function doSubscribe(plan){
     var phone="";try{phone=JSON.parse(localStorage.getItem("tahadi_user")||"{}").phone||"";}catch(e){}
     var adminKey="tahadi_admin_v1";
     var data=JSON.parse(localStorage.getItem(adminKey)||'{"users":[],"subscriptions":[],"grants":[],"settings":{}}');
-    var days=plan.includes("yearly")?365:30;
+    var days=365;
     var sub={
       phone:phone,uid:(_u.uid||""),plan:plan,
       amount:plan.includes("yearly")?(plan.includes("elite")?149:69):(plan.includes("elite")?19:9),
@@ -850,8 +814,8 @@ function doSubscribe(plan){
         var _u=JSON.parse(localStorage.getItem("tahadi_user")||"{}");
         var _uid=_u.uid||("u_"+(_u.phone||"").replace(/[^0-9]/g,""));
         var _planMap={
-          "pro_monthly":"pro_month","pro_yearly":"pro_year",
-          "elite_monthly":"elite_month","elite_yearly":"elite_year"
+          "pro_yearly":"pro_year",
+          "elite_yearly":"elite_year"
         };
         Affiliate.recordSubscriptionCommission(_uid, _planMap[plan]||plan).catch(function(){});
       }catch(e){}
@@ -868,11 +832,13 @@ var _otpTimer=null, _otpPhone="", _otpDemo="", _otpCode="123456", _otpEmail="", 
 
 function showAuthModal(){
   authShowStep(1);
-  document.getElementById("authPhone").value="";
-  document.getElementById("authEmail").value="";
+  var emailEl=document.getElementById("authEmail");
+  var nameEl=document.getElementById("authName");
+  if(emailEl) emailEl.value="";
+  if(nameEl) nameEl.value="";
   document.getElementById("authS1Err").style.display="none";
   document.getElementById("authModal").classList.add("on");
-  setTimeout(function(){document.getElementById("authPhone").focus();},300);
+  setTimeout(function(){document.getElementById("authEmail").focus();},300);
 }
 
 function authShowStep(n){

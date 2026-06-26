@@ -212,21 +212,19 @@ select.inp option{background:#0C1440;}
       <div class="section-title">✅ منح اشتراك يدوي</div>
       <div class="form-row">
         <div class="form-group">
-          <label>رقم الجوال</label>
-          <input type="tel" id="grantPhone" class="inp" placeholder="5XXXXXXXX">
+          <label>البريد الإلكتروني</label>
+          <input type="email" id="grantEmail" class="inp" placeholder="name@example.com">
         </div>
         <div class="form-group">
           <label>الخطة</label>
           <select id="grantPlan" class="inp">
-            <option value="pro_monthly">Pro - شهري (9 ر.س)</option>
-            <option value="pro_yearly">Pro - سنوي (69 ر.س)</option>
-            <option value="elite_monthly">Elite - شهري (19 ر.س)</option>
-            <option value="elite_yearly">Elite - سنوي (149 ر.س)</option>
+            <option value="pro_yearly">Pro سنوي (9 ر.س)</option>
+            <option value="elite_yearly">Elite سنوي (19 ر.س)</option>
           </select>
         </div>
         <div class="form-group">
           <label>المدة (أيام)</label>
-          <input type="number" id="grantDays" class="inp" value="30" min="1">
+          <input type="number" id="grantDays" class="inp" value="365" min="1">
         </div>
         <div class="form-group">
           <label>ملاحظة</label>
@@ -238,7 +236,7 @@ select.inp option{background:#0C1440;}
     <div class="section-title">📋 سجل المنح اليدوي</div>
     <div class="table-wrap">
       <table class="tbl">
-        <thead><tr><th>الجوال</th><th>الخطة</th><th>المدة</th><th>التاريخ</th><th>الملاحظة</th><th>إجراء</th></tr></thead>
+        <thead><tr><th>البريد</th><th>الخطة</th><th>المدة</th><th>التاريخ</th><th>الملاحظة</th><th>إجراء</th></tr></thead>
         <tbody id="grantLog"></tbody>
       </table>
     </div>
@@ -270,9 +268,9 @@ select.inp option{background:#0C1440;}
     <div class="form-card">
       <div class="section-title">💰 أسعار الاشتراكات</div>
       <div class="form-row">
-        <div class="form-group"><label>Pro شهري (ر.س)</label><input type="number" id="sPriceProM" class="inp" value="9"></div>
-        <div class="form-group"><label>Elite شهري (ر.س)</label><input type="number" id="sPriceEliteM" class="inp" value="19"></div>
-        <div class="form-group"><label>خصم السنوي %</label><input type="number" id="sDiscount" class="inp" value="35"></div>
+        <div class="form-group"><label>Pro سنوي (ر.س)</label><input type="number" id="sPriceProM" class="inp" value="9"></div>
+        <div class="form-group"><label>Elite سنوي (ر.س)</label><input type="number" id="sPriceEliteM" class="inp" value="19"></div>
+        
         <div class="form-group"><label>مفتاح Moyasar (PK)</label><input type="text" id="sMoyasarPK" class="inp" placeholder="pk_live_..."></div>
       </div>
       <button class="btn-primary" onclick="saveSettings()">💾 حفظ الإعدادات</button>
@@ -562,31 +560,32 @@ function revokeSubByPhone(phone){
 
 /* ── GRANT ── */
 function doGrant(){
-  var phone=document.getElementById("grantPhone").value.trim();
+  var email=document.getElementById("grantEmail").value.trim();
   var plan =document.getElementById("grantPlan").value;
-  var days =parseInt(document.getElementById("grantDays").value)||30;
+  var days =parseInt(document.getElementById("grantDays").value)||365;
   var note =document.getElementById("grantNote").value.trim();
-  if(!phone){ntf("❗ أدخل رقم الجوال","#FF3D5A");return;}
-  if(!phone.startsWith("5")||phone.length!==9){ntf("❗ الرقم يجب أن يكون 9 أرقام ويبدأ بـ5","#FF3D5A");return;}
+  if(!email||!email.includes("@")){ntf("❗ أدخل بريداً إلكترونياً صحيحاً","#FF3D5A");return;}
 
   var data=db();
-  var fullPhone="+966"+phone;
-  var prices={pro_monthly:9,pro_yearly:69,elite_monthly:19,elite_yearly:149};
+  var uid="u_"+btoa(email).replace(/[^a-zA-Z0-9]/g,"").slice(0,16);
+  var prices={pro_yearly:9,elite_yearly:19};
   var expiresAt=new Date(Date.now()+days*86400000).toISOString();
-  var sub={phone:fullPhone,plan:plan,amount:0,note:"منح يدوي"+(note?" - "+note:""),
+  var sub={uid:uid,email:email,phone:"",plan:plan,amount:0,
+    note:"منح يدوي"+(note?" - "+note:""),
     createdAt:new Date().toISOString(),expiresAt:expiresAt,manual:true};
   data.subscriptions.push(sub);
-  // Find or create user
-  if(!data.users.find(function(u){return u.phone===fullPhone;})){
-    data.users.push({id:"u_"+Date.now(),name:"مستخدم "+phone.slice(-4),phone:fullPhone,
-      email:"",plan:plan,createdAt:new Date().toISOString()});
+  if(!data.users.find(function(u){return u.email===email;})){
+    data.users.push({id:uid,uid:uid,name:"مستخدم "+email.split("@")[0].slice(0,8),
+      email:email,phone:"",plan:plan,createdAt:new Date().toISOString()});
   }
-  data.grants.push({phone:fullPhone,plan:plan,days:days,note:note,date:new Date().toISOString()});
+  data.grants.push({email:email,uid:uid,plan:plan,days:days,note:note,date:new Date().toISOString()});
   saveDB(data);
+  // Firebase
+  if(window.TahadiDB){TahadiDB.saveSubscription(sub).catch(function(){});}
   renderGrantLog();loadDashboard();
-  document.getElementById("grantPhone").value="";
+  document.getElementById("grantEmail").value="";
   document.getElementById("grantNote").value="";
-  ntf("✅ تم منح الاشتراك لـ "+fullPhone,"#00E676");
+  ntf("✅ تم منح الاشتراك لـ "+email,"#00E676");
 }
 
 function renderGrantLog(){
@@ -594,7 +593,7 @@ function renderGrantLog(){
   var tbody=document.getElementById("grantLog");tbody.innerHTML="";
   if(!data.grants.length){tbody.innerHTML="<tr><td colspan=\"6\" class=\"empty-state\">لا يوجد سجل منح</td></tr>";return;}
   data.grants.slice().reverse().forEach(function(g,i){
-    tbody.innerHTML+="<tr><td dir=\"ltr\">"+g.phone+"</td><td>"+g.plan+"</td><td>"+g.days+" يوم</td><td>"+fmtDate(g.date)+"</td><td>"+(g.note||"—")+"</td><td><button class=\"btn-danger\" onclick=\"removeGrant("+(data.grants.length-1-i)+")\">حذف</button></td></tr>";
+    tbody.innerHTML+="<tr><td dir=\"ltr\">"+(g.email||g.phone||"—")+"</td><td>"+g.plan+"</td><td>"+g.days+" يوم</td><td>"+fmtDate(g.date)+"</td><td>"+(g.note||"—")+"</td><td><button class=\"btn-danger\" onclick=\"removeGrant("+(data.grants.length-1-i)+")\">حذف</button></td></tr>";
   });
 }
 
@@ -668,7 +667,7 @@ function ntf(msg,color){
     var isPro  =localStorage.getItem("tahadi_pro")==="1";
     var isElite=localStorage.getItem("tahadi_elite")==="1";
     if((isPro||isElite)&&!data.subscriptions.find(function(s){return s.phone===u.phone&&new Date(s.expiresAt)>new Date();})){
-      var plan=isElite?"elite_monthly":"pro_monthly";
+      var plan=isElite?"elite_yearly":"pro_yearly";
       data.subscriptions.push({phone:u.phone,plan:plan,amount:0,
         note:"تسجيل تلقائي",createdAt:new Date().toISOString(),
         expiresAt:new Date(Date.now()+30*86400000).toISOString()});
@@ -697,7 +696,7 @@ function editSub(phone){
     var exp=new Date(sub.expiresAt);
     document.getElementById("editSubExpiry").value=exp.toISOString().split("T")[0];
   } else {
-    document.getElementById("editSubPlan").value="pro_monthly";
+    document.getElementById("editSubPlan").value="pro_yearly";
     var d=new Date();d.setDate(d.getDate()+30);
     document.getElementById("editSubExpiry").value=d.toISOString().split("T")[0];
   }
@@ -720,7 +719,7 @@ function saveEditSub(){
     }
   });
   // Add new sub record
-  var prices={pro_monthly:9,pro_yearly:69,elite_monthly:19,elite_yearly:149};
+  var prices={pro_yearly:9,elite_yearly:19};
   data.subscriptions.push({
     phone:phone,plan:plan,
     amount:prices[plan]||0,
@@ -861,10 +860,8 @@ function loadEmailJS(){
     <div style="margin-bottom:.85rem">
       <label style="display:block;font-size:.74rem;color:var(--dim);margin-bottom:.28rem;font-weight:700">الخطة الجديدة</label>
       <select id="editSubPlan" class="inp">
-        <option value="pro_monthly">Pro - شهري (9 ر.س)</option>
-        <option value="pro_yearly">Pro - سنوي (69 ر.س)</option>
-        <option value="elite_monthly">Elite - شهري (19 ر.س)</option>
-        <option value="elite_yearly">Elite - سنوي (149 ر.س)</option>
+        <option value="pro_yearly">Pro سنوي (9 ر.س)</option>
+        <option value="elite_yearly">Elite سنوي (19 ر.س)</option>
       </select>
     </div>
     <div style="margin-bottom:.85rem">

@@ -1,0 +1,361 @@
+# 🚀 دليل الرفع الكامل — تحدي الأرقام
+# آخر تحديث: 2024
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 📋 المتطلبات
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. سيرفر VPS (Ubuntu 22.04 LTS) — DigitalOcean أو Hostinger
+   - الحد الأدنى: 1 GB RAM، 25 GB SSD
+   - التكلفة: ~$6/شهر (DigitalOcean) أو ~$3/شهر (Hostinger)
+
+2. دومين (اختياري للبداية)
+   - يمكن البدء بـ IP مباشرة
+
+3. على جهازك:
+   - برنامج FileZilla أو WinSCP (لرفع الملفات)
+   - أو PuTTY للـ SSH
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 📁 الملفات التي ستحتاجها
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+tahadi-www.zip           ← ملفات الموقع (Frontend)
+tahadi-complete-v2.zip   ← يحتوي على Backend أيضاً
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## ⚡ الخيار السريع — بدون Backend
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+إذا أردت البدء سريعاً بدون إعداد Backend:
+
+1. فك ضغط tahadi-www.zip
+2. ارفع المحتوى لأي استضافة ويب عادية
+   (cPanel، Hostinger، Netlify، Vercel)
+3. الموقع يعمل فوراً!
+
+✅ يعمل بدون Backend:
+  - اللعب أوفلاين (نفس الجهاز)
+  - اللعب أونلاين بين تبويبات نفس المتصفح
+  - حفظ البيانات محلياً في المتصفح
+
+❌ لا يعمل بدون Backend:
+  - تسجيل الدخول بالجوال + OTP حقيقي
+  - الدفع الإلكتروني الحقيقي
+  - مزامنة الأونلاين بين أجهزة مختلفة
+  - لوحة الأدمن الكاملة
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 🛠️ الإعداد الكامل على VPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+### الخطوة 1: إنشاء السيرفر
+
+على DigitalOcean:
+  1. اذهب إلى digitalocean.com
+  2. Create → Droplet
+  3. اختر: Ubuntu 22.04 LTS
+  4. الحجم: Basic → $6/month (1GB RAM)
+  5. المنطقة: Singapore أو Frankfurt (الأقرب)
+  6. أضف SSH key أو احفظ كلمة المرور
+  7. Create Droplet
+
+### الخطوة 2: الاتصال بالسيرفر
+
+على Windows (PowerShell أو PuTTY):
+  ssh root@YOUR_SERVER_IP
+
+على Mac/Linux:
+  ssh root@YOUR_SERVER_IP
+
+### الخطوة 3: تثبيت المتطلبات
+
+# تحديث النظام
+apt update && apt upgrade -y
+
+# تثبيت Node.js 18
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+apt install -y nodejs
+
+# تحقق
+node --version   # يجب أن يظهر v18.x.x
+npm --version
+
+# تثبيت Nginx و PM2 و Certbot
+apt install -y nginx certbot python3-certbot-nginx
+npm install -g pm2
+
+### الخطوة 4: رفع الملفات
+
+من جهازك (افتح Terminal أو PowerShell):
+
+# رفع ملف الـ Frontend
+scp tahadi-www.zip root@YOUR_SERVER_IP:/tmp/
+
+# رفع ملف الـ Backend
+scp tahadi-complete-v2.zip root@YOUR_SERVER_IP:/tmp/
+
+### الخطوة 5: إعداد الملفات على السيرفر
+
+# على السيرفر:
+mkdir -p /var/www/tahadi
+cd /var/www/tahadi
+
+# فك ضغط Frontend
+unzip /tmp/tahadi-www.zip
+mv www/* /var/www/tahadi/
+rmdir www
+
+# فك ضغط Backend
+unzip /tmp/tahadi-complete-v2.zip
+mv tahadi-backend /var/www/tahadi/backend
+mv tahadi-frontend /tmp/  # احتياطي فقط
+
+### الخطوة 6: إعداد Backend
+
+cd /var/www/tahadi/backend
+
+# تثبيت المكتبات
+npm install --production
+
+# إنشاء ملف الإعدادات
+cp .env.example .env
+nano .env
+
+# ← في محرر nano، عدّل هذه القيم:
+PORT=3000
+NODE_ENV=production
+FRONTEND_URL=https://tahadi.sa
+
+# غيّر هذا لنص عشوائي طويل (60+ حرف)
+JWT_SECRET=PASTE_RANDOM_64_CHARS_HERE_EXAMPLE_abc123XYZ456
+
+DB_PATH=/var/www/tahadi/backend/db/tahadi.db
+
+# مفاتيح Moyasar (من dashboard.moyasar.com)
+MOYASAR_SECRET_KEY=sk_live_YOUR_KEY
+MOYASAR_PUBLISHABLE_KEY=pk_live_YOUR_KEY
+
+PRICE_MONTHLY=19
+PRICE_YEARLY=59
+ADMIN_EMAIL=dr.fajry@gmail.com
+
+# SMS Gateway (اختياري)
+SMS_GATEWAY=msegat
+MSEGAT_USERNAME=your_username
+MSEGAT_API_KEY=your_key
+MSEGAT_SENDER=تحدي
+
+# حفظ والخروج: Ctrl+O ثم Enter ثم Ctrl+X
+
+# تهيئة قاعدة البيانات
+npm run db:init
+
+# نتيجة متوقعة:
+# ✅ Database initialized: /var/www/tahadi/backend/db/tahadi.db
+
+### الخطوة 7: تشغيل Backend
+
+cd /var/www/tahadi/backend
+
+# تشغيل مع PM2
+pm2 start server.js --name tahadi-api
+
+# تشغيل تلقائي عند إعادة التشغيل
+pm2 startup
+# انسخ الأمر الذي يظهر وشغّله
+pm2 save
+
+# تحقق من أن كل شيء يعمل
+pm2 status
+pm2 logs tahadi-api --lines 20
+
+# اختبار سريع:
+curl http://localhost:3000/health
+# يجب أن يظهر: {"status":"ok",...}
+
+### الخطوة 8: إعداد Nginx
+
+# إنشاء ملف الإعداد
+nano /etc/nginx/sites-available/tahadi
+
+# الصق هذا المحتوى (عدّل tahadi.sa بدومينك):
+
+server {
+    listen 80;
+    server_name tahadi.sa www.tahadi.sa;
+    root /var/www/tahadi;
+    index index.html;
+
+    # Frontend files
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Backend API
+    location /api/ {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # WebSocket للعب الأونلاين
+    location /ws {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 3600s;
+    }
+}
+
+# Ctrl+O ثم Enter ثم Ctrl+X للحفظ
+
+# تفعيل الموقع
+ln -s /etc/nginx/sites-available/tahadi /etc/nginx/sites-enabled/
+
+# اختبار الإعداد
+nginx -t
+
+# إعادة تشغيل Nginx
+systemctl restart nginx
+
+### الخطوة 9: SSL مجاني (HTTPS)
+
+# استبدل tahadi.sa بدومينك الحقيقي
+certbot --nginx -d tahadi.sa -d www.tahadi.sa
+
+# اتبع التعليمات، أدخل البريد الإلكتروني
+# اختر: 2 (Redirect HTTP to HTTPS)
+
+### الخطوة 10: ربط الدومين (اختياري)
+
+في لوحة تحكم الدومين (GoDaddy / Namecheap / أي مزود):
+  A Record → @ → YOUR_SERVER_IP
+  A Record → www → YOUR_SERVER_IP
+
+انتظر 10-30 دقيقة لتفعيل DNS
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 🎮 كيف يعمل اللعب الأونلاين
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+### طريقة 1: نفس الجهاز (بدون Backend)
+  - افتح عدة تبويبات في المتصفح
+  - الهوست ينشئ غرفة ويحصل على الكود
+  - بقية اللاعبين يدخلون الكود في تبويبات أخرى
+  - يعمل فوراً بدون إنترنت!
+
+### طريقة 2: شبكة محلية (بدون Backend)
+  - جميع الأجهزة على نفس WiFi
+  - الهوست يفتح الموقع ويشارك رابط الغرفة
+  - اللاعبون يفتحون الرابط على أجهزتهم
+  - ⚠️ يعمل فقط إذا كانوا على نفس الشبكة
+
+### طريقة 3: أونلاين حقيقي (مع Backend)
+  - يعمل عبر الإنترنت من أي مكان
+  - الهوست يشارك رابط: https://tahadi.sa?room=XXXXXX
+  - اللاعبون يفتحون الرابط من أي جهاز
+  - يتم التزامن عبر localStorage + WebSocket
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 🔐 بيانات الأدمن
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+البريد:       dr.fajry@gmail.com
+كلمة المرور: Admin@2024
+
+رابط لوحة الأدمن:
+  https://tahadi.sa/admin.html
+
+⚠️ غيّر كلمة المرور فور تسجيل أول دخول!
+عبر لوحة الأدمن ← إدارة المستخدمين ← تعديل
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 🔑 إعداد Moyasar للدفع
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. اذهب إلى: https://dashboard.moyasar.com
+2. سجّل حساباً جديداً
+3. من القائمة الجانبية: Settings → API Keys
+4. انسخ:
+   - Publishable Key → ضعها في MOYASAR_PUBLISHABLE_KEY
+   - Secret Key → ضعها في MOYASAR_SECRET_KEY
+5. أضف Webhook:
+   - URL: https://tahadi.sa/api/subscriptions/webhook
+   - Events: payment.paid
+
+للاختبار قبل الإنتاج، استخدم بيانات Moyasar التجريبية:
+  بطاقة اختبار: 4111 1111 1111 1111
+  CVV: 123
+  تاريخ: 12/26
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 📱 إعداد SMS (اختياري)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+بدون SMS Gateway: الرمز دائماً 123456 (وضع تجريبي)
+
+لتفعيل SMS حقيقي عبر Msegat:
+1. سجّل في: https://msegat.com
+2. احصل على: Username + API Key
+3. أضفهما في .env:
+   SMS_GATEWAY=msegat
+   MSEGAT_USERNAME=your_username
+   MSEGAT_API_KEY=your_key
+   MSEGAT_SENDER=تحدي
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 🔄 تحديث الموقع لاحقاً
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+لتحديث ملفات Frontend:
+  scp -r www/* root@YOUR_IP:/var/www/tahadi/
+
+لتحديث Backend:
+  scp server.js root@YOUR_IP:/var/www/tahadi/backend/
+  ssh root@YOUR_IP "cd /var/www/tahadi/backend && pm2 restart tahadi-api"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 🩺 استكشاف الأخطاء
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+الموقع لا يفتح:
+  systemctl status nginx
+  nginx -t
+
+Backend لا يستجيب:
+  pm2 status
+  pm2 logs tahadi-api
+
+قاعدة البيانات:
+  sqlite3 /var/www/tahadi/backend/db/tahadi.db ".tables"
+  sqlite3 /var/www/tahadi/backend/db/tahadi.db "SELECT * FROM users;"
+
+SSL لا يعمل:
+  certbot renew --dry-run
+  systemctl restart nginx
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 📊 الروابط النهائية
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+الموقع الرئيسي:  https://tahadi.sa
+اللعبة:          https://tahadi.sa/game.html
+لوحة المستخدم:  https://tahadi.sa/dashboard.html
+لوحة الأدمن:    https://tahadi.sa/admin.html
+Backend Health:  https://tahadi.sa/health
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 💰 التكاليف الشهرية
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+VPS 1GB (DigitalOcean):     $6/شهر
+دومين .sa:                  ~150 ر.س/سنة
+SSL:                        مجاني
+Moyasar:                    2.5% من كل معاملة
+SMS (Msegat):               ~0.1 ر.س لكل رسالة
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
