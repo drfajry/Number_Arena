@@ -1028,19 +1028,26 @@ function sendOTPEmail(email,name,code,cb){
 function syncPlanFromDB(cb){
   var user=JSON.parse(localStorage.getItem("tahadi_user")||"null");
   if(!user||!user.email){if(cb)cb();return;}
-  if(window.TahadiDB){
+  if(window.TahadiDB&&window.firebase&&firebase.apps&&firebase.apps.length){
     TahadiDB.getPlanByEmail(user.email).then(function(plan){
+      // Firebase هو المصدر النهائي — لا fallback بعد نجاح القراءة
       if(plan&&plan.plan){
         localStorage.setItem("tahadi_pro","1");
         if(plan.plan.indexOf("elite")>-1)localStorage.setItem("tahadi_elite","1");
         else localStorage.removeItem("tahadi_elite");
+        console.log("[Plan] from Firebase:",plan.plan);
       } else {
         localStorage.removeItem("tahadi_pro");
         localStorage.removeItem("tahadi_elite");
+        console.log("[Plan] no active plan (free)");
       }
       if(cb)cb();
-    }).catch(function(){syncFromAdminLocal(user);if(cb)cb();});
+    }).catch(function(e){
+      console.log("[Plan] Firebase error, using local:",e);
+      syncFromAdminLocal(user);if(cb)cb();
+    });
   } else {
+    console.log("[Plan] Firebase not ready, using local admin DB");
     syncFromAdminLocal(user);
     if(cb)cb();
   }
@@ -1101,20 +1108,8 @@ function renderUserBar(){
     return;
   }
 
-  // Check admin DB for subscription (admin grant takes priority)
-  var adminData=JSON.parse(localStorage.getItem("tahadi_admin_v1")||"{}");
-  var now=new Date();
+  // الخطة تُقرأ من tahadi_pro/elite (يضبطها syncPlanFromDB من Firebase)
   var mySub=null;
-  if(adminData.subscriptions&&user.phone){
-    mySub=adminData.subscriptions.filter(function(s){
-      return s.phone===user.phone&&new Date(s.expiresAt)>now;
-    }).sort(function(a,b){return new Date(b.expiresAt)-new Date(a.expiresAt);})[0];
-  }
-  // Determine plan from admin DB first, then localStorage flags
-  if(mySub){
-    if(mySub.plan.startsWith("elite")){isElite=true;localStorage.setItem("tahadi_elite","1");localStorage.setItem("tahadi_pro","1");}
-    else if(mySub.plan.startsWith("pro")){isPro=true;localStorage.setItem("tahadi_pro","1");}
-  }
   var plan=isElite?"elite":isPro?"pro":"free";
   var planLabels={free:"الخطة المجانية",pro:"مشترك Pro ✅",elite:"مشترك Elite 👑"};
   var planClass={free:"free",pro:"pro",elite:"elite"};
@@ -1755,20 +1750,8 @@ function renderUserBar(){
     return;
   }
 
-  // Check admin DB for subscription (admin grant takes priority)
-  var adminData=JSON.parse(localStorage.getItem("tahadi_admin_v1")||"{}");
-  var now=new Date();
+  // الخطة تُقرأ من tahadi_pro/elite (يضبطها syncPlanFromDB من Firebase)
   var mySub=null;
-  if(adminData.subscriptions&&user.phone){
-    mySub=adminData.subscriptions.filter(function(s){
-      return s.phone===user.phone&&new Date(s.expiresAt)>now;
-    }).sort(function(a,b){return new Date(b.expiresAt)-new Date(a.expiresAt);})[0];
-  }
-  // Determine plan from admin DB first, then localStorage flags
-  if(mySub){
-    if(mySub.plan.startsWith("elite")){isElite=true;localStorage.setItem("tahadi_elite","1");localStorage.setItem("tahadi_pro","1");}
-    else if(mySub.plan.startsWith("pro")){isPro=true;localStorage.setItem("tahadi_pro","1");}
-  }
   var plan=isElite?"elite":isPro?"pro":"free";
   var planLabels={free:"الخطة المجانية",pro:"مشترك Pro ✅",elite:"مشترك Elite 👑"};
   var planClass={free:"free",pro:"pro",elite:"elite"};
