@@ -29,6 +29,39 @@ const FIREBASE_CONFIG = {
   var rtdb = firebase.database();
 
   window.TahadiDB = {
+    /* معرّف موحّد من الإيميل */
+    emailToUid: function(email){
+      return "u_"+btoa(email).replace(/[^a-zA-Z0-9]/g,"").slice(0,16);
+    },
+
+    /* تعيين خطة المستخدم — يستبدل أي خطة سابقة (مصدر واحد للحقيقة) */
+    setUserPlan: function(email, plan, expiresAt){
+      var uid=this.emailToUid(email);
+      return rtdb.ref("users/"+uid+"/currentPlan").set({
+        plan: plan,
+        email: email,
+        expiresAt: expiresAt,
+        updatedAt: new Date().toISOString()
+      });
+    },
+
+    /* إلغاء خطة المستخدم */
+    clearUserPlan: function(email){
+      var uid=this.emailToUid(email);
+      return rtdb.ref("users/"+uid+"/currentPlan").remove();
+    },
+
+    /* قراءة خطة بالإيميل */
+    getPlanByEmail: function(email){
+      var uid=this.emailToUid(email);
+      return rtdb.ref("users/"+uid+"/currentPlan").once("value").then(function(s){
+        var plan=s.val();
+        if(!plan)return null;
+        if(new Date(plan.expiresAt)<new Date())return null;
+        return plan;
+      });
+    },
+
 
     /* ── مستخدمون ── */
     saveUser: function(user){
