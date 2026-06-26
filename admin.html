@@ -181,7 +181,7 @@ select.inp option{background:#0C1440;}
     </div>
     <div class="table-wrap">
       <table class="tbl">
-        <thead><tr><th>الاسم</th><th>الجوال</th><th>الخطة</th><th>تاريخ التسجيل</th><th>إجراء</th></tr></thead>
+        <thead><tr><th>الاسم</th><th>البريد</th><th>الخطة</th><th>تاريخ التسجيل</th><th>إجراء</th></tr></thead>
         <tbody id="usersTable"></tbody>
       </table>
     </div>
@@ -535,24 +535,25 @@ function renderSubsTable(allSubs,q){
     else if(active&&daysLeft<=7) dClass='style="color:var(--red)"';
     else if(active&&daysLeft<=30&&s.plan.includes("yearly")) dClass='style="color:var(--gold)"';
     tbody.innerHTML+="<tr>"
-      +"<td dir=\"ltr\">"+s.phone+"</td>"
+      +"<td dir=\"ltr\">"+(s.email||s.phone||"—")+"</td>"
       +"<td><span class=\"badge badge-"+(s.plan.startsWith("elite")?"elite":"pro")+"\">"+s.plan+"</span></td>"
       +"<td>"+(s.amount||"—")+" ر.س</td>"
       +"<td>"+fmtDate(s.createdAt)+"</td>"
       +"<td>"+fmtDate(s.expiresAt)+"</td>"
       +"<td><span "+dClass+">"+daysLbl+"</span></td>"
       +"<td><span class=\"badge badge-"+(active?"active":"expired")+"\">"+(active?"نشط":"منتهي")+"</span></td>"
-      +"<td style=\"display:flex;gap:.4rem\"><button class=\"btn-success\" onclick=\"editSub('"+s.phone+"')\" title=\"تعديل\">✏️</button><button class=\"btn-danger\" onclick=\"revokeSubByPhone('"+s.phone+"')\">إلغاء</button></td>"
+      +"<td style=\"display:flex;gap:.4rem\"><button class=\"btn-success\" onclick=\"editSub('"+(s.email||s.phone)+"')\" title=\"تعديل\">✏️</button><button class=\"btn-danger\" onclick=\"revokeSubByPhone('"+(s.email||s.phone)+"')\">إلغاء</button></td>"
       +"</tr>";
   });
 }
 
-function revokeSubByPhone(phone){
-  if(!confirm("إلغاء اشتراك "+phone+"؟"))return;
+function revokeSubByPhone(identifier){
+  if(!confirm("إلغاء اشتراك "+identifier+"؟"))return;
   var data=db();
   var now=new Date();
   data.subscriptions.forEach(function(s){
-    if(s.phone===phone&&new Date(s.expiresAt)>now) s.expiresAt=new Date().toISOString();
+    if((s.email===identifier||s.phone===identifier||s.uid===identifier)&&new Date(s.expiresAt)>now)
+      s.expiresAt=new Date().toISOString();
   });
   saveDB(data);renderSubs();loadDashboard();
   ntf("تم إلغاء الاشتراك","#FF3D5A");
@@ -575,7 +576,7 @@ function doGrant(){
     createdAt:new Date().toISOString(),expiresAt:expiresAt,manual:true};
   data.subscriptions.push(sub);
   if(!data.users.find(function(u){return u.email===email;})){
-    data.users.push({id:uid,uid:uid,name:"مستخدم "+email.split("@")[0].slice(0,8),
+    data.users.push({id:uid,uid:uid,name:email.split("@")[0],
       email:email,phone:"",plan:plan,createdAt:new Date().toISOString()});
   }
   data.grants.push({email:email,uid:uid,plan:plan,days:days,note:note,date:new Date().toISOString()});
@@ -682,54 +683,59 @@ function ntf(msg,color){
 })();
 
 /* ── Edit Subscription ── */
-function editSub(phone){
+function editSub(identifier){
   var data=db();
   var now=new Date();
+  // البحث بالإيميل أو الجوال أو uid
   var sub=data.subscriptions.filter(function(s){
-    return s.phone===phone&&new Date(s.expiresAt)>now;
+    return (s.email===identifier||s.phone===identifier||s.uid===identifier)&&new Date(s.expiresAt)>now;
   }).sort(function(a,b){return new Date(b.expiresAt)-new Date(a.expiresAt);})[0];
 
-  document.getElementById("editSubPhone").value=phone;
-  document.getElementById("editSubPhoneDisp").textContent=phone;
+  document.getElementById("editSubPhone").value=identifier;
+  document.getElementById("editSubPhoneDisp").textContent=identifier;
   if(sub){
     document.getElementById("editSubPlan").value=sub.plan;
     var exp=new Date(sub.expiresAt);
     document.getElementById("editSubExpiry").value=exp.toISOString().split("T")[0];
   } else {
     document.getElementById("editSubPlan").value="pro_yearly";
-    var d=new Date();d.setDate(d.getDate()+30);
+    var d=new Date();d.setDate(d.getDate()+365);
     document.getElementById("editSubExpiry").value=d.toISOString().split("T")[0];
   }
-  document.getElementById("editSubModal").classList.remove("edit-modal-hidden");document.getElementById("editSubModal").classList.add("edit-modal-open");
+  document.getElementById("editSubModal").classList.remove("edit-modal-hidden");
+  document.getElementById("editSubModal").classList.add("edit-modal-open");
 }
 
 function saveEditSub(){
-  var phone  =document.getElementById("editSubPhone").value;
+  var identifier=document.getElementById("editSubPhone").value;
   var plan   =document.getElementById("editSubPlan").value;
   var expiry =document.getElementById("editSubExpiry").value;
   if(!expiry){ntf("❗ اختر تاريخ الانتهاء","#FF3D5A");return;}
 
   var data=db();
   var now=new Date();
-  // Mark old active subs as expired
+  // إنهاء الاشتراكات النشطة القديمة لنفس المستخدم
   data.subscriptions.forEach(function(s){
-    if(s.phone===phone&&new Date(s.expiresAt)>now){
+    if((s.email===identifier||s.phone===identifier||s.uid===identifier)&&new Date(s.expiresAt)>now){
       s.expiresAt=new Date().toISOString();
       s.note=(s.note||"")+" (عُدِّل)";
     }
   });
-  // Add new sub record
+  // إيجاد بيانات المستخدم
+  var u=data.users.find(function(x){return x.email===identifier||x.phone===identifier||x.uid===identifier;});
   var prices={pro_yearly:9,elite_yearly:19};
-  data.subscriptions.push({
-    phone:phone,plan:plan,
-    amount:prices[plan]||0,
-    note:"تعديل يدوي من الأدمن",
+  var newSub={
+    uid:(u?u.uid:""),email:(u?u.email:identifier),phone:(u?u.phone:""),
+    plan:plan,amount:prices[plan]||0,
+    note:"تعديل يدوي من الأدمن",manual:true,
     createdAt:new Date().toISOString(),
     expiresAt:new Date(expiry+"T23:59:59").toISOString()
-  });
-  // Update user plan field
-  data.users.forEach(function(u){if(u.phone===phone)u.plan=plan;});
+  };
+  data.subscriptions.push(newSub);
+  if(u)u.plan=plan;
   saveDB(data);
+  // Firebase
+  if(window.TahadiDB&&u&&u.uid){TahadiDB.saveSubscription(newSub).catch(function(){});}
   closeEditSub();
   renderSubs();loadDashboard();
   ntf("✅ تم تعديل الاشتراك","#00E676");
@@ -854,7 +860,7 @@ function loadEmailJS(){
     <div style="font-family:'Cairo',sans-serif;font-size:1.1rem;font-weight:900;text-align:center;margin-bottom:1.1rem;color:var(--cyan)">✏️ تعديل الاشتراك</div>
     <input type="hidden" id="editSubPhone">
     <div style="margin-bottom:.85rem">
-      <label style="display:block;font-size:.74rem;color:var(--dim);margin-bottom:.28rem;font-weight:700">رقم الجوال</label>
+      <label style="display:block;font-size:.74rem;color:var(--dim);margin-bottom:.28rem;font-weight:700">البريد الإلكتروني</label>
       <div id="editSubPhoneDisp" style="padding:.6rem .9rem;background:rgba(255,255,255,.04);border:1px solid rgba(0,229,255,.17);border-radius:9px;font-size:.88rem;color:var(--dim)"></div>
     </div>
     <div style="margin-bottom:.85rem">
