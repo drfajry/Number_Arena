@@ -207,8 +207,13 @@
 
   function buildReferralLink(code) {
     if (!code) return '';
-    const origin = (global.location && global.location.origin) ? global.location.origin : 'https://drfajry2.netlify.app';
-    return `${origin}/?${CONFIG.REFERRAL_PARAM}=${encodeURIComponent(code)}`;
+    var origin = (global.location && global.location.origin) ? global.location.origin : '';
+    // تجاهل localhost/file/capacitor — استخدم رابط الموقع الرسمي
+    if(!origin || origin.indexOf('localhost')>-1 || origin.indexOf('127.0.0.1')>-1 ||
+       origin.indexOf('file://')>-1 || origin.indexOf('capacitor')>-1 || origin.indexOf('://localhost')>-1){
+      origin = 'https://drfajry.github.io/Number_Arena';
+    }
+    return origin + '/?' + CONFIG.REFERRAL_PARAM + '=' + encodeURIComponent(code);
   }
 
   async function listCommissions(uid, limit) {
