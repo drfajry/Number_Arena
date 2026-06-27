@@ -354,6 +354,7 @@ select.inp option{background:#0C1440;}
 
 
 .logged-in .guest-only{display:none!important;}
+.tag-elite{color:#C084FC;border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.08)}
 </style>
 <script src="js/affiliate.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -490,22 +491,14 @@ select.inp option{background:#0C1440;}
 <section id="lifelines" class="guest-only sec-divider" style="padding:4.5rem 0">
   <div class="container">
     <div class="sec-badge">🆘 وسائل المساعدة</div>
-    <h2 class="sec-title">٨ وسائل — استخدمها في <span class="hl">اللحظة المناسبة</span></h2>
+    <h2 class="sec-title">٦ وسائل — استخدمها في <span class="hl">اللحظة المناسبة</span></h2>
     <div class="ll-grid">
-      <div class="ll-item"><div class="ll-ico">✂️</div><div class="ll-info"><div class="ll-name">حذف ×2</div><div class="ll-desc">يحذف إجابتين خاطئتين ويبقي الصحيحة مع خاطئة واحدة</div></div><div class="ll-tags"><div class="tag tag-cost">-5 ن</div><div class="tag tag-free">مجاني</div></div></div>
-      <div class="ll-item"><div class="ll-ico">🔄</div><div class="ll-info"><div class="ll-name">تغيير السؤال</div><div class="ll-desc">يستبدل السؤال الحالي ويعيد العداد من البداية</div></div><div class="ll-tags"><div class="tag tag-cost">-8 ن</div><div class="tag tag-free">مجاني</div></div></div>
       <div class="ll-item"><div class="ll-ico">🎲</div><div class="ll-info"><div class="ll-name">بنك الحظ</div><div class="ll-desc">نتيجة عشوائية: +5 أو +10 أو -5 نقاط أو سؤال مجاني أو تجميد وقت!</div></div><div class="ll-tags"><div class="tag tag-free">مجاني</div></div></div>
-      <div class="ll-item"><div class="ll-ico">👥</div><div class="ll-info"><div class="ll-name">تصويت الجمهور</div><div class="ll-desc">يعرض نسب تصويت للإجابات الأربعة</div></div><div class="ll-tags"><div class="tag tag-cost">-5 ن</div><div class="tag tag-pro">Pro</div></div></div>
+      <div class="ll-item"><div class="ll-ico">👥</div><div class="ll-info"><div class="ll-name">تصويت الجمهور</div><div class="ll-desc">يعرض نسب تصويت تقريبية للإجابات الأربعة</div></div><div class="ll-tags"><div class="tag tag-cost">-5 ن</div><div class="tag tag-pro">Pro</div></div></div>
       <div class="ll-item"><div class="ll-ico">⏰</div><div class="ll-info"><div class="ll-name">إعادة الوقت</div><div class="ll-desc">يُعيد العداد إلى 10 ثواني إذا أوشك على الانتهاء</div></div><div class="ll-tags"><div class="tag tag-pro">Pro</div></div></div>
-      <div class="ll-item"><div class="ll-ico">❄️</div><div class="ll-info"><div class="ll-name">تجميد فريق</div><div class="ll-desc">تختار فريقاً يُجمَّد جولة كاملة ولا يستطيع الإجابة</div></div><div class="ll-tags"><div class="tag tag-pro" style="color:#C084FC;border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.1)">Elite</div></div></div>
-      <div class="ll-item"><div class="ll-ico">🛡️</div><div class="ll-info"><div class="ll-name">الدرع</div><div class="ll-desc">يحمي فريقك من خصم يحق لك وقلب النقاط لجولة واحدة</div></div><div class="ll-tags"><div class="tag tag-pro" style="color:#C084FC;border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.1)">Elite</div></div></div>
-      <div class="ll-item" class="ll-full"><div class="ll-ico">🔀</div><div class="ll-info"><div class="ll-name">قلب النقاط</div><div class="ll-desc">يبدّل نقاطك مع نقاط منافس — تكلف 15 نقطة</div></div><div class="ll-tags"><div class="tag tag-pro" style="color:#C084FC;border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.1)">Elite</div></div></div>
-    </div>
-    <div style="background:rgba(255,208,70,.06);border:1px solid rgba(255,208,70,.2);border-radius:12px;padding:.82rem 1.1rem;margin-top:.85rem;font-size:.76rem;color:var(--gold)">
-      💡 <strong>نقاط السرعة:</strong> 10 في أول 3 ث · 9 في 3-6 ث · 8 في 6-9 ث · ... · حد أدنى 1 نقطة
-    </div>
-    <div style="background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.2);border-radius:12px;padding:.75rem 1.1rem;margin-top:.55rem;font-size:.74rem;color:#C084FC">
-      🔓 <strong>Free:</strong> 3 وسائل &nbsp;|&nbsp; <strong>Pro:</strong> 5 وسائل &nbsp;|&nbsp; <strong>Elite:</strong> جميع الوسائل الـ8
+      <div class="ll-item"><div class="ll-ico">❄️</div><div class="ll-info"><div class="ll-name">تجميد فريق</div><div class="ll-desc">تختار فريقاً يُجمَّد جولة كاملة ولا يستطيع الإجابة</div></div><div class="ll-tags"><div class="tag tag-elite">Elite</div></div></div>
+      <div class="ll-item"><div class="ll-ico">🛡️</div><div class="ll-info"><div class="ll-name">الدرع</div><div class="ll-desc">يحميك من خصم النقاط ومن قلب النقاط</div></div><div class="ll-tags"><div class="tag tag-elite">Elite</div></div></div>
+      <div class="ll-item"><div class="ll-ico">🔀</div><div class="ll-info"><div class="ll-name">قلب النقاط</div><div class="ll-desc">يبدّل نقاطك مع منافس — يتطلب بقاء 3 أسئلة على الأقل</div></div><div class="ll-tags"><div class="tag tag-cost">-15 ن</div><div class="tag tag-elite">Elite</div></div></div>
     </div>
   </div>
 </section>
@@ -550,7 +543,7 @@ select.inp option{background:#0C1440;}
 </section>
 
 <!-- ══ AFFILIATE SECTION ══ -->
-<section id="affiliate-section" style="padding:4rem 0;border-top:1px solid rgba(255,255,255,.06)">
+<section id="affiliate-section" style="display:none;padding:4rem 0;border-top:1px solid rgba(255,255,255,.06)">
   <div class="container">
     <div class="sec-badge">💸 برنامج التسويق بالعمولة</div>
     <h2 class="sec-title">سوّق وكسب <span class="hl2">10%</span> من كل اشتراك</h2>
@@ -602,10 +595,10 @@ select.inp option{background:#0C1440;}
       </div>
       <div class="footer-col"><h4>المنصة</h4><ul><li><a onclick="goSec('features')">المميزات</a></li><li><a onclick="goSec('how')">كيف تعمل</a></li><li><a onclick="goSec('pricing')">الأسعار</a></li></ul></div>
       <div class="footer-col"><h4>اللعب</h4><ul><li><a onclick="openCreate()">لعبة أونلاين</a></li><li><a onclick="openJoin()">انضمام بالرمز</a></li><li><a onclick="openOffline()">على نفس الجهاز</a></li></ul></div>
-      <div class="footer-col"><h4>الدعم</h4><ul><li><a onclick="goSec('faq')">الأسئلة الشائعة</a></li><li><a href="dashboard.html">لوحتي</a></li></ul></div>
+      <div class="footer-col"><h4>الدعم</h4><ul><li><a onclick="goSec('faq')">الأسئلة الشائعة</a></li><li><a href="dashboard.html">لوحتي</a></li><li><a onclick="openContact()">تواصل معنا</a></li><li><a href="privacy-policy.html" target="_blank">سياسة الخصوصية</a></li></ul></div>
     </div>
     <div class="footer-btm">
-      <div class="footer-copy">© 2024 تحدي الأرقام. جميع الحقوق محفوظة.</div>
+      <div class="footer-copy">© 2026 تحدي الأرقام. جميع الحقوق محفوظة.</div>
       <div class="footer-made">صُنع بـ <span>❤</span> في السعودية</div>
     </div>
   </div>
@@ -1264,7 +1257,7 @@ function showUserMenu(){
 </div>
 
 <!-- ══ AFFILIATE SECTION ══ -->
-<section id="affiliate-section" style="padding:4rem 0;border-top:1px solid rgba(255,255,255,.06)">
+<section id="affiliate-section" style="display:none;padding:4rem 0;border-top:1px solid rgba(255,255,255,.06)">
   <div class="container">
     <div class="sec-badge">💸 برنامج التسويق بالعمولة</div>
     <h2 class="sec-title">سوّق وكسب <span class="hl2">10%</span> من كل اشتراك</h2>
@@ -1319,7 +1312,7 @@ function showUserMenu(){
       <div class="footer-col"><h4>الدعم</h4><ul><li><a onclick="goSec('faq')">الأسئلة الشائعة</a></li><li><a href="dashboard.html">لوحتي</a></li></ul></div>
     </div>
     <div class="footer-btm">
-      <div class="footer-copy">© 2024 تحدي الأرقام. جميع الحقوق محفوظة.</div>
+      <div class="footer-copy">© 2026 تحدي الأرقام. جميع الحقوق محفوظة.</div>
       <div class="footer-made">صُنع بـ <span>❤</span> في السعودية</div>
     </div>
   </div>
@@ -1831,9 +1824,33 @@ function showUserMenu(){
   });
 })();
 
+
+function openContact(){document.getElementById("contactModal").classList.add("on");}
 </script>
 
 
+
+
+<!-- Contact Modal -->
+<div class="mo" id="contactModal">
+  <div class="mb" style="max-width:400px">
+    <div class="mt_">📧 تواصل معنا</div>
+    <p style="text-align:center;font-size:.85rem;color:var(--dim);margin-bottom:1.2rem">
+      نسعد بتواصلك معنا لأي استفسار أو اقتراح
+    </p>
+    <div style="display:flex;flex-direction:column;gap:.8rem">
+      <a href="mailto:dr.fajry@gmail.com" style="display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.17);border-radius:11px;text-decoration:none;color:var(--text)">
+        <span style="font-size:1.4rem">✉️</span>
+        <div><div style="font-size:.72rem;color:var(--dim)">البريد الإلكتروني</div><div style="font-size:.88rem" dir="ltr">dr.fajry@gmail.com</div></div>
+      </a>
+      <a href="https://x.com/PickByFaisal" target="_blank" style="display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.17);border-radius:11px;text-decoration:none;color:var(--text)">
+        <span style="font-size:1.4rem">𝕏</span>
+        <div><div style="font-size:.72rem;color:var(--dim)">تابعنا على X</div><div style="font-size:.88rem" dir="ltr">@PickByFaisal</div></div>
+      </a>
+    </div>
+    <button class="btn-s full" onclick="closeM('contactModal')" style="margin-top:1rem">إغلاق</button>
+  </div>
+</div>
 
 </body>
 </html>
