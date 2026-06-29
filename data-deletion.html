@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>طلب حذف الحساب والبيانات — تحدي الأرقام</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070B1F;--bg2:#0C1130;--card:rgba(255,255,255,.04);
+    --border:rgba(0,229,255,.14);--cyan:#00E5FF;--cyan2:#00B8CC;--gold:#FFD046;
+    --red:#FF3D5A;--green:#00E676;
+    --text:#D8EEFF;--text2:#A0C4E8;--dim:rgba(160,210,255,.5);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);
+    line-height:1.9;min-height:100vh;
+    background-image:radial-gradient(circle at 20% 10%,rgba(0,229,255,.06),transparent 40%),
+                     radial-gradient(circle at 80% 90%,rgba(255,208,70,.05),transparent 40%);
+  }
+  .container{max-width:680px;margin:0 auto;padding:2.5rem 1.5rem}
+  .header{text-align:center;margin-bottom:2rem;padding-bottom:1.8rem;border-bottom:1px solid var(--border)}
+  .logo{width:72px;height:72px;border-radius:18px;margin-bottom:1rem;box-shadow:0 0 30px rgba(0,229,255,.2)}
+  h1{
+    font-family:'Cairo',sans-serif;font-size:1.7rem;font-weight:900;
+    background:linear-gradient(135deg,var(--cyan),var(--gold));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    margin-bottom:.5rem;
+  }
+  .sub{color:var(--dim);font-size:.9rem}
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:16px;
+    padding:1.5rem;margin-bottom:1.2rem;
+  }
+  h2{
+    font-family:'Cairo',sans-serif;font-size:1.1rem;font-weight:700;
+    color:var(--cyan);margin-bottom:.8rem;display:flex;align-items:center;gap:.5rem;
+  }
+  p{color:var(--text2);margin-bottom:.7rem}
+  ul{list-style:none;padding:0;margin:.5rem 0}
+  li{color:var(--text2);padding:.4rem 1.5rem .4rem 0;position:relative}
+  li::before{content:"◆";color:var(--cyan);position:absolute;right:0;font-size:.7rem;top:.7rem}
+  strong{color:var(--text);font-weight:700}
+  a{color:var(--cyan);text-decoration:none}
+  .intro{
+    background:linear-gradient(135deg,rgba(0,229,255,.07),rgba(255,208,70,.04));
+    border:1px solid var(--border);border-radius:16px;padding:1.3rem;margin-bottom:1.5rem;
+  }
+  /* Form */
+  .field{margin-bottom:1rem}
+  label{display:block;font-size:.85rem;color:var(--text);margin-bottom:.4rem;font-weight:500}
+  input,textarea,select{
+    width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);
+    border-radius:10px;padding:.75rem .9rem;color:#fff;font-family:'Tajawal',sans-serif;
+    font-size:.95rem;outline:none;transition:.2s;
+  }
+  input:focus,textarea:focus,select:focus{border-color:var(--cyan);background:rgba(0,229,255,.06)}
+  textarea{resize:vertical;min-height:80px}
+  .btn{
+    display:block;width:100%;padding:.9rem;border:none;border-radius:12px;
+    background:linear-gradient(135deg,var(--red),#c92a44);color:#fff;font-weight:700;
+    font-size:1rem;cursor:pointer;font-family:'Cairo',sans-serif;margin-top:.5rem;
+    transition:transform .15s;text-align:center;text-decoration:none;
+  }
+  .btn:hover{transform:translateY(-2px)}
+  .btn-mail{background:linear-gradient(135deg,var(--cyan),var(--cyan2));margin-top:.7rem}
+  .note{font-size:.78rem;color:var(--dim);text-align:center;margin-top:1rem;line-height:1.7}
+  .back{display:inline-block;margin-top:1.5rem;color:var(--cyan);font-size:.9rem}
+  .timeline{display:flex;gap:.6rem;align-items:flex-start;margin:.5rem 0}
+  .timeline b{background:var(--cyan);color:var(--bg);width:24px;height:24px;border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <img src="logo.png" class="logo" alt="تحدي الأرقام">
+    <h1>طلب حذف الحساب والبيانات</h1>
+    <div class="sub">تحدي الأرقام — Number Arena</div>
+  </div>
+
+  <div class="intro">
+    <p style="margin:0">يحق لك طلب حذف حسابك وجميع البيانات المرتبطة به في أي وقت. املأ النموذج أدناه أو راسلنا مباشرةً، وسنعالج طلبك خلال مدة أقصاها <strong>30 يوماً</strong>.</p>
+  </div>
+
+  <div class="card">
+    <h2>🗑️ ما الذي سيُحذف</h2>
+    <ul>
+      <li>حسابك وبريدك الإلكتروني المسجّل</li>
+      <li>اسمك المعروض داخل اللعبة</li>
+      <li>سجلّ اشتراكاتك ونقاطك</li>
+      <li>أي بيانات أخرى مرتبطة بحسابك</li>
+    </ul>
+    <p style="font-size:.82rem;color:var(--dim);margin-top:.5rem">ملاحظة: قد نحتفظ ببعض السجلّات المالية الأساسية إذا تطلّب القانون ذلك.</p>
+  </div>
+
+  <div class="card">
+    <h2>📝 نموذج طلب الحذف</h2>
+    <div class="field">
+      <label>البريد الإلكتروني المسجّل في الحساب *</label>
+      <input type="email" id="delEmail" placeholder="example@email.com">
+    </div>
+    <div class="field">
+      <label>سبب الحذف (اختياري)</label>
+      <select id="delReason">
+        <option value="">— اختياري —</option>
+        <option>لم أعد أستخدم التطبيق</option>
+        <option>مخاوف تتعلق بالخصوصية</option>
+        <option>أنشأت حساباً جديداً</option>
+        <option>سبب آخر</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>ملاحظات إضافية (اختياري)</label>
+      <textarea id="delNotes" placeholder="أي تفاصيل تساعدنا..."></textarea>
+    </div>
+    <a href="#" class="btn" id="sendWa">📱 إرسال الطلب عبر واتساب</a>
+    <a href="#" class="btn btn-mail" id="sendMail">✉️ إرسال الطلب عبر الإيميل</a>
+    <p class="note">سنؤكّد استلام طلبك، وننفّذه خلال 30 يوماً كحدٍّ أقصى.</p>
+  </div>
+
+  <div class="card">
+    <h2>⏱️ خطوات المعالجة</h2>
+    <div class="timeline"><b>1</b><span>ترسل الطلب عبر النموذج أعلاه</span></div>
+    <div class="timeline"><b>2</b><span>نؤكّد هويتك عبر البريد المسجّل</span></div>
+    <div class="timeline"><b>3</b><span>نحذف حسابك وبياناتك خلال 30 يوماً</span></div>
+    <div class="timeline"><b>4</b><span>نرسل لك تأكيداً نهائياً بالحذف</span></div>
+  </div>
+
+  <div style="text-align:center">
+    <a href="index.html" class="back">← العودة للصفحة الرئيسية</a>
+  </div>
+</div>
+
+<script>
+  // بيانات التواصل (تُحدّث من إعدادات الأدمن إن توفّرت)
+  var CONTACT_EMAIL = "dr.fajry@gmail.com";
+  var CONTACT_WA = ""; // يُملأ من الإعدادات
+  try{
+    var s = JSON.parse(localStorage.getItem("tahadi_admin_settings")||"{}");
+    if(s.payEmail) CONTACT_EMAIL = s.payEmail;
+    if(s.payWhatsapp) CONTACT_WA = s.payWhatsapp.replace(/[^0-9]/g,"");
+  }catch(e){}
+
+  function buildMsg(){
+    var email=document.getElementById("delEmail").value.trim();
+    var reason=document.getElementById("delReason").value;
+    var notes=document.getElementById("delNotes").value.trim();
+    var msg="طلب حذف حساب وبيانات — تحدي الأرقام\n\n";
+    msg+="البريد المسجّل: "+(email||"(لم يُذكر)")+"\n";
+    if(reason) msg+="السبب: "+reason+"\n";
+    if(notes) msg+="ملاحظات: "+notes+"\n";
+    return {email:email, text:msg};
+  }
+
+  document.getElementById("sendWa").addEventListener("click",function(e){
+    e.preventDefault();
+    var d=buildMsg();
+    if(!d.email){alert("الرجاء إدخال البريد الإلكتروني المسجّل");return;}
+    if(!CONTACT_WA){alert("خدمة واتساب غير متوفرة حالياً، استخدم الإيميل.");return;}
+    window.open("https://wa.me/"+CONTACT_WA+"?text="+encodeURIComponent(d.text),"_blank");
+  });
+
+  document.getElementById("sendMail").addEventListener("click",function(e){
+    e.preventDefault();
+    var d=buildMsg();
+    if(!d.email){alert("الرجاء إدخال البريد الإلكتروني المسجّل");return;}
+    var subj=encodeURIComponent("طلب حذف حساب وبيانات — تحدي الأرقام");
+    var body=encodeURIComponent(d.text);
+    window.location.href="mailto:"+CONTACT_EMAIL+"?subject="+subj+"&body="+body;
+  });
+</script>
+</body>
+</html>
