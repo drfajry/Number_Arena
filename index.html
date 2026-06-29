@@ -357,6 +357,31 @@ select.inp option{background:#0C1440;}
 .tag-elite{color:#C084FC;border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.08)}
 .logged-in .guest-link{display:none!important;}
 .logged-in li:has(.guest-link){display:none!important;}
+/* ── صفحة الدفع اليدوي ── */
+.mp-overlay{position:fixed;inset:0;background:rgba(3,6,18,.88);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;animation:mpFade .2s ease}
+@keyframes mpFade{from{opacity:0}to{opacity:1}}
+.mp-box{background:linear-gradient(160deg,#0C1230,#070B1F);border:1px solid rgba(0,229,255,.25);border-radius:20px;max-width:440px;width:100%;padding:1.6rem 1.4rem;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.6);max-height:92vh;overflow-y:auto}
+.mp-close{position:absolute;top:.7rem;left:.9rem;background:none;border:none;color:#7C8BB0;font-size:1.8rem;cursor:pointer;line-height:1}
+.mp-close:hover{color:#fff}
+.mp-head{text-align:center;margin-bottom:1.2rem}
+.mp-title{font-size:1.3rem;font-weight:800;color:#00E5FF;margin-bottom:.3rem}
+.mp-amount{font-size:1.6rem;font-weight:800;color:#FFD046}
+.mp-steps{margin:1rem 0 .6rem}
+.mp-step{font-size:.9rem;color:#D8EEFF;display:flex;align-items:center;gap:.5rem}
+.mp-step b{background:#00E5FF;color:#070B1F;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0}
+.mp-rows{background:rgba(255,255,255,.03);border-radius:12px;padding:.5rem .8rem;border:1px solid rgba(255,255,255,.06)}
+.mp-row{display:flex;align-items:center;gap:.5rem;padding:.55rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.mp-row:last-child{border-bottom:none}
+.mp-label{font-size:.8rem;color:#7C8BB0;min-width:80px}
+.mp-val{flex:1;font-size:.88rem;color:#fff;font-weight:600;word-break:break-all;direction:ltr;text-align:right}
+.mp-copy{background:rgba(0,229,255,.15);border:1px solid rgba(0,229,255,.3);color:#00E5FF;border-radius:8px;padding:.25rem .6rem;font-size:.72rem;cursor:pointer;flex-shrink:0}
+.mp-copy:hover{background:rgba(0,229,255,.28)}
+.mp-send{display:flex;flex-direction:column;gap:.6rem;margin:1rem 0 .5rem}
+.mp-wa,.mp-mail{display:block;text-align:center;padding:.8rem;border-radius:12px;font-weight:700;font-size:.95rem;text-decoration:none;transition:transform .15s}
+.mp-wa{background:#25D366;color:#fff}
+.mp-mail{background:rgba(0,229,255,.15);color:#00E5FF;border:1px solid rgba(0,229,255,.3)}
+.mp-wa:hover,.mp-mail:hover{transform:translateY(-2px)}
+.mp-note{font-size:.76rem;color:#7C8BB0;text-align:center;margin-top:.8rem;line-height:1.6}
 </style>
 <script src="js/affiliate.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -407,10 +432,10 @@ select.inp option{background:#0C1440;}
           <div class="hero-stat"><div class="val">4</div><div class="lbl">فرق</div></div>
         </div>
         <!-- Affiliate teaser -->
-        <div onclick="scrollToAffiliate()" style="cursor:pointer;margin-top:.75rem;
+        <div onclick="scrollToAffiliate()" style="display:none;cursor:pointer;margin-top:.75rem;
           background:linear-gradient(135deg,rgba(255,208,70,.1),rgba(0,229,255,.07));
           border:1px solid rgba(255,208,70,.25);border-radius:11px;
-          padding:.62rem .95rem;display:inline-flex;align-items:center;gap:.55rem;
+          padding:.62rem .95rem;align-items:center;gap:.55rem;
           font-size:.78rem;font-weight:700;color:var(--gold);transition:all .2s"
           onmouseover="this.style.background='linear-gradient(135deg,rgba(255,208,70,.18),rgba(0,229,255,.12))'"
           onmouseout="this.style.background='linear-gradient(135deg,rgba(255,208,70,.1),rgba(0,229,255,.07))'">
@@ -597,7 +622,7 @@ select.inp option{background:#0C1440;}
       </div>
       <div class="footer-col"><h4>المنصة</h4><ul><li><a onclick="goSec('features')" class="guest-link">المميزات</a></li><li><a onclick="goSec('how')" class="guest-link">كيف تعمل</a></li><li><a onclick="goSec('pricing')">الأسعار</a></li></ul></div>
       <div class="footer-col"><h4>اللعب</h4><ul><li><a onclick="openCreate()">لعبة أونلاين</a></li><li><a onclick="openJoin()">انضمام بالرمز</a></li><li><a onclick="openOffline()">على نفس الجهاز</a></li></ul></div>
-      <div class="footer-col"><h4>الدعم</h4><ul><li><a onclick="goSec('faq')" class="guest-link">الأسئلة الشائعة</a></li><li><a href="dashboard.html">لوحتي</a></li><li><a onclick="openContact()">تواصل معنا</a></li><li><a href="privacy-policy.html" target="_blank">سياسة الخصوصية</a></li></ul></div>
+      <div class="footer-col"><h4>الدعم</h4><ul><li><a onclick="goSec('faq')" class="guest-link">الأسئلة الشائعة</a></li><li><a href="dashboard.html">لوحتي</a></li><li><a onclick="openContact()">تواصل معنا</a></li><li><a href="privacy-policy.html" target="_blank">سياسة الخصوصية</a></li><li><a href="data-deletion.html" target="_blank">حذف الحساب والبيانات</a></li></ul></div>
     </div>
     <div class="footer-btm">
       <div class="footer-copy">© 2026 تحدي الأرقام. جميع الحقوق محفوظة.</div>
@@ -779,7 +804,9 @@ function doSubscribe(plan){
 
   var pk=localStorage.getItem("tahadi_moyasar_pk")||"";
   if(!pk||pk.length<20){
-    alert("للاشتراك تواصل مع الدعم أو أضف مفتاح Moyasar في لوحة الأدمن");return;
+    // لا يوجد دفع إلكتروني مفعّل → اعرض صفحة الدفع اليدوي
+    openManualPay(plan, info);
+    return;
   }
   ntf("جارٍ التحويل لصفحة الدفع...","#00E5FF");
   var email="";try{email=JSON.parse(localStorage.getItem("tahadi_user")||"{}").email||"";}catch(e){}
@@ -794,6 +821,80 @@ function doSubscribe(plan){
   if(email) params.push("metadata[email]="+encodeURIComponent(email));
   setTimeout(function(){window.location.href="https://checkout.moyasar.com/?"+params.join("&");},800);
 }
+
+// ── صفحة الدفع اليدوي ──
+function _paySettings(){
+  try{return JSON.parse(localStorage.getItem("tahadi_admin_settings")||"{}");}catch(e){return {};}
+}
+function openManualPay(plan, info){
+  var s=_paySettings();
+  // حدّث من Firebase ثم اعرض
+  if(window.TahadiDB&&window.TahadiDB.getSettings){
+    TahadiDB.getSettings().then(function(fs){
+      if(fs) localStorage.setItem("tahadi_admin_settings",JSON.stringify(fs));
+      _renderManualPay(plan, info, fs||s);
+    }).catch(function(){_renderManualPay(plan, info, s);});
+  } else { _renderManualPay(plan, info, s); }
+}
+function _renderManualPay(plan, info, s){
+  s=s||{};
+  var amount=(info.amount/100).toFixed(0);
+  var email="";try{email=JSON.parse(localStorage.getItem("tahadi_user")||"{}").email||"";}catch(e){}
+  var planAr = plan==="elite" ? "Elite" : "Pro";
+  var rows="";
+  function row(label,val,copy){
+    if(!val) return "";
+    return '<div class="mp-row"><span class="mp-label">'+label+'</span>'+
+      '<span class="mp-val" id="mpv_'+copy+'">'+val+'</span>'+
+      '<button class="mp-copy" onclick="_mpCopy(\''+copy+'\')">نسخ</button></div>';
+  }
+  rows+=row("اسم المستفيد", s.payName, "name");
+  rows+=row("البنك", s.payBank, "bank");
+  rows+=row("الآيبان", s.payIban, "iban");
+  rows+=row("رقم الحساب", s.payAccount, "acc");
+  rows+=row("STC Pay", s.payStc, "stc");
+  rows+=row("UrPay", s.payUrpay, "urpay");
+  if(!rows){
+    rows='<p style="color:#FF3D5A;text-align:center;padding:1rem">لم تُضَف بيانات الدفع بعد. تواصل مع الدعم.</p>';
+  }
+  var wa=(s.payWhatsapp||"").replace(/[^0-9]/g,"");
+  var mailto=s.payEmail||"dr.fajry@gmail.com";
+  var waMsg=encodeURIComponent("السلام عليكم، أرغب في تفعيل اشتراك "+planAr+" ("+amount+" ر.س).\nالإيميل المسجّل: "+email+"\nمرفق إيصال التحويل.");
+  var subj=encodeURIComponent("طلب تفعيل اشتراك "+planAr+" — تحدي الأرقام");
+  var body=encodeURIComponent("الإيميل المسجّل: "+email+"\nالخطة: "+planAr+" ("+amount+" ر.س)\n\nمرفق إيصال التحويل.");
+  var html=''+
+  '<div class="mp-overlay" id="mpOverlay" onclick="if(event.target===this)closeManualPay()">'+
+    '<div class="mp-box">'+
+      '<button class="mp-close" onclick="closeManualPay()">×</button>'+
+      '<div class="mp-head">'+
+        '<div class="mp-title">تفعيل اشتراك '+planAr+'</div>'+
+        '<div class="mp-amount">'+amount+' ر.س / سنة</div>'+
+      '</div>'+
+      '<div class="mp-steps">'+
+        '<div class="mp-step"><b>1</b> حوّل المبلغ على أحد الحسابات التالية</div>'+
+      '</div>'+
+      '<div class="mp-rows">'+rows+'</div>'+
+      '<div class="mp-steps">'+
+        '<div class="mp-step"><b>2</b> أرسل صورة الإيصال + إيميلك المسجّل</div>'+
+      '</div>'+
+      '<div class="mp-send">'+
+        (wa?'<a class="mp-wa" href="https://wa.me/'+wa+'?text='+waMsg+'" target="_blank">📱 إرسال عبر واتساب</a>':'')+
+        '<a class="mp-mail" href="mailto:'+mailto+'?subject='+subj+'&body='+body+'">✉️ إرسال عبر الإيميل</a>'+
+      '</div>'+
+      '<p class="mp-note">سيتم تفعيل اشتراكك خلال ساعات من استلام الإيصال والتأكد منه.</p>'+
+    '</div>'+
+  '</div>';
+  var ex=document.getElementById("mpOverlay");if(ex)ex.remove();
+  document.body.insertAdjacentHTML("beforeend",html);
+}
+function _mpCopy(id){
+  var el=document.getElementById("mpv_"+id);if(!el)return;
+  var t=el.textContent;
+  if(navigator.clipboard){navigator.clipboard.writeText(t);}
+  else{var ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();}
+  ntf("✅ تم النسخ","#00E676");
+}
+function closeManualPay(){var o=document.getElementById("mpOverlay");if(o)o.remove();}
 
 // Handle payment return
 (function(){
