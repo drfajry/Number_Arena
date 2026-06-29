@@ -276,6 +276,29 @@ select.inp option{background:#0C1440;}
       <button class="btn-primary" onclick="saveSettings()">💾 حفظ الإعدادات</button>
     </div>
     <div class="form-card">
+      <div class="section-title">💳 بيانات الدفع اليدوي (تظهر للعميل عند طلب الاشتراك)</div>
+      <p style="font-size:.78rem;color:var(--dim);margin-bottom:.85rem">
+        هذه البيانات تظهر للعميل في صفحة الدفع. يحوّل العميل المبلغ ثم يرسل الإيصال.
+      </p>
+      <div class="form-row">
+        <div class="form-group"><label>اسم صاحب الحساب</label><input type="text" id="sPayName" class="inp" placeholder="فيصل الفجري"></div>
+        <div class="form-group"><label>اسم البنك</label><input type="text" id="sPayBank" class="inp" placeholder="مصرف الراجحي"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>رقم الآيبان (IBAN)</label><input type="text" id="sPayIban" class="inp" placeholder="SA00 0000 0000 0000 0000 0000"></div>
+        <div class="form-group"><label>رقم الحساب</label><input type="text" id="sPayAccount" class="inp" placeholder="000000000000000"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>STC Pay (رقم الجوال)</label><input type="text" id="sPayStc" class="inp" placeholder="05xxxxxxxx"></div>
+        <div class="form-group"><label>UrPay (رقم الجوال)</label><input type="text" id="sPayUrpay" class="inp" placeholder="05xxxxxxxx"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>واتساب لاستقبال الإيصال</label><input type="text" id="sPayWhatsapp" class="inp" placeholder="9665xxxxxxxx"></div>
+        <div class="form-group"><label>إيميل لاستقبال الإيصال</label><input type="text" id="sPayEmail" class="inp" placeholder="dr.fajry@gmail.com"></div>
+      </div>
+      <button class="btn-primary" onclick="saveSettings()">💾 حفظ بيانات الدفع</button>
+    </div>
+    <div class="form-card">
       <div class="section-title">📧 إعداد EmailJS (رمز التحقق على الإيميل)</div>
       <p style="font-size:.78rem;color:var(--dim);margin-bottom:.85rem">
         أنشئ حساباً مجانياً على <a href="https://emailjs.com" target="_blank" style="color:var(--cyan)">emailjs.com</a>
@@ -664,28 +687,42 @@ function loadSettings(){
   document.getElementById("sPriceEliteM").value  =s.priceEliteM||19;
   document.getElementById("sDiscount").value      =s.discount||35;
   document.getElementById("sMoyasarPK").value     =s.moyasarPK||"";
+  // بيانات الدفع اليدوي
+  document.getElementById("sPayName").value     =s.payName||"";
+  document.getElementById("sPayBank").value     =s.payBank||"";
+  document.getElementById("sPayIban").value     =s.payIban||"";
+  document.getElementById("sPayAccount").value  =s.payAccount||"";
+  document.getElementById("sPayStc").value      =s.payStc||"";
+  document.getElementById("sPayUrpay").value    =s.payUrpay||"";
+  document.getElementById("sPayWhatsapp").value =s.payWhatsapp||"";
+  document.getElementById("sPayEmail").value    =s.payEmail||"";
 }
 
 function saveSettings(){
   var pk=document.getElementById("sMoyasarPK").value.trim();
   if(pk) localStorage.setItem("tahadi_moyasar_pk",pk);
-  // Original:
-  // TahadiDB sync:
-  if(window.TahadiDB){
-    TahadiDB.saveSettings({
-      priceProM:   parseInt(document.getElementById("sPriceProM").value)||9,
-      priceEliteM: parseInt(document.getElementById("sPriceEliteM").value)||19,
-      discount:    parseInt(document.getElementById("sDiscount").value)||35,
-      moyasarPK:   pk||""
-    }).catch(function(){});
-  }
-  var data=db();
-  data.settings={
+  var payObj={
+    payName:     document.getElementById("sPayName").value.trim(),
+    payBank:     document.getElementById("sPayBank").value.trim(),
+    payIban:     document.getElementById("sPayIban").value.trim(),
+    payAccount:  document.getElementById("sPayAccount").value.trim(),
+    payStc:      document.getElementById("sPayStc").value.trim(),
+    payUrpay:    document.getElementById("sPayUrpay").value.trim(),
+    payWhatsapp: document.getElementById("sPayWhatsapp").value.trim(),
+    payEmail:    document.getElementById("sPayEmail").value.trim()
+  };
+  var base={
     priceProM:   parseInt(document.getElementById("sPriceProM").value)||9,
     priceEliteM: parseInt(document.getElementById("sPriceEliteM").value)||19,
     discount:    parseInt(document.getElementById("sDiscount").value)||35,
-    moyasarPK:   document.getElementById("sMoyasarPK").value.trim()
+    moyasarPK:   pk||""
   };
+  var all={};for(var k in base)all[k]=base[k];for(var k2 in payObj)all[k2]=payObj[k2];
+  if(window.TahadiDB){
+    TahadiDB.saveSettings(all).catch(function(){});
+  }
+  var data=db();
+  data.settings=all;
   saveDB(data);ntf("✅ تم حفظ الإعدادات","#00E676");
 }
 
