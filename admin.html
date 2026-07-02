@@ -685,7 +685,6 @@ function loadSettings(){
   var data=db();var s=data.settings||{};
   document.getElementById("sPriceProM").value    =s.priceProM||9;
   document.getElementById("sPriceEliteM").value  =s.priceEliteM||19;
-  document.getElementById("sDiscount").value      =s.discount||35;
   document.getElementById("sMoyasarPK").value     =s.moyasarPK||"";
   // بيانات الدفع اليدوي
   document.getElementById("sPayName").value     =s.payName||"";
@@ -714,16 +713,24 @@ function saveSettings(){
   var base={
     priceProM:   parseInt(document.getElementById("sPriceProM").value)||9,
     priceEliteM: parseInt(document.getElementById("sPriceEliteM").value)||19,
-    discount:    parseInt(document.getElementById("sDiscount").value)||35,
     moyasarPK:   pk||""
   };
   var all={};for(var k in base)all[k]=base[k];for(var k2 in payObj)all[k2]=payObj[k2];
-  if(window.TahadiDB){
-    TahadiDB.saveSettings(all).catch(function(){});
-  }
   var data=db();
   data.settings=all;
-  saveDB(data);ntf("✅ تم حفظ الإعدادات","#00E676");
+  saveDB(data);
+  if(window.TahadiDB&&TahadiDB.saveSettings){
+    ntf("⏳ جارٍ الحفظ السحابي...","#00E5FF");
+    TahadiDB.saveSettings(all).then(function(){
+      ntf("✅ تم الحفظ سحابياً — ستظهر للعملاء الآن","#00E676");
+    }).catch(function(e){
+      var code=(e&&(e.code||e.message))||"غير معروف";
+      ntf("❌ فشل الحفظ السحابي: "+code,"#FF3D5A");
+      alert("فشل الحفظ في Firebase — لن تظهر البيانات للعملاء.\n\nسبب الخطأ: "+code+"\n\nإذا كان السبب PERMISSION_DENIED فالمشكلة في قواعد الأمان (Rules) بقاعدة بيانات Firebase وليست في هذه الصفحة.");
+    });
+  } else {
+    ntf("⚠️ Firebase غير متصل — حُفظ محلياً فقط ولن يظهر للعملاء","#FFD046");
+  }
 }
 
 function changePwd(){
