@@ -63,6 +63,23 @@ const FIREBASE_CONFIG = {
     },
 
 
+    /* ── مصادقة سحابية: بصمة كلمة المرور ──
+       الكود يُرسل مرة واحدة فقط عند إنشاء الحساب.
+       بعدها الدخول يتم بمطابقة البصمة من Firebase (يعمل عبر الأجهزة). */
+    savePassHash: function(email, hash){
+      var uid=this.emailToUid(email);
+      return rtdb.ref("users/"+uid+"/auth").update({
+        passHash: hash,
+        email: email,
+        updatedAt: new Date().toISOString()
+      });
+    },
+    getPassHash: function(email){
+      var uid=this.emailToUid(email);
+      return rtdb.ref("users/"+uid+"/auth/passHash").once("value")
+        .then(function(s){ return s.val(); });
+    },
+
     /* ── مستخدمون ── */
     saveUser: function(user){
       var uid = user.uid || ("u_"+(user.email||"").replace(/[^a-zA-Z0-9]/g,"").slice(0,16));
