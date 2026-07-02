@@ -770,6 +770,8 @@ function ntf(msg,color="#00E5FF"){
   el.classList.add("on");clearTimeout(ntout);ntout=setTimeout(()=>el.classList.remove("on"),3000);
 }
 function openSubscribe(plan){
+  // داخل التطبيق: لا واجهة شراء إطلاقاً (سياسة Google Play)
+  if(window.IS_APP){ntf("هذه الميزة غير متاحة داخل التطبيق","#8AB8FF");return;}
   var token=localStorage.getItem("tahadi_token");
   if(!token){
     // غير مسجّل — احفظ الخطة وافتح تسجيل الدخول
@@ -781,6 +783,7 @@ function openSubscribe(plan){
 }
 
 function doSubscribe(plan){
+  if(window.IS_APP){ntf("هذه الميزة غير متاحة داخل التطبيق","#8AB8FF");return;}
   var isPro=localStorage.getItem("tahadi_pro")==="1";
   var isElite=localStorage.getItem("tahadi_elite")==="1";
 
@@ -994,22 +997,15 @@ function authSubmit(){
 
   var users=getUsers();
   var existing=users[email];
+  var btn=document.getElementById("authSubmitBtn");
 
-  if(existing){
-    // مستخدم موجود — تحقق من كلمة المرور (دخول مباشر بدون إيميل)
-    if(existing.pass===hashPass(pass)){
-      loginUser(existing);
-    } else {
-      err.textContent="❌ كلمة المرور غير صحيحة";err.style.display="block";
-    }
-  } else {
-    // مستخدم جديد — أرسل رمز تأكيد لمرة واحدة
+  function proceedSignupOTP(){
+    // إنشاء حساب جديد — الرمز يُرسل مرة واحدة فقط هنا
     _pendingEmail=email;
     _pendingPass=pass;
     _pendingName=(document.getElementById("authName").value||"").trim();
     var emailName=_pendingName||email.split("@")[0];
     _otpCode=String(Math.floor(100000+Math.random()*900000));
-    var btn=document.getElementById("authSubmitBtn");
     btn.disabled=true;btn.textContent="جارٍ الإرسال...";
     sendOTPEmail(email,emailName,_otpCode,function(ok){
       btn.disabled=false;btn.textContent="دخول / تسجيل →";
@@ -1020,6 +1016,58 @@ function authSubmit(){
       startOtpTimer();
       setTimeout(function(){document.getElementById("otp0").focus();},300);
     });
+  }
+
+  if(existing){
+    // مستخدم موجود محلياً — دخول مباشر بدون أي رمز
+    if(existing.pass===hashPass(pass)){
+      loginUser(existing);
+      // مزامنة البصمة سحابياً (ترحيل الحسابات القديمة)
+      if(window.TahadiDB&&TahadiDB.savePassHash){
+        TahadiDB.savePassHash(email,existing.pass).catch(function(){});
+      }
+    } else {
+      err.textContent="❌ كلمة المرور غير صحيحة";err.style.display="block";
+    }
+    return;
+  }
+
+  // لا يوجد سجل محلي — تحقق من Firebase قبل إرسال أي رمز
+  // (يحل مشكلة: طلب كود التحقق بعد مسح تخزين الجهاز أو الدخول من جهاز آخر)
+  if(window.TahadiDB&&TahadiDB.getPassHash){
+    btn.disabled=true;btn.textContent="جارٍ التحقق...";
+    TahadiDB.getPassHash(email).then(function(cloudHash){
+      btn.disabled=false;btn.textContent="دخول / تسجيل →";
+      if(cloudHash){
+        // حساب موجود سحابياً — دخول مباشر بدون رمز
+        if(cloudHash===hashPass(pass)){
+          var uid=TahadiDB.emailToUid(email);
+          TahadiDB.getUser(uid).then(function(prof){
+            var user={
+              name:(prof&&prof.name)||email.split("@")[0],
+              email:email, phone:(prof&&prof.phone)||"",
+              uid:uid, pass:cloudHash
+            };
+            var u2=getUsers(); u2[email]=user; saveUsers(u2);
+            loginUser(user);
+          }).catch(function(){
+            var user={name:email.split("@")[0],email:email,phone:"",uid:TahadiDB.emailToUid(email),pass:cloudHash};
+            var u2=getUsers(); u2[email]=user; saveUsers(u2);
+            loginUser(user);
+          });
+        } else {
+          err.textContent="❌ كلمة المرور غير صحيحة";err.style.display="block";
+        }
+      } else {
+        // لا حساب سحابياً — تسجيل جديد (رمز لمرة واحدة)
+        proceedSignupOTP();
+      }
+    }).catch(function(){
+      btn.disabled=false;btn.textContent="دخول / تسجيل →";
+      proceedSignupOTP();
+    });
+  } else {
+    proceedSignupOTP();
   }
 }
 
@@ -1072,6 +1120,10 @@ function authVerify(){
   var users=getUsers();
   users[_pendingEmail]=user;
   saveUsers(users);
+  // حفظ بصمة كلمة المرور سحابياً — الدخول القادم مباشر بدون رمز على أي جهاز
+  if(window.TahadiDB&&TahadiDB.savePassHash){
+    TahadiDB.savePassHash(_pendingEmail,user.pass).catch(function(){});
+  }
   document.getElementById("authWelcome").textContent="أهلاً "+displayName+" 🎉";
   authShowStep(3);
   loginUser(user,true);
@@ -1243,7 +1295,7 @@ function renderUserBar(){
     +"</div>"
     +"</div></div>"
     +"<div style=\"display:flex;align-items:center;gap:.5rem\">"
-    +(plan==="free"?"<button class=\"btn-p\" onclick=\"openSubscribe(\'pro\')\" style=\"padding:.38rem .85rem;font-size:.76rem\">🔓 اشترك</button>":"")
+    +((plan==="free"&&!window.IS_APP)?"<button class=\"btn-p\" onclick=\"openSubscribe(\'pro\')\" style=\"padding:.38rem .85rem;font-size:.76rem\">🔓 اشترك</button>":"")
     +"<button class=\"btn-s\" onclick=\"doLogout()\" style=\"padding:.38rem .75rem;font-size:.72rem\">خروج</button>"
     +"</div>"
     +"</div>";
@@ -1389,5 +1441,36 @@ function openContact(){document.getElementById("contactModal").classList.add("on
   </div>
 </div>
 
+<script>
+/* ══════════════════════════════════════
+   APP MODE — توافق سياسة Google Play
+   داخل التطبيق: لا أسعار، لا أزرار شراء، لا صفحة دفع.
+   المزايا تُفتح تلقائياً عند تسجيل الدخول (حسب حالة الحساب في Firebase).
+   الشراء يتم من الموقع فقط.
+══════════════════════════════════════ */
+(function(){
+  function applyAppMode(){
+    if(!window.IS_APP) return;
+    // 1) قسم الأسعار كاملاً
+    var pr=document.getElementById("pricing"); if(pr)pr.style.display="none";
+    // 2) روابط "الأسعار" في القائمة والفوتر
+    document.querySelectorAll("a").forEach(function(a){
+      var oc=a.getAttribute("onclick")||"";
+      if(oc.indexOf("pricing")>-1) a.style.display="none";
+    });
+    // 3) سؤال الأسعار في الأسئلة الشائعة — نص محايد بلا دعوة للشراء
+    document.querySelectorAll(".faq-a").forEach(function(el){
+      if(el.textContent.indexOf("اشترك")>-1){
+        el.textContent="نعم! الخطة المجانية تشمل 200 سؤال شهرياً، لعباً على نفس الجهاز، و3 وسائل مساعدة. مزايا حسابك تُفعَّل تلقائياً عند تسجيل الدخول.";
+      }
+    });
+    // 4) أي نافذة دفع يدوي مفتوحة (احتياط)
+    var mp=document.getElementById("mpOverlay"); if(mp)mp.remove();
+  }
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",applyAppMode);
+  } else { applyAppMode(); }
+})();
+</script>
 </body>
 </html>
