@@ -3158,7 +3158,7 @@ function goHome(){
   window.location.href="index.html";
 }
 function ct(){return G.teams[G.ci];}
-function iM(){return isOff||ct().id===myId||isHost;}
+function iM(){return isOff||ct().id===myId;}
 function calcP(tl){return Math.max(1,10-Math.floor((TS-tl)/3));}
 
 function saveState(){
