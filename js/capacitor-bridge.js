@@ -51,6 +51,46 @@
     });
   }
 
+  /* ── درع الجلسة: حماية تسجيل الدخول من مسح تخزين WebView ──
+     أندرويد قد يمسح localStorage تحت ضغط الذاكرة (خصوصاً مع امتلاء ذاكرة الجهاز)
+     الحل: نسخ بيانات الجلسة للتخزين الأصلي (Preferences) واستعادتها تلقائياً.
+     يتطلب: npm install @capacitor/preferences && npx cap sync android
+     (يتجاهل نفسه بأمان إن لم تكن الإضافة مثبتة) */
+  (function(){
+    var Prefs = window.Capacitor.Plugins.Preferences;
+    if(!Prefs) return;
+    var KEYS = ["tahadi_token","tahadi_user","tahadi_users","tahadi_pro","tahadi_elite"];
+
+    function backup(){
+      KEYS.forEach(function(k){
+        var v = localStorage.getItem(k);
+        if(v) Prefs.set({key:k, value:v}).catch(function(){});
+      });
+    }
+    function restore(){
+      var restored = false, pending = KEYS.length;
+      KEYS.forEach(function(k){
+        if(localStorage.getItem(k)){ if(--pending===0) done(); return; }
+        Prefs.get({key:k}).then(function(r){
+          if(r && r.value){ localStorage.setItem(k, r.value); restored = true; }
+          if(--pending===0) done();
+        }).catch(function(){ if(--pending===0) done(); });
+      });
+      function done(){
+        if(restored && typeof window.renderUserBar === "function"){
+          try{ renderUserBar(); }catch(e){}
+        }
+      }
+    }
+
+    restore();                       // استعادة عند الإقلاع إن كان التخزين مُسح
+    setTimeout(backup, 4000);        // نسخة أولى بعد استقرار الصفحة
+    setInterval(backup, 20000);      // نسخ دوري كل 20 ثانية
+    document.addEventListener("visibilitychange", function(){
+      if(document.visibilityState === "hidden") backup(); // نسخة عند مغادرة التطبيق
+    });
+  })();
+
   /* ── Haptics (اهتزازات) ── */
   var Haptics = window.Capacitor.Plugins.Haptics;
   window.haptic = {
