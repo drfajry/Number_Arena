@@ -671,7 +671,7 @@ select.inp option{background:#0C1440;}
     <div class="fg"><label>اسم فريقك</label><input type="text" id="qmName" class="inp" placeholder="اسم فريقك..." maxlength="20" onkeydown="if(event.key==='Enter')doQuickMatch()"></div>
     <div id="qmErr" class="err" style="display:none"></div>
     <button id="qmCreateBtn" class="btn-p" onclick="qmToCreate()" style="display:none;width:100%;margin-bottom:.6rem;background:linear-gradient(135deg,#A855F7,#7C3AED)">🌍 أنشئ غرفة عامة الآن</button>
-    <div class="mo-btns"><button class="btn-p" id="qmBtn" onclick="doQuickMatch()">🔎 ابحث عن غرفة</button><button class="btn-s" onclick="closeM('qmMo')">إلغاء</button></div>
+    <div class="mo-btns"><button class="btn-p" id="qmBtn" onclick="doQuickMatch()">🔎 ابحث عن غرفة</button><button class="btn-s" onclick="closeQuickMatch()">إلغاء</button></div>
   </div>
 </div>
 
@@ -749,7 +749,12 @@ async function doCreate(){
     teams:[{id:"t"+Date.now(),name,color:cC,points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{remove:false,change:false,luck:false,audience:false,resetTime:false,freeze:false,shield:false,flip:false}}],
     ci:0,qi:0,phase:"sel",board:null,qs:null,cc:null,cq:null};
   if(fbDB){
-    await fbDB.ref("rooms/"+code).set(room);
+    try{
+      await fbDB.ref("rooms/"+code).set(room);
+    }catch(e){
+      ntf("❌ تعذّر إنشاء الغرفة أونلاين: "+(e&&e.message||"خطأ اتصال"),"#FF3D5A");
+      return;
+    }
     // غرفة عامة: سجّلها في اللوبي حتى يجدها الباحثون عن لاعبين
     if(isPublic){
       await fbDB.ref("publicRooms/"+code).set({
@@ -757,7 +762,11 @@ async function doCreate(){
       }).catch(function(){});
     }
   }
-  else localStorage.setItem("tahadi_v7_"+code,JSON.stringify(room));
+  else{
+    // بلا Firebase الغرفة محلية فقط — نبّه بوضوح بدل الفشل الصامت
+    ntf("⚠️ لا اتصال بالخادم — الغرفة ستعمل على هذا الجهاز فقط","#FFD046");
+    localStorage.setItem("tahadi_v7_"+code,JSON.stringify(room));
+  }
   localStorage.setItem("tahadi_my_id",room.teams[0].id);
   localStorage.setItem("tahadi_is_host","1");
   closeM("createMo");
@@ -799,62 +808,102 @@ async function doJoin(){
 }
 
 /* ── البحث عن لاعبين (Quick Match) ── */
+var _qmActive=false; // علم إيقاف البحث عند الإغلاق/الإلغاء
+
 function openQuickMatch(){
   if(!fbDB){ntf("البحث الأونلاين يتطلب اتصالاً بالإنترنت","#FF3D5A");return;}
+  _qmActive=false;
   document.getElementById("qmErr").style.display="none";
+  document.getElementById("qmCreateBtn").style.display="none";
+  var btn=document.getElementById("qmBtn");
+  btn.disabled=false;btn.textContent="🔎 ابحث عن غرفة";
   document.getElementById("qmMo").classList.add("on");
   setTimeout(()=>document.getElementById("qmName").focus(),300);
+}
+
+function closeQuickMatch(){
+  _qmActive=false; // يوقف حلقة البحث فوراً
+  closeM("qmMo");
+}
+
+/* محاولة واحدة: افحص اللوبي وحاول الانضمام — ترجع code عند النجاح أو null */
+async function _qmTryOnce(name){
+  const snap=await fbDB.ref("publicRooms").get();
+  const all=snap.val()||{};
+  const now=Date.now(), MAXAGE=30*60*1000;
+  let list=Object.values(all)
+    .filter(r=>r&&r.code&&(now-(r.createdAt||0))<MAXAGE&&(r.players||1)<(r.tc||4))
+    .sort((a,b)=>(b.players-a.players)||(b.createdAt-a.createdAt));
+  const COLORS=["red","green","yellow","cyan"];
+  for(const cand of list){
+    if(!_qmActive)return null;
+    const rs=await fbDB.ref("rooms/"+cand.code).get();
+    const room=rs.val();
+    if(!room||room.status!=="waiting"||room.teams.length>=room.tc){
+      fbDB.ref("publicRooms/"+cand.code).remove().catch(function(){});
+      continue;
+    }
+    const takenC=room.teams.map(t=>t.color);
+    const free=COLORS.find(c=>!takenC.includes(c))||"red";
+    const r=await joinRoomCore(cand.code,name,free);
+    if(r.ok)return cand.code;
+  }
+  return null;
 }
 
 async function doQuickMatch(){
   const name=document.getElementById("qmName").value.trim();
   const err=document.getElementById("qmErr");err.style.display="none";
+  document.getElementById("qmCreateBtn").style.display="none";
   if(!name){err.textContent="❗ أدخل اسم فريقك";err.style.display="block";return;}
+  if(_qmActive)return; // بحث جارٍ بالفعل
+
   const btn=document.getElementById("qmBtn");
-  btn.disabled=true;btn.textContent="🔎 جارٍ البحث...";
+  const TOTAL=30;            // مدة البحث الكلية بالثواني
+  const RETRY=3500;          // إعادة الفحص كل 3.5 ثانية
+  const deadline=Date.now()+TOTAL*1000;
+  _qmActive=true;
+  btn.disabled=true;
 
   try{
-    const snap=await fbDB.ref("publicRooms").get();
-    const all=snap.val()||{};
-    const now=Date.now(), MAXAGE=30*60*1000;
-    // مرشّحات صالحة: عمر أقل من 30 دقيقة وفيها مقعد — الأقرب للامتلاء أولاً ثم الأحدث
-    let list=Object.values(all)
-      .filter(r=>r&&r.code&&(now-(r.createdAt||0))<MAXAGE&&(r.players||1)<(r.tc||4))
-      .sort((a,b)=>(b.players-a.players)||(b.createdAt-a.createdAt));
-
-    const COLORS=["red","green","yellow","cyan"];
-    for(const cand of list){
-      // تحقق فعلي من الغرفة (تنظيف كسول للسجلات الميتة)
-      const rs=await fbDB.ref("rooms/"+cand.code).get();
-      const room=rs.val();
-      if(!room||room.status!=="waiting"||room.teams.length>=room.tc){
-        fbDB.ref("publicRooms/"+cand.code).remove().catch(function(){});
-        continue;
-      }
-      // اختر أول لون غير محجوز تلقائياً
-      const takenC=room.teams.map(t=>t.color);
-      const free=COLORS.find(c=>!takenC.includes(c))||"red";
-      const r=await joinRoomCore(cand.code,name,free);
-      if(r.ok){
+    while(_qmActive&&Date.now()<deadline){
+      var left=Math.ceil((deadline-Date.now())/1000);
+      btn.textContent="🔎 جارٍ البحث... ("+left+" ث)";
+      const code=await _qmTryOnce(name);
+      if(code){
+        _qmActive=false;
         btn.disabled=false;btn.textContent="🔎 ابحث عن غرفة";
         closeM("qmMo");
         ntf("✅ وجدنا لك غرفة! جارٍ الانضمام...","#00E676");
-        setTimeout(function(){window.location.href="game.html?room="+cand.code;},600);
+        setTimeout(function(){window.location.href="game.html?room="+code;},600);
         return;
       }
+      if(!_qmActive)break; // أُلغي أثناء المحاولة
+      // انتظر قبل الفحص التالي مع تحديث العدّاد كل ثانية
+      const waitUntil=Math.min(Date.now()+RETRY,deadline);
+      while(_qmActive&&Date.now()<waitUntil){
+        left=Math.ceil((deadline-Date.now())/1000);
+        btn.textContent="🔎 جارٍ البحث... ("+left+" ث)";
+        await new Promise(res=>setTimeout(res,1000));
+      }
     }
-    // لا غرف متاحة — اعرض خيار إنشاء غرفة عامة
+    // انتهت المهلة بلا نتيجة (أو أُلغي)
     btn.disabled=false;btn.textContent="🔎 ابحث عن غرفة";
-    err.innerHTML="لا يوجد لاعبون متاحون حالياً.<br>أنشئ <b>غرفة عامة</b> وسيجدك الباحثون تلقائياً!";
-    err.style.display="block";
-    document.getElementById("qmCreateBtn").style.display="block";
+    if(_qmActive){
+      _qmActive=false;
+      err.innerHTML="بحثنا 30 ثانية ولا يوجد لاعبون متاحون حالياً.<br>أنشئ <b>غرفة عامة</b> وسيجدك الباحثون تلقائياً!";
+      err.style.display="block";
+      document.getElementById("qmCreateBtn").style.display="block";
+    }
   }catch(e){
+    _qmActive=false;
     btn.disabled=false;btn.textContent="🔎 ابحث عن غرفة";
     err.textContent="تعذّر البحث — تحقق من الاتصال";err.style.display="block";
   }
 }
 
 function qmToCreate(){
+  _qmActive=false;
   const name=document.getElementById("qmName").value.trim();
   closeM("qmMo");
   openCreate();
