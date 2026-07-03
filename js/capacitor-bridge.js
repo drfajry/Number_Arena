@@ -36,6 +36,21 @@
     });
   }
 
+  /* ── Deep Links: فتح روابط الغرف داخل التطبيق ──
+     عند فتح https://drfajry.github.io/Number_Arena/...?room=CODE من التطبيق
+     نوجّه المستخدم لصفحة الانضمام الصحيحة */
+  if(App){
+    App.addListener('appUrlOpen', function(ev){
+      try{
+        var u = new URL(ev.url);
+        var room = u.searchParams.get('room');
+        if(room){
+          window.location.href = 'index.html?room=' + encodeURIComponent(room.toUpperCase());
+        }
+      }catch(e){}
+    });
+  }
+
   /* ── Haptics (اهتزازات) ── */
   var Haptics = window.Capacitor.Plugins.Haptics;
   window.haptic = {
