@@ -296,6 +296,16 @@ select.inp option{background:#0C1440;}
         <div class="form-group"><label>واتساب لاستقبال الإيصال</label><input type="text" id="sPayWhatsapp" class="inp" placeholder="9665xxxxxxxx"></div>
         <div class="form-group"><label>إيميل لاستقبال الإيصال</label><input type="text" id="sPayEmail" class="inp" placeholder="dr.fajry@gmail.com"></div>
       </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label>باركود الحساب البنكي (QR) — من تطبيق البنك: حسابي ← مشاركة ← رمز QR</label>
+          <input type="file" id="sPayQrFile" class="inp" accept="image/*" onchange="handleQrUpload(this)" style="padding:.5rem">
+          <div id="qrPreviewWrap" style="display:none;margin-top:.6rem;text-align:center">
+            <img id="qrPreview" src="" style="max-width:160px;border-radius:12px;border:1px solid var(--border);background:#fff;padding:6px">
+            <div><button type="button" class="btn-danger" onclick="removeQr()" style="margin-top:.4rem">🗑 حذف الباركود</button></div>
+          </div>
+        </div>
+      </div>
       <button class="btn-primary" onclick="saveSettings()">💾 حفظ بيانات الدفع</button>
     </div>
     <div class="form-card">
@@ -681,6 +691,38 @@ function removeGrant(idx){
 }
 
 /* ── SETTINGS ── */
+var _payQrData=""; // باركود الحساب (dataURL مضغوط)
+
+function handleQrUpload(input){
+  var file=input.files&&input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      // ضغط تلقائي: أقصى بُعد 400px حتى يبقى الحجم صغيراً في Firebase
+      var max=400, w=img.width, h=img.height;
+      if(w>max||h>max){var r=Math.min(max/w,max/h);w=Math.round(w*r);h=Math.round(h*r);}
+      var cv=document.createElement("canvas");cv.width=w;cv.height=h;
+      var cx=cv.getContext("2d");
+      cx.fillStyle="#FFFFFF";cx.fillRect(0,0,w,h); // خلفية بيضاء للـ QR
+      cx.drawImage(img,0,0,w,h);
+      _payQrData=cv.toDataURL("image/jpeg",0.85);
+      document.getElementById("qrPreview").src=_payQrData;
+      document.getElementById("qrPreviewWrap").style.display="block";
+      ntf("✅ تم تجهيز الباركود — اضغط حفظ بيانات الدفع","#00E676");
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function removeQr(){
+  _payQrData="";
+  document.getElementById("sPayQrFile").value="";
+  document.getElementById("qrPreviewWrap").style.display="none";
+  ntf("تم حذف الباركود — اضغط حفظ بيانات الدفع لتأكيد الحذف","#FFD046");
+}
+
 function loadSettings(){
   var data=db();var s=data.settings||{};
   document.getElementById("sPriceProM").value    =s.priceProM||9;
@@ -695,6 +737,14 @@ function loadSettings(){
   document.getElementById("sPayUrpay").value    =s.payUrpay||"";
   document.getElementById("sPayWhatsapp").value =s.payWhatsapp||"";
   document.getElementById("sPayEmail").value    =s.payEmail||"";
+  // باركود الحساب المحفوظ
+  _payQrData=s.payQr||"";
+  if(_payQrData){
+    document.getElementById("qrPreview").src=_payQrData;
+    document.getElementById("qrPreviewWrap").style.display="block";
+  } else {
+    document.getElementById("qrPreviewWrap").style.display="none";
+  }
 }
 
 function saveSettings(){
@@ -708,7 +758,8 @@ function saveSettings(){
     payStc:      document.getElementById("sPayStc").value.trim(),
     payUrpay:    document.getElementById("sPayUrpay").value.trim(),
     payWhatsapp: document.getElementById("sPayWhatsapp").value.trim(),
-    payEmail:    document.getElementById("sPayEmail").value.trim()
+    payEmail:    document.getElementById("sPayEmail").value.trim(),
+    payQr:       _payQrData||""
   };
   var base={
     priceProM:   parseInt(document.getElementById("sPriceProM").value)||9,
