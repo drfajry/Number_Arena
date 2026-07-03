@@ -877,6 +877,11 @@ function _renderManualPay(plan, info, s){
         '<div class="mp-step"><b>1</b> حوّل المبلغ على أحد الحسابات التالية</div>'+
       '</div>'+
       '<div class="mp-rows">'+rows+'</div>'+
+      (s.payQr?
+        '<div style="text-align:center;margin:.8rem 0">'+
+          '<div style="font-size:.78rem;color:var(--dim);margin-bottom:.4rem">أو امسح باركود الحساب من تطبيق بنكك</div>'+
+          '<img src="'+s.payQr+'" alt="باركود الحساب" style="max-width:150px;border-radius:12px;background:#fff;padding:6px">'+
+        '</div>':'')+
       '<div class="mp-steps">'+
         '<div class="mp-step"><b>2</b> أرسل صورة الإيصال + إيميلك المسجّل</div>'+
       '</div>'+
@@ -948,6 +953,8 @@ function closeManualPay(){var o=document.getElementById("mpOverlay");if(o)o.remo
    الرمز يُرسل مرة واحدة فقط عند التسجيل الجديد
 ══════════════════════════════════ */
 var _otpTimer=null, _otpCode="123456", _pendingEmail="", _pendingName="", _pendingPass="";
+var _authBusy=false;          // قفل يمنع الطلبات المتوازية (Enter + نقرة زر)
+var _lastOtpSend={};          // آخر وقت إرسال لكل إيميل — يمنع تكرار الرسائل
 
 // EmailJS — مفاتيح ثابتة للجميع (تُحفظ هنا ليرسل لكل المستخدمين)
 var EMAILJS_SVC = "service_vbq9ib7";
@@ -995,6 +1002,8 @@ function authSubmit(){
     err.textContent="❗ كلمة المرور 6 أحرف على الأقل";err.style.display="block";return;
   }
 
+  if(_authBusy) return; // طلب قيد التنفيذ — تجاهل Enter/النقرات الإضافية
+
   var users=getUsers();
   var existing=users[email];
   var btn=document.getElementById("authSubmitBtn");
@@ -1005,9 +1014,22 @@ function authSubmit(){
     _pendingPass=pass;
     _pendingName=(document.getElementById("authName").value||"").trim();
     var emailName=_pendingName||email.split("@")[0];
+    // مانع التكرار: إن أُرسل رمز لنفس الإيميل خلال 45 ثانية، اعرض شاشة الإدخال بلا إرسال جديد
+    var last=_lastOtpSend[email]||0;
+    if(Date.now()-last<45000){
+      _authBusy=false;
+      document.getElementById("authEmailDisp").textContent=email;
+      authShowStep(2);
+      ntf("استخدم الرمز المُرسل سابقاً لإيميلك","#FFD046");
+      setTimeout(function(){document.getElementById("otp0").focus();},300);
+      return;
+    }
+    _lastOtpSend[email]=Date.now();
+    _authBusy=true;
     _otpCode=String(Math.floor(100000+Math.random()*900000));
     btn.disabled=true;btn.textContent="جارٍ الإرسال...";
     sendOTPEmail(email,emailName,_otpCode,function(ok){
+      _authBusy=false;
       btn.disabled=false;btn.textContent="دخول / تسجيل →";
       document.getElementById("demoHint").style.display=ok?"none":"block";
       document.getElementById("authEmailDisp").textContent=email;
@@ -1035,10 +1057,12 @@ function authSubmit(){
   // لا يوجد سجل محلي — تحقق من Firebase قبل إرسال أي رمز
   // (يحل مشكلة: طلب كود التحقق بعد مسح تخزين الجهاز أو الدخول من جهاز آخر)
   if(window.TahadiDB&&TahadiDB.getPassHash){
+    _authBusy=true;
     btn.disabled=true;btn.textContent="جارٍ التحقق...";
     TahadiDB.getPassHash(email).then(function(cloudHash){
       btn.disabled=false;btn.textContent="دخول / تسجيل →";
       if(cloudHash){
+        _authBusy=false;
         // حساب موجود سحابياً — دخول مباشر بدون رمز
         if(cloudHash===hashPass(pass)){
           var uid=TahadiDB.emailToUid(email);
@@ -1063,6 +1087,7 @@ function authSubmit(){
         proceedSignupOTP();
       }
     }).catch(function(){
+      _authBusy=false;
       btn.disabled=false;btn.textContent="دخول / تسجيل →";
       proceedSignupOTP();
     });
@@ -1084,10 +1109,16 @@ function startOtpTimer(){
 }
 
 function authResend(){
+  if(_authBusy) return;
+  var last=_lastOtpSend[_pendingEmail]||0;
+  if(Date.now()-last<45000){ntf("انتظر قليلاً قبل إعادة الإرسال","#FFD046");return;}
+  _lastOtpSend[_pendingEmail]=Date.now();
+  _authBusy=true;
   _otpCode=String(Math.floor(100000+Math.random()*900000));
   for(var i=0;i<6;i++)document.getElementById("otp"+i).value="";
   document.getElementById("authS2Err").style.display="none";
   sendOTPEmail(_pendingEmail,_pendingName,_otpCode,function(ok){
+    _authBusy=false;
     document.getElementById("demoHint").style.display=ok?"none":"block";
     startOtpTimer();
     document.getElementById("otp0").focus();
