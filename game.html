@@ -3219,14 +3219,19 @@ function hostStart(){
   if(!G.board)G.board=shuf([...BT]).map(function(t,i){return{i:i,n:i+1,t:t,used:false,by:null};});
   if(!G.qs)G.qs=pickQs();
   G.status="playing";G.phase="sel";
+  // أزل الغرفة من لوبي البحث — اللعبة بدأت
+  if(fbDB)fbDB.ref("publicRooms/"+G.code).remove().catch(function(){});
   saveState();SFX.start();ss("game");initGame();
   ntf("⚡ تبدأ! دور: "+ct().name,COLORS[ct().color].h);
 }
 
 function shareR(){
-  var url=location.origin+"/game.html?room="+G.code;
-  if(navigator.share)navigator.share({title:"تحدي الأرقام",text:"انضم! الرمز: "+G.code,url:url}).catch(function(){});
-  else navigator.clipboard.writeText(url).then(function(){ntf("✅ تم نسخ الرابط","#00E676");}).catch(function(){ntf("الرمز: "+G.code,"#FFD046");});
+  // رابط عام ثابت — location.origin داخل التطبيق يعطي localhost (رابط مكسور)
+  var base="https://drfajry.github.io/Number_Arena";
+  var url=base+"/game.html?room="+G.code;
+  var txt="انضم للعبة تحدي الأرقام! 🎮\nرمز الغرفة: "+G.code+"\nأو ادخل مباشرة:";
+  if(navigator.share)navigator.share({title:"تحدي الأرقام",text:txt,url:url}).catch(function(){});
+  else navigator.clipboard.writeText(txt+" "+url).then(function(){ntf("✅ تم نسخ الرابط والرمز","#00E676");}).catch(function(){ntf("الرمز: "+G.code,"#FFD046");});
 }
 
 /* ════════════════════════════════════════
@@ -3869,6 +3874,7 @@ function closeYov(){document.getElementById("yov").classList.remove("on");}
 ════════════════════════════════════════ */
 function endGame(){
   G.status="finished";stopT();clearInterval(pollIv);saveState();SFX.end();
+  if(fbDB)fbDB.ref("publicRooms/"+G.code).remove().catch(function(){});
   var sorted=[...G.teams].sort(function(a,b){return b.points-a.points;});
   ss("results");
   var list=document.getElementById("rlist");list.innerHTML="";
