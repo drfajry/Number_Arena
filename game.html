@@ -3009,7 +3009,7 @@ refreshTiers();
    STATE
 ════════════════════════════════════════ */
 var G=null, myId=null, isHost=false, isOff=false;
-var _fbConnected=true, _wasDisconnected=false;
+var _fbConnected=true, _wasDisconnected=false, _lastAnsSeen=0, _odCancelled=false;
 var tiv=null, tleft=TS, frozen=false, ftout=null;
 var yqPend=false, stealPending=false, dblPts=false;
 var ansTO=null, fbDB=null, fbRef=null, pollIv=null, ntout=null;
@@ -3076,6 +3076,14 @@ var _joinChecked=false, _joinGrace=Date.now()+6000;
 function listenRoom(code){
   if(fbDB){
     fbRef=fbDB.ref("rooms/"+code);
+    // إعادة تفعيل التنظيف التلقائي عند الانقطاع (المضيف فقط — يحذف الغرفة عند خروجه)
+    // (الانتقال من index ألغى onDisconnect السابق، فنعيده هنا)
+    try{
+      if(localStorage.getItem("tahadi_is_host")==="1"){
+        fbRef.onDisconnect().remove();
+        fbDB.ref("publicRooms/"+code).onDisconnect().remove();
+      }
+    }catch(e){}
     fbRef.on("value",function(snap){
       var data=snap.val();
       if(!data){
@@ -3097,6 +3105,11 @@ function listenRoom(code){
       var prev={s:G&&G.status,qi:G&&G.qi,ci:G&&G.ci,ph:G&&G.phase};
       G=data;
       if(!G._roomState)G._roomState={};
+      // بمجرد أن تصبح اللعبة جارية، ألغِ أي حذف تلقائي عند الانقطاع (حماية من تذبذب الشبكة)
+      if(G.status==="playing"&&fbRef&&!_odCancelled){
+        _odCancelled=true;
+        try{fbRef.onDisconnect().cancel();fbDB.ref("publicRooms/"+code).onDisconnect().cancel();}catch(e){}
+      }
       updateUI(prev);
     });
   } else {
@@ -3167,7 +3180,20 @@ function ss(id){
 function closeM(id){document.getElementById(id).classList.remove("on");}
 function oM(id){document.getElementById(id).classList.add("on");}
 function goHome(){
-  clearInterval(pollIv);if(fbRef)fbRef.off();
+  clearInterval(pollIv);stopT&&stopT();
+  try{
+    // المضيف ينظّف غرفته عند المغادرة (تمنع تراكم الغرف المنتهية التي تسبب "الغرفة غير موجودة" لاحقاً)
+    if(fbDB&&G&&G.code&&localStorage.getItem("tahadi_is_host")==="1"){
+      if(!G.status||G.status==="finished"||G.status==="waiting"){
+        fbDB.ref("rooms/"+G.code).remove().catch(function(){});
+        fbDB.ref("publicRooms/"+G.code).remove().catch(function(){});
+      }
+    }
+  }catch(e){}
+  if(fbRef)fbRef.off();
+  // نظّف مفاتيح الجلسة حتى لا تُحمل غرفة قديمة في اللعبة التالية
+  localStorage.removeItem("tahadi_my_id");
+  localStorage.removeItem("tahadi_is_host");
   window.location.href="index.html";
 }
 function ct(){return G.teams[G.ci];}
@@ -3176,7 +3202,10 @@ function calcP(tl){return Math.max(1,10-Math.floor((TS-tl)/3));}
 
 function saveState(){
   if(!G||isOff)return;
-  if(fbDB&&fbRef)fbRef.set(G);
+  if(fbDB&&fbRef){
+    if(G.status==="finished"&&!(iM()||isHost))return; // غير المضيف لا يعيد كتابة غرفة منتهية
+    fbRef.set(G);
+  }
   else localStorage.setItem("tahadi_v7_"+G.code,JSON.stringify(G));
 }
 
@@ -3217,8 +3246,28 @@ function updateUI(prev){
           if(!qShown){ rBoard();showQUI(G.cc); }
         }
       }
+      // لاعب غير حالي: أظهر نتيجة إجابة المنافس (صحيحة/خاطئة + الإجابة الصحيحة) — تعليمي
+      if(!iM()&&G.lastAns&&G.lastAns.stamp!==_lastAnsSeen){
+        _lastAnsSeen=G.lastAns.stamp;
+        var la=G.lastAns;
+        rOpts_rev(la.chosen);
+        showAns(la.ok,0,0,0,la.correct);
+      }
     }
-  } else if(G.status==="finished"){endGame();}
+  } else if(G.status==="finished"){
+    endGame();
+    // إعادة رسم النتائج عند وصول أي تحديث نقاط متأخر
+    if(document.getElementById("results").classList.contains("on")){
+      var sorted=[...G.teams].sort(function(a,b){return b.points-a.points;});
+      var list=document.getElementById("rlist");
+      if(list){list.innerHTML="";["🥇","🥈","🥉","4️⃣"].forEach(function(m,i){
+        if(!sorted[i])return;var t=sorted[i],row=document.createElement("div");
+        row.className="rrow"+(i===0?" fi":"");row.style.borderColor=i===0?COLORS[t.color].h:"rgba(0,229,255,.09)";
+        row.innerHTML="<div class=\"rrank\">"+m+"</div><div style=\"flex:1\"><div class=\"rname\" style=\"color:"+COLORS[t.color].h+"\">"+t.name+"</div><div class=\"rstat\">✅ "+t.ca+" صحيحة | ★ "+t.gc+" ذهبية | ◆ "+t.svc+" فضية | 🎉 "+t.mbc+" مبروك</div></div><div class=\"rpts_\" style=\"color:"+COLORS[t.color].h+"\">"+t.points+"</div>";
+        list.appendChild(row);
+      });}
+    }
+  }
   else{ss("waiting");renderWait();}
 }
 
@@ -3256,6 +3305,8 @@ function hostStart(){
   G.status="playing";G.phase="sel";
   // أزل الغرفة من لوبي البحث — اللعبة بدأت
   if(fbDB)fbDB.ref("publicRooms/"+G.code).remove().catch(function(){});
+  // ألغِ الحذف التلقائي عند الانقطاع — بعد بدء اللعب يجب ألا يُحذف بسبب تذبذب الشبكة
+  if(fbDB&&fbRef){try{fbRef.onDisconnect().cancel();}catch(e){}}
   saveState();SFX.start();ss("game");initGame();
   ntf("⚡ تبدأ! دور: "+ct().name,COLORS[ct().color].h);
 }
@@ -3565,6 +3616,8 @@ function doSubmit(letter){
     if(_bi>-1&&G.board[_bi]){G.board[_bi].used=true;G.board[_bi].by=ct().color;}
     G.cc.used=true;G.cc.by=ct().color;
   }
+  // احفظ نتيجة الإجابة ليراها الجميع (الهدف التعليمي): الاختيار + الصحيح + صواب/خطأ
+  G.lastAns={chosen:letter,correct:q.correct,ok:ok,qtext:q.text,stamp:Date.now(),team:ct().name};
   saveState();
   if(!ok&&stealPending){
     // Handled by steal banner
@@ -3696,7 +3749,7 @@ function nextT(){
   if(G.qi>=TOT){endGame();return;}
   G.ci=(G.ci+1)%G.teams.length;
   G.phase="sel";G.cc=null;G.cq=null;yqPend=false;stealPending=false;
-  G.answerDeadline=null;G.selDeadline=null;
+  G.answerDeadline=null;G.selDeadline=null;G.lastAns=null;
   dblPts=false;frozen=false;
   document.getElementById("fchip").style.display="none";
   document.getElementById("dblChip").style.display="none";
@@ -3901,11 +3954,16 @@ function doFlipPick(){
     b.onclick=function(){
       if(shielded){ntf("🛡️ "+t.name+" محمي من القلب!","#00E676");return;}
       SFX.flip();
-      var myPts=ct().points,theirPts=t.points;
-      ct().points=theirPts;t.points=myPts;
-      bump(ct());bump(t);
-      saveState();rBar();
-      ntf("🔀 تم قلب النقاط! "+ct().name+": "+ct().points+" ↔ "+t.name+": "+t.points,"#A855F7");
+      // بدّل بالبحث عن الفريقين بالمعرّف (لا بالمرجع — يمنع الخلط بعد تزامن Firebase)
+      var meIdx=G.teams.findIndex(function(x){return x.id===ct().id;});
+      var themIdx=G.teams.findIndex(function(x){return x.id===t.id;});
+      if(meIdx<0||themIdx<0){closeFlip();return;}
+      var myPts=G.teams[meIdx].points, theirPts=G.teams[themIdx].points;
+      G.teams[meIdx].points=theirPts;
+      G.teams[themIdx].points=myPts;
+      bump(G.teams[meIdx]);bump(G.teams[themIdx]);
+      rBar();saveState();
+      ntf("🔀 تم قلب النقاط! "+G.teams[meIdx].name+": "+G.teams[meIdx].points+" ↔ "+G.teams[themIdx].name+": "+G.teams[themIdx].points,"#A855F7");
       closeFlip();
     };
     list.appendChild(b);
@@ -3964,8 +4022,15 @@ function closeYov(){document.getElementById("yov").classList.remove("on");}
    END GAME
 ════════════════════════════════════════ */
 function endGame(){
-  G.status="finished";stopT();stopSelT();clearInterval(pollIv);saveState();SFX.end();
-  if(fbDB)fbDB.ref("publicRooms/"+G.code).remove().catch(function(){});
+  stopT();stopSelT();clearInterval(pollIv);
+  // المضيف/اللاعب المنهي فقط يكتب الحالة النهائية مرة واحدة (يمنع الكتابة المزدوجة بنقاط قديمة)
+  if(G.status!=="finished"){
+    G.status="finished";
+    if(iM()||isHost)saveState();
+  }
+  SFX.end();
+  if(fbDB&&(iM()||isHost))fbDB.ref("publicRooms/"+G.code).remove().catch(function(){});
+  // اعرض دائماً من نسخة G المتزامنة (لا نعيد حساب أو حفظ النقاط)
   var sorted=[...G.teams].sort(function(a,b){return b.points-a.points;});
   ss("results");
   var list=document.getElementById("rlist");list.innerHTML="";
