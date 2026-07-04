@@ -640,7 +640,7 @@ select.inp option{background:#0C1440;}
     <div style="background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.18);border-radius:9px;padding:.55rem .9rem;margin-bottom:1rem;font-size:.76rem;color:var(--cyan)">
       🔥 يعمل مع أجهزة مختلفة عبر الإنترنت
     </div>
-    <div class="fg"><label>اسم فريقك</label><input type="text" id="cName" class="inp" placeholder="اسم فريقك..." maxlength="20"></div>
+    <div class="fg"><label>اسم فريقك</label><input type="text" id="cName" class="inp" placeholder="اسم فريقك..." maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false"></div>
     <div class="fg"><label>لونك</label><div class="cpk" id="cCpk"></div></div>
     <div class="fg"><label>عدد الفرق</label><select id="cCount" class="inp"><option value="2">2 فرق</option><option value="3">3 فرق</option><option value="4">4 فرق</option></select></div>
     <div class="fg" style="display:flex;align-items:center;gap:.55rem;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.22);border-radius:9px;padding:.6rem .9rem">
@@ -655,7 +655,7 @@ select.inp option{background:#0C1440;}
   <div class="mb">
     <div class="mt_">🚪 الانضمام لغرفة</div>
     <div class="fg"><label>رمز الغرفة (6 أحرف)</label><input type="text" id="jCode" class="inp" placeholder="XXXXXX" maxlength="6" style="letter-spacing:.28em;font-weight:900;font-size:1.2rem;text-align:center;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
-    <div class="fg"><label>اسم فريقك</label><input type="text" id="jName" class="inp" placeholder="اسم فريقك..." maxlength="20"></div>
+    <div class="fg"><label>اسم فريقك</label><input type="text" id="jName" class="inp" placeholder="اسم فريقك..." maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false"></div>
     <div class="fg"><label>لونك</label><div class="cpk" id="jCpk"></div></div>
     <div id="joinErr" class="err" style="display:none"></div>
     <div class="mo-btns"><button class="btn-p" onclick="doJoin()">انضمام</button><button class="btn-s" onclick="closeM('joinMo')">إلغاء</button></div>
@@ -668,7 +668,7 @@ select.inp option{background:#0C1440;}
     <div style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.22);border-radius:9px;padding:.55rem .9rem;margin-bottom:1rem;font-size:.76rem;color:#C084FC">
       نبحث لك عن غرفة عامة متاحة وننضمّك إليها فوراً — بلا رمز ولا رابط
     </div>
-    <div class="fg"><label>اسم فريقك</label><input type="text" id="qmName" class="inp" placeholder="اسم فريقك..." maxlength="20" onkeydown="if(event.key==='Enter')doQuickMatch()"></div>
+    <div class="fg"><label>اسم فريقك</label><input type="text" id="qmName" class="inp" placeholder="اسم فريقك..." maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')doQuickMatch()"></div>
     <div id="qmErr" class="err" style="display:none"></div>
     <button id="qmCreateBtn" class="btn-p" onclick="qmToCreate()" style="display:none;width:100%;margin-bottom:.6rem;background:linear-gradient(135deg,#A855F7,#7C3AED)">🌍 أنشئ غرفة عامة الآن</button>
     <div class="mo-btns"><button class="btn-p" id="qmBtn" onclick="doQuickMatch()">🔎 ابحث عن غرفة</button><button class="btn-s" onclick="closeQuickMatch()">إلغاء</button></div>
@@ -738,8 +738,8 @@ function onlineGate(){
   return true;
 }
 
-function openCreate(){if(!onlineGate())return;document.getElementById("createMo").classList.add("on");setTimeout(()=>document.getElementById("cName").focus(),300);}
-function openJoin(){if(!onlineGate())return;document.getElementById("joinMo").classList.add("on");}
+function openCreate(){if(!onlineGate())return;document.getElementById("cName").value="";document.getElementById("createMo").classList.add("on");setTimeout(()=>document.getElementById("cName").focus(),300);}
+function openJoin(){if(!onlineGate())return;document.getElementById("jName").value="";document.getElementById("joinMo").classList.add("on");}
 function openJoinDirect(){document.getElementById("joinMo").classList.add("on");}
 function openOffline(){buildOff();document.getElementById("offMo").classList.add("on");}
 document.querySelectorAll(".mo").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("on");}));
@@ -886,6 +886,7 @@ function openQuickMatch(){
   if(!onlineGate())return;
   if(!fbDB){ntf("البحث الأونلاين يتطلب اتصالاً بالإنترنت","#FF3D5A");return;}
   _qmActive=false;
+  document.getElementById("qmName").value="";
   document.getElementById("qmErr").style.display="none";
   document.getElementById("qmCreateBtn").style.display="none";
   var btn=document.getElementById("qmBtn");
