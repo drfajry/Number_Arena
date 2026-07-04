@@ -812,6 +812,8 @@ async function doCreate(){
   }
   localStorage.setItem("tahadi_my_id",room.teams[0].id);
   localStorage.setItem("tahadi_is_host","1");
+  // ألغِ الحذف التلقائي قبل الانتقال — الانتقال بين الصفحات يقطع الاتصال ويُشغّل onDisconnect خطأً
+  if(fbDB&&isPublic){try{fbDB.ref("publicRooms/"+code).onDisconnect().cancel();}catch(e){}}
   closeM("createMo");
   window.location.href="game.html?room="+code;
 }
@@ -969,6 +971,8 @@ async function doQuickMatch(){
       if(d&&d.teams&&d.teams.length>=2&&!joined){
         joined=true;_qmActive=false;
         roomRef.off();
+        // ألغِ الحذف التلقائي قبل الانتقال — وإلا يحذف الغرفة لحظة الدخول للعبة
+        try{fbDB.ref("rooms/"+myCode).onDisconnect().cancel();fbDB.ref("publicRooms/"+myCode).onDisconnect().cancel();}catch(e){}
         closeM("qmMo");
         ntf("✅ انضم لاعب! جارٍ البدء...","#00E676");
         setTimeout(function(){window.location.href="game.html?room="+myCode;},500);
@@ -995,8 +999,9 @@ async function doQuickMatch(){
             var rs=await fbDB.ref("rooms/"+other.code).get();
             var od=rs.val();
             if(od&&od.status==="waiting"&&od.teams.length<od.tc){
-              // انضم لغرفته واحذف غرفتي
+              // انضم لغرفته واحذف غرفتي (وألغِ حذفها التلقائي أولاً لتفادي أي تعارض)
               joined=true;_qmActive=false;roomRef.off();
+              try{fbDB.ref("rooms/"+myCode).onDisconnect().cancel();fbDB.ref("publicRooms/"+myCode).onDisconnect().cancel();}catch(e){}
               fbDB.ref("rooms/"+myCode).remove().catch(function(){});
               fbDB.ref("publicRooms/"+myCode).remove().catch(function(){});
               var takenC=od.teams.map(function(t){return t.color;});
