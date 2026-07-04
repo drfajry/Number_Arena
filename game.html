@@ -3064,18 +3064,23 @@ function initFB(){
   }
 })();
 
-var _joinChecked=false;
+var _joinChecked=false, _joinGrace=Date.now()+6000;
 function listenRoom(code){
   if(fbDB){
     fbRef=fbDB.ref("rooms/"+code);
     fbRef.on("value",function(snap){
       var data=snap.val();
-      if(!data){ntf("❌ الغرفة غير موجودة","#FF3D5A");setTimeout(goHome,2000);return;}
-      // زائر وصل برابط مباشر وليس عضواً في الغرفة → حوّله لصفحة الانضمام الصحيحة
+      if(!data){
+        // خلال مهلة سماح بعد الانضمام لا نطرد فوراً (قد لا تكون الكتابة وصلت بعد)
+        if(Date.now()<_joinGrace)return;
+        ntf("❌ الغرفة غير موجودة","#FF3D5A");setTimeout(goHome,2000);return;
+      }
+      // تحويل زائر غير عضو لصفحة الانضمام — مرة واحدة فقط وفي طور الانتظار فقط
       if(!_joinChecked){
         _joinChecked=true;
         var isMember=myId&&(data.teams||[]).some(function(t){return t.id===myId;});
-        if(data.status==="waiting"&&!isMember){
+        // لا نحوّل إن لم يُضبط myId بعد (لاعب انضم للتو والبيانات لم تتزامن)
+        if(data.status==="waiting"&&!isMember&&myId&&Date.now()>_joinGrace){
           fbRef.off();
           window.location.href="index.html?room="+code;
           return;
@@ -3193,7 +3198,18 @@ function updateUI(prev){
   }
   if(G.status==="playing"){
     if(!document.getElementById("game").classList.contains("on")){ss("game");initGame();}
-    else{updH();rBar();if(G.phase==="sel"){rBoard();showBoard();stopT();resetTUI();document.getElementById("tscore").textContent="";rBanner();}}
+    else{
+      updH();rBar();
+      if(G.phase==="sel"){rBoard();showBoard();stopT();resetTUI();document.getElementById("tscore").textContent="";rBanner();}
+      else if(G.phase==="ans"){
+        // لاعب غير حالي: اعرض السؤال والمؤقت (كان يبقى على اللوحة بلا وقت)
+        if(!iM()&&G.cc&&G.cq){
+          var qShown=document.getElementById("qwrap").style.display==="flex"
+                     && document.getElementById("qtxt").textContent===G.cq.text;
+          if(!qShown){ rBoard();showQUI(G.cc); }
+        }
+      }
+    }
   } else if(G.status==="finished"){endGame();}
   else{ss("waiting");renderWait();}
 }
@@ -3351,7 +3367,7 @@ function selCell(i){
     G._roomState.frozenTeams[ct().id]--;
     // Move to next TEAM only, don't increment question counter
     G.ci=(G.ci+1)%G.teams.length;
-    G.phase="sel";G.cc=null;G.cq=null;
+    G.phase="sel";G.cc=null;G.cq=null;G.answerDeadline=null;
     saveState();updH();rBar();rBoard();showBoard();rBanner();
     setTimeout(function(){
       ntf("دور: "+ct().name,COLORS[ct().color].h);
@@ -3430,13 +3446,26 @@ function rOpts(q,rm,hintWrong){
 function startT(){
   stopT();tleft=TS;frozen=false;
   document.getElementById("fchip").style.display="none";
-  updTUI();if(!iM())return;
+  // مؤقت مشترك: المضيف/اللاعب الحالي يكتب زمن البداية، والجميع يحسب منه
+  if(iM()&&G&&G.phase==="ans"&&!G.answerDeadline){
+    G.answerDeadline=Date.now()+TS*1000;
+    saveState();
+  }
+  updTUI();
   tiv=setInterval(function(){
     if(frozen)return;
-    tleft--;updTUI();
+    // احسب المتبقي من الموعد المشترك إن وُجد (يتزامن عبر الأجهزة)
+    if(G&&G.answerDeadline){
+      tleft=Math.max(0,Math.ceil((G.answerDeadline-Date.now())/1000));
+    } else { tleft--; }
+    updTUI();
     if(tleft<=10&&tleft>0&&tleft%2===0)SFX.tick();
-    if(tleft<=0){stopT();timeOut();}
-  },1000);
+    if(tleft<=0){
+      stopT();
+      // فقط اللاعب الحالي ينفّذ انتهاء الوقت (يمنع الكتابة المزدوجة)
+      if(iM())timeOut();
+    }
+  },250);
 }
 function stopT(){clearInterval(tiv);tiv=null;}
 function resetTUI(){
@@ -3617,6 +3646,7 @@ function nextT(){
   if(G.qi>=TOT){endGame();return;}
   G.ci=(G.ci+1)%G.teams.length;
   G.phase="sel";G.cc=null;G.cq=null;yqPend=false;stealPending=false;
+  G.answerDeadline=null;
   dblPts=false;frozen=false;
   document.getElementById("fchip").style.display="none";
   document.getElementById("dblChip").style.display="none";
