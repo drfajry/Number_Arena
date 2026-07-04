@@ -3246,12 +3246,12 @@ function updateUI(prev){
           if(!qShown){ rBoard();showQUI(G.cc); }
         }
       }
-      // لاعب غير حالي: أظهر نتيجة إجابة المنافس (صحيحة/خاطئة + الإجابة الصحيحة) — تعليمي
+      // لاعب غير حالي: أظهر نتيجة إجابة المنافس (صحيحة/خاطئة + النقاط + الإجابة الصحيحة) — تعليمي
       if(!iM()&&G.lastAns&&G.lastAns.stamp!==_lastAnsSeen){
         _lastAnsSeen=G.lastAns.stamp;
         var la=G.lastAns;
         rOpts_rev(la.chosen);
-        showAns(la.ok,0,0,0,la.correct);
+        showAns(la.ok,la.base||0,la.bonus||0,la.tl||0,la.correct);
       }
     }
   } else if(G.status==="finished"){
@@ -3616,8 +3616,8 @@ function doSubmit(letter){
     if(_bi>-1&&G.board[_bi]){G.board[_bi].used=true;G.board[_bi].by=ct().color;}
     G.cc.used=true;G.cc.by=ct().color;
   }
-  // احفظ نتيجة الإجابة ليراها الجميع (الهدف التعليمي): الاختيار + الصحيح + صواب/خطأ
-  G.lastAns={chosen:letter,correct:q.correct,ok:ok,qtext:q.text,stamp:Date.now(),team:ct().name};
+  // احفظ نتيجة الإجابة ليراها الجميع (الهدف التعليمي): الاختيار + الصحيح + النقاط
+  G.lastAns={chosen:letter,correct:q.correct,ok:ok,qtext:q.text,stamp:Date.now(),team:ct().name,base:base,bonus:bonus,tl:snap};
   saveState();
   if(!ok&&stealPending){
     // Handled by steal banner
@@ -3734,8 +3734,10 @@ function showAns(ok,base,bonus,tl,corr){
     else cor.style.display="none";
   }
   ov.classList.add("on");clearTimeout(ansTO);
+  // فقط اللاعب الحالي (صاحب الدور) يتقدّم للدور التالي — يمنع تكرار الأدوار
   ansTO=setTimeout(function(){
     ov.classList.remove("on");
+    if(!iM())return; // المنافس يشاهد فقط، لا يتحكم في تقدّم الدور
     if(yqPend&&ok){yqPend=false;showYovModal();}
     else nextT();
   },2400);
