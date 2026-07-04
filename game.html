@@ -3009,7 +3009,7 @@ refreshTiers();
    STATE
 ════════════════════════════════════════ */
 var G=null, myId=null, isHost=false, isOff=false;
-var _fbConnected=true, _wasDisconnected=false, _lastAnsSeen=0, _odCancelled=false;
+var _fbConnected=true, _wasDisconnected=false, _lastAnsSeen=0, _odCancelled=false, _lastAdvancedQi=-1;
 var tiv=null, tleft=TS, frozen=false, ftout=null;
 var yqPend=false, stealPending=false, dblPts=false;
 var ansTO=null, fbDB=null, fbRef=null, pollIv=null, ntout=null;
@@ -3254,7 +3254,7 @@ function updateUI(prev){
         _lastAnsSeen=G.lastAns.stamp;
         var la=G.lastAns;
         rOpts_rev(la.chosen);
-        showAns(la.ok,la.base||0,la.bonus||0,la.tl||0,la.correct);
+        showAns(la.ok,la.base||0,la.bonus||0,la.tl||0,la.correct,false);
       }
     }
   } else if(G.status==="finished"){
@@ -3303,6 +3303,7 @@ function renderWait(){
 
 function hostStart(){
   if(!G||G.teams.length<2)return;
+  _lastAdvancedQi=-1;
   if(!G.board)G.board=shuf([...BT]).map(function(t,i){return{i:i,n:i+1,t:t,used:false,by:null};});
   if(!G.qs)G.qs=pickQs();
   G.status="playing";G.phase="sel";
@@ -3583,7 +3584,7 @@ function updTUI(){
   var ts=document.getElementById("tscore");
   if(ts&&G&&G.phase==="ans"&&!dblPts)ts.textContent=calcP(tleft)+" نقطة";
 }
-function timeOut(){SFX.timeout();rOpts_rev(null);showAns(false,0,0,0,G.cq&&G.cq.correct);}
+function timeOut(){SFX.timeout();rOpts_rev(null);showAns(false,0,0,0,G.cq&&G.cq.correct,true);}
 
 /* ════════════════════════════════════════
    SUBMIT
@@ -3627,7 +3628,7 @@ function doSubmit(letter){
     stealPending=false;
     return;
   }
-  showAns(ok,base,bonus,snap,q.correct);
+  showAns(ok,base,bonus,snap,q.correct,true);
 }
 
 function showStealBanner(){
@@ -3648,7 +3649,7 @@ function showStealBanner(){
   setTimeout(function(){
     if(document.getElementById("stealBanner").style.display!=="none"){
       document.getElementById("stealBanner").style.display="none";
-      showAns(false,0,0,0,G.cq&&G.cq.correct);
+      showAns(false,0,0,0,G.cq&&G.cq.correct,true);
     }
   },8000);
 }
@@ -3660,7 +3661,7 @@ function doSteal(teamId){
   // Switch current team to stealer temporarily
   var origCi=G.ci;
   var stealerIdx=G.teams.findIndex(function(t){return t.id===teamId;});
-  if(stealerIdx<0){showAns(false,0,0,0,G.cq&&G.cq.correct);return;}
+  if(stealerIdx<0){showAns(false,0,0,0,G.cq&&G.cq.correct,true);return;}
   // Re-enable options for stealer
   stopT();
   var snap=15; // give 15s to steal
@@ -3684,21 +3685,21 @@ function doSteal(teamId){
         ntf("🎉 "+G.teams[stealerIdx].name+" سرق النقاط!","#00E676");
         setTimeout(function(){
           G.ci=origCi;
-          showAns(false,0,0,0,G.cq.correct);
+          showAns(false,0,0,0,G.cq.correct,true);
         },1200);
       } else {
         SFX.wrong();
         ntf("❌ فشلت السرقة!","#FF3D5A");
         setTimeout(function(){
           G.ci=origCi;
-          showAns(false,0,0,0,G.cq.correct);
+          showAns(false,0,0,0,G.cq.correct,true);
         },1200);
       }
     };
   });
   // Timer for steal
   tiv=setInterval(function(){
-    if(snap<=0){stopT();banner.style.display="none";G.ci=origCi;showAns(false,0,0,0,G.cq.correct);}
+    if(snap<=0){stopT();banner.style.display="none";G.ci=origCi;showAns(false,0,0,0,G.cq.correct,true);}
     snap--;tleft=snap;updTUI();
   },1000);
 }
@@ -3717,7 +3718,7 @@ function rOpts_rev(chosen){
 /* ════════════════════════════════════════
    ANSWER OVERLAY
 ════════════════════════════════════════ */
-function showAns(ok,base,bonus,tl,corr){
+function showAns(ok,base,bonus,tl,corr,isDriver){
   var ov=document.getElementById("ansov");
   document.getElementById("ansico").textContent=ok?"✅":"❌";
   var msg=document.getElementById("ansmsg");
@@ -3737,10 +3738,10 @@ function showAns(ok,base,bonus,tl,corr){
     else cor.style.display="none";
   }
   ov.classList.add("on");clearTimeout(ansTO);
-  // فقط اللاعب الحالي (صاحب الدور) يتقدّم للدور التالي — يمنع تكرار الأدوار
   ansTO=setTimeout(function(){
     ov.classList.remove("on");
-    if(!iM())return; // المنافس يشاهد فقط، لا يتحكم في تقدّم الدور
+    // فقط "السائق" (اللاعب الذي أجاب فعلاً) يتقدّم للدور — لا يُعاد تقييم iM() لأن الدور قد تزامن
+    if(!isDriver)return;
     if(yqPend&&ok){yqPend=false;showYovModal();}
     else nextT();
   },2400);
@@ -3750,6 +3751,9 @@ function showAns(ok,base,bonus,tl,corr){
    NEXT TURN
 ════════════════════════════════════════ */
 function nextT(){
+  // حماية من التقدّم المزدوج: لا نتقدّم مرتين من نفس السؤال (صدى الشبكة/مؤقتات متأخرة)
+  if(_lastAdvancedQi===G.qi){return;}
+  _lastAdvancedQi=G.qi;
   G.qi++;
   if(G.qi>=TOT){endGame();return;}
   G.ci=(G.ci+1)%G.teams.length;
