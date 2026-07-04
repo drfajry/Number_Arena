@@ -748,7 +748,17 @@ function toggleNav(){
   navOpen=!navOpen;
   const nl=document.querySelector(".nav-links");
   if(!nl)return;
-  if(navOpen){nl.style.cssText="display:flex;flex-direction:column;position:fixed;top:56px;right:0;left:0;background:rgba(7,11,31,.97);padding:1rem 1.5rem;border-bottom:1px solid var(--border);z-index:99;gap:.3rem;";}
+  if(navOpen){
+    // داخل التطبيق: روابط التسويق مخفية، فاعرض إجراءات مفيدة فقط
+    if(window.IS_APP){
+      var logged=!!localStorage.getItem("tahadi_token");
+      nl.innerHTML = logged
+        ? '<a class="nav-link" onclick="doLogout();toggleNav()">🚪 تسجيل الخروج</a>'
+          +'<a class="nav-link" onclick="goSec(\'faq\');toggleNav()">❓ الأسئلة الشائعة</a>'
+        : '<a class="nav-link" onclick="showAuthModal();toggleNav()">👤 تسجيل الدخول</a>';
+    }
+    nl.style.cssText="display:flex;flex-direction:column;position:fixed;top:56px;right:0;left:0;background:rgba(7,11,31,.97);padding:1rem 1.5rem;border-bottom:1px solid var(--border);z-index:99;gap:.6rem;";
+  }
   else{nl.style.cssText="";}
 }
 
@@ -1416,6 +1426,7 @@ function authVerify(){
 }
 
 function loginUser(user,skipStep){
+  window._forceLoggedOut=false; // دخول جديد — أعد تفعيل درع الجلسة
   var uid=user.uid;
   var sessionId="s_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
   localStorage.setItem("tahadi_token","tok_"+Date.now());
@@ -1430,13 +1441,22 @@ function loginUser(user,skipStep){
       sref.on("value",function(s){
         var cur=s.val();
         if(cur&&cur!==localStorage.getItem("tahadi_session")){
-          // جهاز آخر سجّل الدخول بنفس الحساب
+          // جهاز آخر سجّل الدخول بنفس الحساب — خروج فعلي كامل
           sref.off();
           localStorage.removeItem("tahadi_token");
+          localStorage.removeItem("tahadi_session");
+          localStorage.removeItem("tahadi_user");
           localStorage.removeItem("tahadi_pro");
           localStorage.removeItem("tahadi_elite");
+          // امسح النسخة الأصلية (درع الجلسة) حتى لا يستعيدها بعد إعادة التحميل
+          try{
+            var Prefs=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Preferences;
+            if(Prefs){["tahadi_token","tahadi_user","tahadi_pro","tahadi_elite"].forEach(function(k){Prefs.remove({key:k});});}
+          }catch(e){}
+          // منع درع الجلسة من الاستعادة في هذه الجلسة
+          window._forceLoggedOut=true;
           alert("⚠️ تم تسجيل الدخول بهذا الحساب من جهاز آخر.\nتم إنهاء الجلسة على هذا الجهاز.");
-          location.reload();
+          setTimeout(function(){location.reload();},300);
         }
       });
     }catch(e){}
@@ -1629,10 +1649,16 @@ function renderUserBar(){
 function scrollToAffiliate(){document.getElementById("affiliate-section").scrollIntoView({behavior:"smooth"});}
 
 function doLogout(){
+  window._forceLoggedOut=true; // امنع درع الجلسة من الاستعادة
   localStorage.removeItem("tahadi_token");
+  localStorage.removeItem("tahadi_session");
   localStorage.removeItem("tahadi_user");
   localStorage.removeItem("tahadi_pro");
   localStorage.removeItem("tahadi_elite");
+  try{
+    var Prefs=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Preferences;
+    if(Prefs){["tahadi_token","tahadi_user","tahadi_pro","tahadi_elite"].forEach(function(k){Prefs.remove({key:k});});}
+  }catch(e){}
   var affSec=document.getElementById("affiliate-section");
   if(affSec)affSec.style.display="none";
   var affBox=document.getElementById("affiliate-box");
