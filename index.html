@@ -1238,10 +1238,79 @@ function showAuthModal(){
 }
 
 function authShowStep(n){
-  [1,2,3].forEach(function(i){
+  [1,2,3,4,5].forEach(function(i){
     var el=document.getElementById("authS"+i);
     if(el) el.style.display=i===n?"block":"none";
   });
+}
+
+/* ── نسيت كلمة المرور (استعادة ذاتية عبر رمز البريد) ── */
+var _fpEmail="", _fpCode="", _fpUid="";
+function startForgot(){
+  var email=(document.getElementById("authEmail").value||"").trim().toLowerCase();
+  var err=document.getElementById("authS1Err");err.style.display="none";
+  if(!email||email.indexOf("@")<0){err.textContent="❗ أدخل بريدك الإلكتروني أولاً ثم اضغط نسيت كلمة المرور";err.style.display="block";return;}
+  // تحقق أن الحساب موجود (محلياً أو سحابياً) قبل الإرسال
+  var btn=document.getElementById("authSubmitBtn");
+  function proceed(){
+    _fpEmail=email;
+    _fpCode=String(Math.floor(100000+Math.random()*900000));
+    var nm=email.split("@")[0];
+    document.getElementById("fpEmailDisp").textContent=email;
+    authShowStep(4);
+    for(var i=0;i<6;i++)document.getElementById("fp"+i).value="";
+    sendOTPEmail(email,nm,_fpCode,function(ok){
+      document.getElementById("fpDemoHint").style.display=ok?"none":"block";
+      setTimeout(function(){document.getElementById("fp0").focus();},300);
+    });
+  }
+  // تحقق سحابي من وجود الحساب
+  if(window.TahadiDB&&TahadiDB.getPassHash){
+    TahadiDB.getPassHash(email).then(function(h){
+      var local=getUsers()[email];
+      if(h||local){proceed();}
+      else{err.textContent="❌ لا يوجد حساب بهذا البريد";err.style.display="block";}
+    }).catch(function(){
+      if(getUsers()[email])proceed();
+      else{err.textContent="❌ لا يوجد حساب بهذا البريد";err.style.display="block";}
+    });
+  } else {
+    if(getUsers()[email])proceed();
+    else{err.textContent="❌ لا يوجد حساب بهذا البريد";err.style.display="block";}
+  }
+}
+function fpIn(i){var el=document.getElementById("fp"+i);if(el.value&&i<5)document.getElementById("fp"+(i+1)).focus();}
+function fpKey(i,e){if(e.key==="Backspace"&&!document.getElementById("fp"+i).value&&i>0)document.getElementById("fp"+(i-1)).focus();}
+function fpVerify(){
+  var code="";for(var i=0;i<6;i++)code+=document.getElementById("fp"+i).value;
+  var err=document.getElementById("authS4Err");err.style.display="none";
+  if(code.length!==6){err.textContent="❗ أدخل الرمز كاملاً";err.style.display="block";return;}
+  if(code!==_fpCode){err.textContent="❌ رمز غير صحيح";err.style.display="block";return;}
+  authShowStep(5);
+  setTimeout(function(){document.getElementById("fpNewPass").focus();},300);
+}
+function fpSetNew(){
+  var p1=document.getElementById("fpNewPass").value;
+  var p2=document.getElementById("fpNewPass2").value;
+  var err=document.getElementById("authS5Err");err.style.display="none";
+  if(p1.length<6){err.textContent="❗ كلمة المرور 6 أحرف على الأقل";err.style.display="block";return;}
+  if(p1!==p2){err.textContent="❌ كلمتا المرور غير متطابقتين";err.style.display="block";return;}
+  var newHash=hashPass(p1);
+  // حدّث البصمة محلياً وسحابياً
+  var users=getUsers();
+  var uid="u_"+btoa(_fpEmail).replace(/[^a-zA-Z0-9]/g,"").slice(0,16);
+  var existing=users[_fpEmail];
+  var user=existing||{name:_fpEmail.split("@")[0],email:_fpEmail,phone:"",uid:uid};
+  user.pass=newHash;users[_fpEmail]=user;saveUsers(users);
+  function finish(){
+    ntf("✅ تم تغيير كلمة المرور","#00E676");
+    document.getElementById("authWelcome").textContent="أهلاً "+user.name+" 🎉";
+    authShowStep(3);
+    loginUser(user,true);
+  }
+  if(window.TahadiDB&&TahadiDB.savePassHash){
+    TahadiDB.savePassHash(_fpEmail,newHash).then(finish).catch(finish);
+  } else finish();
 }
 
 /* قاعدة المستخدمين المحلية + Firebase */
@@ -1720,6 +1789,9 @@ function openContact(){document.getElementById("contactModal").classList.add("on
       </div>
       <div id="authS1Err" style="color:var(--red);font-size:.78rem;margin-bottom:.5rem;display:none"></div>
       <button class="btn-p full" id="authSubmitBtn" onclick="authSubmit()">دخول / تسجيل →</button>
+      <div style="text-align:center;margin-top:.55rem">
+        <button onclick="startForgot()" style="background:none;border:none;color:var(--cyan);font-size:.76rem;cursor:pointer;font-family:'Tajawal',sans-serif;text-decoration:underline">نسيت كلمة المرور؟</button>
+      </div>
       <button class="btn-s full" onclick="closeM('authModal')" style="margin-top:.5rem">إلغاء</button>
     </div>
 
@@ -1759,6 +1831,46 @@ function openContact(){document.getElementById("contactModal").classList.add("on
       <div style="font-family:'Cairo',sans-serif;font-size:1.15rem;font-weight:900;color:var(--green)">تم بنجاح!</div>
       <div style="font-size:.8rem;color:var(--dim);margin:.4rem 0 1rem" id="authWelcome"></div>
       <button class="btn-p" onclick="closeM('authModal')" style="max-width:180px;margin:0 auto">ابدأ ⚡</button>
+    </div>
+
+    <!-- Step 4: رمز استعادة كلمة المرور -->
+    <div id="authS4" style="display:none">
+      <div class="mt_">🔑 استعادة كلمة المرور</div>
+      <p style="text-align:center;font-size:.8rem;color:var(--dim);margin-bottom:.9rem">
+        أرسلنا رمزاً إلى<br><strong id="fpEmailDisp" style="color:var(--text)"></strong>
+      </p>
+      <div class="otp-grid">
+        <input class="otp-cell" type="tel" maxlength="1" id="fp0" oninput="fpIn(0)" onkeydown="fpKey(0,event)">
+        <input class="otp-cell" type="tel" maxlength="1" id="fp1" oninput="fpIn(1)" onkeydown="fpKey(1,event)">
+        <input class="otp-cell" type="tel" maxlength="1" id="fp2" oninput="fpIn(2)" onkeydown="fpKey(2,event)">
+        <input class="otp-cell" type="tel" maxlength="1" id="fp3" oninput="fpIn(3)" onkeydown="fpKey(3,event)">
+        <input class="otp-cell" type="tel" maxlength="1" id="fp4" oninput="fpIn(4)" onkeydown="fpKey(4,event)">
+        <input class="otp-cell" type="tel" maxlength="1" id="fp5" oninput="fpIn(5)" onkeydown="fpKey(5,event)">
+      </div>
+      <div id="fpDemoHint" style="background:rgba(255,208,70,.08);border:1px solid rgba(255,208,70,.2);border-radius:8px;padding:.45rem .75rem;font-size:.74rem;color:var(--gold);margin:.5rem 0;display:none">
+        💡 إذا لم يصل الرمز استخدم: <strong>123456</strong>
+      </div>
+      <div id="authS4Err" style="color:var(--red);font-size:.78rem;margin-bottom:.5rem;display:none"></div>
+      <button class="btn-p full" onclick="fpVerify()">تأكيد الرمز →</button>
+      <button class="btn-s full" onclick="authShowStep(1)" style="margin-top:.5rem">← رجوع</button>
+    </div>
+
+    <!-- Step 5: كلمة مرور جديدة -->
+    <div id="authS5" style="display:none">
+      <div class="mt_">🔐 كلمة مرور جديدة</div>
+      <p style="text-align:center;font-size:.78rem;color:var(--dim);margin-bottom:.85rem">اختر كلمة مرور جديدة لحسابك</p>
+      <div class="fg">
+        <label>كلمة المرور الجديدة *</label>
+        <input type="password" id="fpNewPass" class="inp" placeholder="6 أحرف على الأقل"
+          onkeydown="if(event.key==='Enter')fpSetNew()">
+      </div>
+      <div class="fg">
+        <label>تأكيد كلمة المرور *</label>
+        <input type="password" id="fpNewPass2" class="inp" placeholder="أعد كتابتها"
+          onkeydown="if(event.key==='Enter')fpSetNew()">
+      </div>
+      <div id="authS5Err" style="color:var(--red);font-size:.78rem;margin-bottom:.5rem;display:none"></div>
+      <button class="btn-p full" onclick="fpSetNew()">حفظ والدخول →</button>
     </div>
 
   </div>
