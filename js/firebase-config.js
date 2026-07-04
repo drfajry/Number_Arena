@@ -99,6 +99,21 @@ const FIREBASE_CONFIG = {
         .then(function(s){ return s.val(); });
     },
 
+    /* ── تعديل بيانات مستخدم من لوحة التحكم ── */
+    adminUpdateUser: function(uid, fields){
+      var updates={updatedAt:new Date().toISOString()};
+      if(fields.name!==undefined)  updates.name=fields.name;
+      if(fields.email!==undefined) updates.email=fields.email;
+      if(fields.phone!==undefined) updates.phone=fields.phone;
+      return rtdb.ref("users/"+uid+"/profile").update(updates);
+    },
+    // إعادة تعيين كلمة المرور: يحفظ بصمتها (نفس آلية تسجيل الدخول)
+    adminResetPassword: function(uid, hash){
+      return rtdb.ref("users/"+uid+"/auth").update({
+        passHash: hash, updatedAt:new Date().toISOString()
+      });
+    },
+
     /* ── اشتراكات ── */
     saveSubscription: function(sub){
       sub.createdAt = sub.createdAt || new Date().toISOString();
