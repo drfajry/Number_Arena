@@ -554,7 +554,49 @@ function renderUsersTable(users,q){
     var now=new Date();
     var sub=data.subscriptions.filter(function(s){return (s.phone===u.phone||s.uid===u.uid)&&new Date(s.expiresAt)>now;}).pop();
     var planBadge=sub?"<span class=\"badge badge-"+(sub.plan.startsWith("elite")?"elite":"pro")+"\">"+sub.plan+"</span>":"<span class=\"badge badge-free\">مجاني</span>";
-    tbody.innerHTML+="<tr><td>"+u.name+"</td><td dir=\"ltr\">"+u.phone+"</td><td>"+planBadge+"</td><td>"+fmtDate(u.createdAt)+"</td><td><button class=\"btn-danger\" onclick=\"deleteUser(\'"+u.id+"\')\">حذف</button></td></tr>";
+    var uid=u.uid||u.id||"";
+    _userCache[uid]={uid:uid,name:u.name||"",email:u.email||"",phone:u.phone||""};
+    tbody.innerHTML+="<tr><td>"+(u.name||"—")+"</td><td dir=\"ltr\">"+(u.phone||"—")+"</td><td>"+planBadge+"</td><td>"+fmtDate(u.createdAt)+"</td><td><button class=\"btn-primary\" style=\"padding:.3rem .7rem;font-size:.72rem;margin-left:4px\" onclick=\"openEditUser('"+uid+"')\">✏️ تعديل</button><button class=\"btn-danger\" style=\"padding:.3rem .7rem;font-size:.72rem\" onclick=\"deleteUser('"+(u.id||uid)+"')\">حذف</button></td></tr>";
+  });
+}
+
+var _userCache={};
+// نفس دالة التشفير في index.html — ضروري ليطابق تسجيل الدخول
+function hashPass(p){
+  var h=0;for(var i=0;i<p.length;i++){h=((h<<5)-h+p.charCodeAt(i))|0;}
+  return String(h);
+}
+function openEditUser(uid){
+  var u=_userCache[uid];if(!u){ntf("تعذّر جلب المستخدم","#FF3D5A");return;}
+  document.getElementById("euUid").value=u.uid;
+  document.getElementById("euName").value=u.name;
+  document.getElementById("euEmail").value=u.email;
+  document.getElementById("euPhone").value=u.phone;
+  document.getElementById("euPass").value="";
+  document.getElementById("editUserModal").style.display="flex";
+}
+function closeEditUser(){document.getElementById("editUserModal").style.display="none";}
+function saveEditUser(){
+  var uid=document.getElementById("euUid").value;
+  var name=document.getElementById("euName").value.trim();
+  var email=document.getElementById("euEmail").value.trim();
+  var phone=document.getElementById("euPhone").value.trim();
+  var newPass=document.getElementById("euPass").value;
+  if(!window.TahadiDB){ntf("Firebase غير متصل","#FF3D5A");return;}
+  var btn=document.getElementById("euSaveBtn");btn.disabled=true;btn.textContent="جارٍ الحفظ...";
+  var tasks=[TahadiDB.adminUpdateUser(uid,{name:name,email:email,phone:phone})];
+  if(newPass){
+    if(newPass.length<4){ntf("كلمة المرور 4 أحرف على الأقل","#FF3D5A");btn.disabled=false;btn.textContent="💾 حفظ التعديلات";return;}
+    tasks.push(TahadiDB.adminResetPassword(uid,hashPass(newPass)));
+  }
+  Promise.all(tasks).then(function(){
+    btn.disabled=false;btn.textContent="💾 حفظ التعديلات";
+    closeEditUser();ntf("✅ تم حفظ التعديلات"+(newPass?" وكلمة المرور":""),"#00E676");
+    if(_userCache[uid]){_userCache[uid].name=name;_userCache[uid].email=email;_userCache[uid].phone=phone;}
+    renderUsers();
+  }).catch(function(e){
+    btn.disabled=false;btn.textContent="💾 حفظ التعديلات";
+    ntf("❌ فشل الحفظ: "+(e&&e.message||"خطأ"),"#FF3D5A");
   });
 }
 
@@ -1113,5 +1155,19 @@ function dedupData(){
   </div>
 </div>
 
+<div id="editUserModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#0b1230;border:1px solid var(--border);border-radius:16px;padding:1.5rem;max-width:420px;width:100%;max-height:90vh;overflow:auto">
+    <h3 style="margin:0 0 1rem;color:var(--cyan)">✏️ تعديل بيانات المستخدم</h3>
+    <input type="hidden" id="euUid">
+    <div style="margin-bottom:.8rem"><label style="font-size:.8rem;color:#9fb3d1">الاسم</label><input id="euName" class="inp" style="width:100%" placeholder="اسم المستخدم"></div>
+    <div style="margin-bottom:.8rem"><label style="font-size:.8rem;color:#9fb3d1">البريد الإلكتروني</label><input id="euEmail" class="inp" style="width:100%" dir="ltr" placeholder="email@example.com"></div>
+    <div style="margin-bottom:.8rem"><label style="font-size:.8rem;color:#9fb3d1">الجوال</label><input id="euPhone" class="inp" style="width:100%" dir="ltr" placeholder="9665xxxxxxxx"></div>
+    <div style="margin-bottom:1rem"><label style="font-size:.8rem;color:#FFD046">كلمة مرور جديدة (اترُكها فارغة لعدم التغيير)</label><input id="euPass" class="inp" style="width:100%" dir="ltr" placeholder="كلمة مرور جديدة عند فقدها"></div>
+    <div style="display:flex;gap:.6rem">
+      <button id="euSaveBtn" class="btn-primary" style="flex:1" onclick="saveEditUser()">💾 حفظ التعديلات</button>
+      <button class="btn-danger" style="flex:0 0 auto" onclick="closeEditUser()">إلغاء</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
