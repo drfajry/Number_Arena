@@ -792,6 +792,7 @@ async function doCreate(){
       await fbDB.ref("publicRooms/"+code).set({
         code:code, host:name, tc:tc, players:1, createdAt:Date.now()
       }).catch(function(){});
+      try{fbDB.ref("publicRooms/"+code).onDisconnect().remove();}catch(e){}
     }
   }
   else{
@@ -863,7 +864,7 @@ function closeQuickMatch(){
 async function _qmTryOnce(name){
   const snap=await fbDB.ref("publicRooms").get();
   const all=snap.val()||{};
-  const now=Date.now(), MAXAGE=30*60*1000;
+  const now=Date.now(), MAXAGE=10*60*1000; // 10 دقائق (كانت 30 — تقصير يقلل الغرف الميتة)
   let list=Object.values(all)
     .filter(r=>r&&r.code&&(now-(r.createdAt||0))<MAXAGE&&(r.players||1)<(r.tc||4))
     .sort((a,b)=>(b.players-a.players)||(b.createdAt-a.createdAt));
@@ -872,7 +873,9 @@ async function _qmTryOnce(name){
     if(!_qmActive)return null;
     const rs=await fbDB.ref("rooms/"+cand.code).get();
     const room=rs.val();
-    if(!room||room.status!=="waiting"||room.teams.length>=room.tc){
+    // تحقق صارم: الغرفة موجودة فعلاً + في الانتظار + فيها مقعد + لها فرق حقيقية
+    if(!room||room.status!=="waiting"||!room.teams||room.teams.length>=room.tc||room.teams.length<1){
+      // غرفة ميتة → احذفها من اللوبي فوراً
       fbDB.ref("publicRooms/"+cand.code).remove().catch(function(){});
       continue;
     }
@@ -913,6 +916,11 @@ async function doQuickMatch(){
     if(!fbDB){throw new Error("no fb");}
     await fbDB.ref("rooms/"+myCode).set(room);
     await fbDB.ref("publicRooms/"+myCode).set({code:myCode,host:name,tc:2,players:1,createdAt:Date.now()});
+    // تنظيف تلقائي: إن انقطع صاحب الغرفة (أغلق/خرج)، تُحذف الغرفة فوراً من اللوبي والغرف
+    try{
+      fbDB.ref("publicRooms/"+myCode).onDisconnect().remove();
+      fbDB.ref("rooms/"+myCode).onDisconnect().remove();
+    }catch(e){}
     localStorage.setItem("tahadi_my_id",room.teams[0].id);
     localStorage.setItem("tahadi_is_host","1");
 
@@ -1409,8 +1417,30 @@ function authVerify(){
 
 function loginUser(user,skipStep){
   var uid=user.uid;
+  var sessionId="s_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
   localStorage.setItem("tahadi_token","tok_"+Date.now());
+  localStorage.setItem("tahadi_session",sessionId);
   localStorage.setItem("tahadi_user",JSON.stringify({name:user.name,email:user.email,phone:"",uid:uid}));
+
+  // جلسة واحدة نشطة لكل حساب: اكتب معرّف الجلسة، وراقبه — إن دخل جهاز آخر، اخرج من هنا
+  if(window.TahadiDB&&TahadiDB.emailToUid){
+    try{
+      var sref=firebase.database().ref("users/"+uid+"/activeSession");
+      sref.set(sessionId).catch(function(){});
+      sref.on("value",function(s){
+        var cur=s.val();
+        if(cur&&cur!==localStorage.getItem("tahadi_session")){
+          // جهاز آخر سجّل الدخول بنفس الحساب
+          sref.off();
+          localStorage.removeItem("tahadi_token");
+          localStorage.removeItem("tahadi_pro");
+          localStorage.removeItem("tahadi_elite");
+          alert("⚠️ تم تسجيل الدخول بهذا الحساب من جهاز آخر.\nتم إنهاء الجلسة على هذا الجهاز.");
+          location.reload();
+        }
+      });
+    }catch(e){}
+  }
 
   // استكمال الانضمام لغرفة معلّقة (وصل برابط قبل تسجيل الدخول)
   function resumePendingRoom(){
