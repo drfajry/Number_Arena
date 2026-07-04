@@ -701,14 +701,46 @@ try{if(typeof firebase!=="undefined"&&firebase.apps.length)fbDB=firebase.databas
 
 (function(){
   const p=new URLSearchParams(location.search);
-  if(p.get("room")){openJoin();document.getElementById("jCode").value=p.get("room").toUpperCase();}
+  if(p.get("room")){
+    var _rc=p.get("room").toUpperCase();
+    if(onlineGate()){
+      openJoinDirect();document.getElementById("jCode").value=_rc;
+    } else {
+      // احفظ الرمز — يُستكمل الانضمام تلقائياً بعد تسجيل الدخول
+      sessionStorage.setItem("tahadi_pending_room",_rc);
+    }
+  }
   buildCpk("cCpk","c");buildCpk("jCpk","j");buildOff();
 })();
 
 function goSec(id){document.getElementById(id)?.scrollIntoView({behavior:"smooth"});}
 function closeM(id){document.getElementById(id).classList.remove("on");}
-function openCreate(){document.getElementById("createMo").classList.add("on");setTimeout(()=>document.getElementById("cName").focus(),300);}
-function openJoin(){document.getElementById("joinMo").classList.add("on");}
+/* ── بوابة الأونلاين: تسجيل دخول + اشتراك (Pro أو Elite) ── */
+function onlineGate(){
+  var token=localStorage.getItem("tahadi_token");
+  if(!token){
+    ntf("🔐 سجّل دخولك أولاً للعب أونلاين","#FFD046");
+    if(typeof showAuthModal==="function")setTimeout(showAuthModal,400);
+    return false;
+  }
+  var isPro=localStorage.getItem("tahadi_pro")==="1";
+  var isElite=localStorage.getItem("tahadi_elite")==="1";
+  if(!isPro&&!isElite){
+    if(window.IS_APP){
+      // داخل التطبيق: رسالة محايدة بلا أي توجيه للشراء (سياسة Google Play)
+      ntf("اللعب الأونلاين غير متاح في حسابك الحالي","#FFD046");
+    } else {
+      ntf("⭐ اللعب الأونلاين ميزة لأصحاب الباقات — اختر باقتك","#FFD046");
+      setTimeout(function(){goSec("pricing");},600);
+    }
+    return false;
+  }
+  return true;
+}
+
+function openCreate(){if(!onlineGate())return;document.getElementById("createMo").classList.add("on");setTimeout(()=>document.getElementById("cName").focus(),300);}
+function openJoin(){if(!onlineGate())return;document.getElementById("joinMo").classList.add("on");}
+function openJoinDirect(){document.getElementById("joinMo").classList.add("on");}
 function openOffline(){buildOff();document.getElementById("offMo").classList.add("on");}
 document.querySelectorAll(".mo").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("on");}));
 
@@ -811,6 +843,7 @@ async function doJoin(){
 var _qmActive=false; // علم إيقاف البحث عند الإغلاق/الإلغاء
 
 function openQuickMatch(){
+  if(!onlineGate())return;
   if(!fbDB){ntf("البحث الأونلاين يتطلب اتصالاً بالإنترنت","#FF3D5A");return;}
   _qmActive=false;
   document.getElementById("qmErr").style.display="none";
@@ -1322,6 +1355,20 @@ function loginUser(user,skipStep){
   var uid=user.uid;
   localStorage.setItem("tahadi_token","tok_"+Date.now());
   localStorage.setItem("tahadi_user",JSON.stringify({name:user.name,email:user.email,phone:"",uid:uid}));
+
+  // استكمال الانضمام لغرفة معلّقة (وصل برابط قبل تسجيل الدخول)
+  function resumePendingRoom(){
+    var pr=sessionStorage.getItem("tahadi_pending_room");
+    if(!pr)return;
+    sessionStorage.removeItem("tahadi_pending_room");
+    setTimeout(function(){
+      if(onlineGate()){
+        openJoinDirect();
+        document.getElementById("jCode").value=pr;
+      }
+    },800);
+  }
+
   // Firebase
   if(window.TahadiDB){
     TahadiDB.saveUser({name:user.name,email:user.email,uid:uid}).then(function(){
@@ -1331,8 +1378,11 @@ function loginUser(user,skipStep){
           if(plan.plan.indexOf("elite")>-1)localStorage.setItem("tahadi_elite","1");
           renderUserBar();
         }
-      }).catch(function(){});
-    }).catch(function(){});
+        resumePendingRoom(); // بعد مزامنة الباقة — حتى تمر البوابة للمشتركين
+      }).catch(function(){resumePendingRoom();});
+    }).catch(function(){resumePendingRoom();});
+  } else {
+    resumePendingRoom();
   }
   if(window.Affiliate){try{Affiliate.attachReferralOnSignup(uid).catch(function(){});}catch(e){}}
   renderUserBar();
