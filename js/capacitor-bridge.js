@@ -62,12 +62,14 @@
     var KEYS = ["tahadi_token","tahadi_user","tahadi_users","tahadi_pro","tahadi_elite"];
 
     function backup(){
+      if(window._forceLoggedOut) return; // خروج قسري — لا نسخ
       KEYS.forEach(function(k){
         var v = localStorage.getItem(k);
         if(v) Prefs.set({key:k, value:v}).catch(function(){});
       });
     }
     function restore(){
+      if(window._forceLoggedOut) return; // خروج قسري — لا استعادة
       var restored = false, pending = KEYS.length;
       KEYS.forEach(function(k){
         if(localStorage.getItem(k)){ if(--pending===0) done(); return; }
