@@ -3208,7 +3208,7 @@ function updateUI(prev){
     if(!document.getElementById("game").classList.contains("on")){ss("game");initGame();}
     else{
       updH();rBar();
-      if(G.phase==="sel"){rBoard();showBoard();stopT();resetTUI();document.getElementById("tscore").textContent="";rBanner();}
+      if(G.phase==="sel"){rBoard();showBoard();stopT();resetTUI();document.getElementById("tscore").textContent="";rBanner();startSelT();}
       else if(G.phase==="ans"){
         // لاعب غير حالي: اعرض السؤال والمؤقت (كان يبقى على اللوحة بلا وقت)
         if(!iM()&&G.cc&&G.cq){
@@ -3285,6 +3285,42 @@ function initGame(){
   document.getElementById("dblChip").style.display="none";
   dblPts=false;stealPending=false;
   stopT();resetTUI();rBanner();
+  if(G.phase==="sel")startSelT();
+}
+
+/* ── مؤقت اختيار الخلية: يمنع تعطّل اللعبة لو لم يختر اللاعب رقماً ── */
+var selIv=null, SEL_TS=20;
+function stopSelT(){clearInterval(selIv);selIv=null;var b=document.getElementById("selTimer");if(b)b.style.display="none";}
+function startSelT(){
+  stopSelT();
+  if(isOff)return; // الوضع المحلي لا يحتاجه
+  // موعد مشترك لاختيار الخلية (يكتبه اللاعب الحالي)
+  if(iM()&&G&&G.phase==="sel"&&!G.selDeadline){G.selDeadline=Date.now()+SEL_TS*1000;saveState();}
+  var b=document.getElementById("selTimer");
+  if(!b){
+    b=document.createElement("div");b.id="selTimer";
+    b.style.cssText="position:fixed;top:64px;left:50%;transform:translateX(-50%);background:rgba(255,61,90,.15);border:1px solid #FF3D5A;color:#FF7090;font-weight:900;font-size:.8rem;padding:.3rem .9rem;border-radius:20px;z-index:50;display:none";
+    document.body.appendChild(b);
+  }
+  selIv=setInterval(function(){
+    if(!G||G.phase!=="sel"){stopSelT();return;}
+    var left=G.selDeadline?Math.max(0,Math.ceil((G.selDeadline-Date.now())/1000)):SEL_TS;
+    b.style.display="block";
+    b.textContent=(iM()?"⏱️ اختر رقماً خلال ":"⏱️ بانتظار الاختيار ")+left+" ث";
+    if(left<=0){
+      stopSelT();
+      // اللاعب الحالي فقط ينفّذ الاختيار التلقائي (يمنع الازدواج)
+      if(iM())autoPickCell();
+    }
+  },500);
+}
+function autoPickCell(){
+  if(!G||G.phase!=="sel")return;
+  var avail=[];G.board.forEach(function(c,i){if(!c.used)avail.push(i);});
+  if(!avail.length)return;
+  var pick=avail[Math.floor(Math.random()*avail.length)];
+  ntf("⏱️ انتهى وقت الاختيار — اختيار تلقائي","#FFD046");
+  selCell(pick);
 }
 
 function showBoard(){
@@ -3375,7 +3411,7 @@ function selCell(i){
     G._roomState.frozenTeams[ct().id]--;
     // Move to next TEAM only, don't increment question counter
     G.ci=(G.ci+1)%G.teams.length;
-    G.phase="sel";G.cc=null;G.cq=null;G.answerDeadline=null;
+    G.phase="sel";G.cc=null;G.cq=null;G.answerDeadline=null;G.selDeadline=null;
     saveState();updH();rBar();rBoard();showBoard();rBanner();
     setTimeout(function(){
       ntf("دور: "+ct().name,COLORS[ct().color].h);
@@ -3383,6 +3419,7 @@ function selCell(i){
     return;
   }
   var cell=G.board[i];if(!cell||cell.used)return;
+  stopSelT();G.selDeadline=null;
   SFX.click();
   G.cc=cell;G.phase="ans";G.cq=G.qs[G.qi];
   saveState();rBoard();
@@ -3522,7 +3559,12 @@ function doSubmit(letter){
     // Show steal banner if steal lifeline was active (always show for opposing teams)
     showStealBanner();
   }
-  if(G.cc){G.cc.used=true;G.cc.by=ct().color;}
+  if(G.cc){
+    // علّم الخلية على اللوحة نفسها بالفهرس (G.cc قد يكون نسخة منفصلة بعد تزامن Firebase)
+    var _bi=(typeof G.cc.i==="number")?G.cc.i:G.board.findIndex(function(c){return c.n===G.cc.n;});
+    if(_bi>-1&&G.board[_bi]){G.board[_bi].used=true;G.board[_bi].by=ct().color;}
+    G.cc.used=true;G.cc.by=ct().color;
+  }
   saveState();
   if(!ok&&stealPending){
     // Handled by steal banner
@@ -3654,7 +3696,7 @@ function nextT(){
   if(G.qi>=TOT){endGame();return;}
   G.ci=(G.ci+1)%G.teams.length;
   G.phase="sel";G.cc=null;G.cq=null;yqPend=false;stealPending=false;
-  G.answerDeadline=null;
+  G.answerDeadline=null;G.selDeadline=null;
   dblPts=false;frozen=false;
   document.getElementById("fchip").style.display="none";
   document.getElementById("dblChip").style.display="none";
@@ -3922,7 +3964,7 @@ function closeYov(){document.getElementById("yov").classList.remove("on");}
    END GAME
 ════════════════════════════════════════ */
 function endGame(){
-  G.status="finished";stopT();clearInterval(pollIv);saveState();SFX.end();
+  G.status="finished";stopT();stopSelT();clearInterval(pollIv);saveState();SFX.end();
   if(fbDB)fbDB.ref("publicRooms/"+G.code).remove().catch(function(){});
   var sorted=[...G.teams].sort(function(a,b){return b.points-a.points;});
   ss("results");
