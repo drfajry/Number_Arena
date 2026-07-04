@@ -3186,7 +3186,18 @@ function initRoomState(){
   });
 }
 
+function _diag(msg){
+  var d=document.getElementById("_diagBox");
+  if(!d){
+    d=document.createElement("div");d.id="_diagBox";
+    d.style.cssText="position:fixed;bottom:0;left:0;right:0;max-height:32vh;overflow:auto;background:rgba(0,0,0,.88);color:#0f0;font:10px monospace;padding:4px 6px;z-index:99999;direction:ltr;white-space:pre-wrap;border-top:1px solid #0f0";
+    document.body.appendChild(d);
+  }
+  var t=new Date().toLocaleTimeString();
+  d.textContent=("["+t+"] "+msg+"\n"+d.textContent).slice(0,2000);
+}
 function updateUI(prev){
+  if(G){_diag("UI status="+G.status+" phase="+G.phase+" ci="+G.ci+" qi="+G.qi+" myId="+(myId||"?").slice(-4)+" isMine="+(G.teams&&G.teams[G.ci]?(G.teams[G.ci].id===myId):"?")+" teams="+(G.teams?G.teams.length:0)+" deadline="+(G.answerDeadline?"Y":"N"));}
   if(!G)return;
   initRoomState();
   var changed=!prev||prev.s!==G.status||prev.qi!==G.qi||prev.ci!==G.ci||prev.ph!==G.phase;
