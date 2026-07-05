@@ -178,6 +178,7 @@ select.inp option{background:#0C1440;}
   <div id="pg-users" class="page">
     <div class="search-bar">
       <input class="search-inp" id="userSearch" placeholder="🔍 بحث بالاسم أو الجوال..." oninput="renderUsers()">
+      <button class="btn-primary" style="padding:.5rem 1rem;font-size:.75rem;white-space:nowrap" onclick="backfillDates()">📅 تعبئة التواريخ الناقصة</button>
     </div>
     <div class="table-wrap">
       <table class="tbl">
@@ -556,6 +557,28 @@ function renderUsers(){
 }
 
 var _usersRaw=[], _sortKey="createdAt", _sortDir=-1;
+
+// تعبئة تاريخ التسجيل الناقص للمستخدمين القدامى (قبل إضافة هذه الميزة)
+// تقريبي فقط: يستخدم آخر تحديث (updatedAt) إن وُجد، وإلا تاريخ اليوم — موضّح للأدمن بوضوح
+async function backfillDates(){
+  if(!window.TahadiDB||!window.firebase){ntf("Firebase غير متصل","#FF3D5A");return;}
+  if(!confirm("سيتم تعبئة تاريخ التسجيل للمستخدمين الذين لا يملكون تاريخاً محفوظاً، بأقرب تقدير متاح (تاريخ تقريبي وليس دقيقاً بالضرورة لأنه لم يُحفظ أصلاً وقت تسجيلهم). هل تريد الاستمرار؟"))return;
+  var snap=await firebase.database().ref("users").once("value");
+  var updates={}, count=0;
+  snap.forEach(function(c){
+    var v=c.val();
+    if(v&&v.profile&&!v.profile.createdAt){
+      var approx=v.profile.updatedAt||new Date().toISOString();
+      updates["users/"+c.key+"/profile/createdAt"]=approx;
+      count++;
+    }
+  });
+  if(!count){ntf("لا توجد تواريخ ناقصة — الكل محدّث","#00E676");return;}
+  await firebase.database().ref().update(updates);
+  ntf("✅ تم تعبئة "+count+" تاريخاً تقريبياً","#00E676");
+  renderUsers();
+}
+
 function applySortFilter(users,q){
   var filtered=q?users.filter(function(u){
     return (u.name||"").toLowerCase().indexOf(q)>-1 || (u.phone||"").indexOf(q)>-1 || (u.email||"").toLowerCase().indexOf(q)>-1;
