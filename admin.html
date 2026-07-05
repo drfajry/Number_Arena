@@ -181,7 +181,12 @@ select.inp option{background:#0C1440;}
     </div>
     <div class="table-wrap">
       <table class="tbl">
-        <thead><tr><th>الاسم</th><th>البريد</th><th>الخطة</th><th>تاريخ التسجيل</th><th>إجراء</th></tr></thead>
+        <thead><tr>
+          <th style="cursor:pointer" onclick="sortUsers('name')">الاسم <span id="sortName"></span></th>
+          <th>البريد</th><th>الجوال</th><th>الخطة</th>
+          <th style="cursor:pointer" onclick="sortUsers('createdAt')">تاريخ التسجيل <span id="sortDate"></span></th>
+          <th>إجراء</th>
+        </tr></thead>
         <tbody id="usersTable"></tbody>
       </table>
     </div>
@@ -531,32 +536,57 @@ function renderUsers(){
   // Try TahadiDB (Firebase) first
   if(window.TahadiDB){
     TahadiDB.getAllUsers().then(function(fbUsers){
-      // Merge with localStorage users
+      // Merge with localStorage users (تجنّب ازدواج نفس المستخدم بين المصدرين)
       var localData=db();
       var merged=fbUsers.slice();
       localData.users.forEach(function(u){
         if(!merged.find(function(x){return x.uid===u.id||x.email===u.email;}))
           merged.push(u);
       });
-      renderUsersTable(merged,q);
+      _usersRaw=merged;
+      renderUsersTable(applySortFilter(merged,q),q);
     }).catch(function(){
-      renderUsersTable(db().users,q);
+      _usersRaw=db().users;
+      renderUsersTable(applySortFilter(db().users,q),q);
     });
     return;
   }
-  renderUsersTable(db().users,q);
+  _usersRaw=db().users;
+  renderUsersTable(applySortFilter(db().users,q),q);
 }
+
+var _usersRaw=[], _sortKey="createdAt", _sortDir=-1;
+function applySortFilter(users,q){
+  var filtered=q?users.filter(function(u){
+    return (u.name||"").toLowerCase().indexOf(q)>-1 || (u.phone||"").indexOf(q)>-1 || (u.email||"").toLowerCase().indexOf(q)>-1;
+  }):users.slice();
+  filtered.sort(function(a,b){
+    var av=(a[_sortKey]||""), bv=(b[_sortKey]||"");
+    if(_sortKey==="createdAt"){av=new Date(av||0).getTime()||0;bv=new Date(bv||0).getTime()||0;}
+    else{av=String(av).toLowerCase();bv=String(bv).toLowerCase();}
+    return av<bv?-_sortDir:(av>bv?_sortDir:0);
+  });
+  return filtered;
+}
+function sortUsers(key){
+  if(_sortKey===key)_sortDir=-_sortDir; else {_sortKey=key;_sortDir=key==="createdAt"?-1:1;}
+  document.getElementById("sortName").textContent=_sortKey==="name"?(_sortDir===1?"▲":"▼"):"";
+  document.getElementById("sortDate").textContent=_sortKey==="createdAt"?(_sortDir===1?"▲":"▼"):"";
+  var q=(document.getElementById("userSearch").value||"").toLowerCase();
+  renderUsersTable(applySortFilter(_usersRaw,q),q);
+}
+
 function renderUsersTable(users,q){
   var data=db();
   var tbody=document.getElementById("usersTable");tbody.innerHTML="";
-  if(!users.length){tbody.innerHTML="<tr><td colspan=\"5\" class=\"empty-state\">لا يوجد مستخدمون</td></tr>";return;}
+  if(!users.length){tbody.innerHTML="<tr><td colspan=\"6\" class=\"empty-state\">لا يوجد مستخدمون</td></tr>";return;}
   users.forEach(function(u){
     var now=new Date();
     var sub=data.subscriptions.filter(function(s){return (s.phone===u.phone||s.uid===u.uid)&&new Date(s.expiresAt)>now;}).pop();
     var planBadge=sub?"<span class=\"badge badge-"+(sub.plan.startsWith("elite")?"elite":"pro")+"\">"+sub.plan+"</span>":"<span class=\"badge badge-free\">مجاني</span>";
     var uid=u.uid||u.id||"";
     _userCache[uid]={uid:uid,name:u.name||"",email:u.email||"",phone:u.phone||""};
-    tbody.innerHTML+="<tr><td>"+(u.name||"—")+"</td><td dir=\"ltr\">"+(u.phone||"—")+"</td><td>"+planBadge+"</td><td>"+fmtDate(u.createdAt)+"</td><td><button class=\"btn-primary\" style=\"padding:.3rem .7rem;font-size:.72rem;margin-left:4px\" onclick=\"openEditUser('"+uid+"')\">✏️ تعديل</button><button class=\"btn-danger\" style=\"padding:.3rem .7rem;font-size:.72rem\" onclick=\"deleteUser('"+(u.id||uid)+"')\">حذف</button></td></tr>";
+    tbody.innerHTML+="<tr><td>"+(u.name||"—")+"</td><td dir=\"ltr\">"+(u.email||"—")+"</td><td dir=\"ltr\">"+(u.phone||"—")+"</td><td>"+planBadge+"</td><td>"+fmtDate(u.createdAt)+"</td><td><button class=\"btn-primary\" style=\"padding:.3rem .7rem;font-size:.72rem;margin-left:4px\" onclick=\"openEditUser('"+uid+"')\">✏️ تعديل</button><button class=\"btn-danger\" style=\"padding:.3rem .7rem;font-size:.72rem\" onclick=\"deleteUser('"+(u.id||uid)+"','"+uid+"')\">حذف</button></td></tr>";
   });
 }
 
@@ -600,11 +630,21 @@ function saveEditUser(){
   });
 }
 
-function deleteUser(id){
+function deleteUser(id,uid){
   if(!confirm("حذف هذا المستخدم؟"))return;
   var data=db();
   data.users=data.users.filter(function(u){return u.id!==id;});
-  saveDB(data);renderUsers();ntf("تم الحذف","#FF3D5A");
+  saveDB(data);
+  // الحذف الفعلي من Firebase — بدونه يعود المستخدم فوراً لأن الجدول يُحمَّل من السحابة
+  if(window.TahadiDB&&uid&&firebase&&firebase.database){
+    firebase.database().ref("users/"+uid).remove().then(function(){
+      ntf("تم الحذف نهائياً","#FF3D5A");renderUsers();
+    }).catch(function(e){
+      ntf("❌ فشل الحذف من السحابة: "+(e&&e.message||"خطأ"),"#FF3D5A");renderUsers();
+    });
+  } else {
+    renderUsers();ntf("تم الحذف","#FF3D5A");
+  }
 }
 
 /* ── SUBSCRIPTIONS ── */
