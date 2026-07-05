@@ -85,12 +85,19 @@ const FIREBASE_CONFIG = {
       var uid = user.uid || ("u_"+(user.email||"").replace(/[^a-zA-Z0-9]/g,"").slice(0,16));
       user.uid = uid;
       localStorage.setItem("tahadi_user", JSON.stringify(user));
-      return rtdb.ref("users/"+uid+"/profile").update({
-        name:  user.name  || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        uid:   uid,
-        updatedAt: new Date().toISOString()
+      var ref=rtdb.ref("users/"+uid+"/profile");
+      return ref.once("value").then(function(s){
+        var existing=s.val();
+        var updates={
+          name:  user.name  || "",
+          email: user.email || "",
+          phone: user.phone || "",
+          uid:   uid,
+          updatedAt: new Date().toISOString()
+        };
+        // تاريخ التسجيل يُكتب مرة واحدة فقط ولا يُستبدل أبداً بعد ذلك
+        if(!existing||!existing.createdAt) updates.createdAt=new Date().toISOString();
+        return ref.update(updates);
       }).then(function(){ return uid; });
     },
 
