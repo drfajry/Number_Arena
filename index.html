@@ -345,7 +345,7 @@ select.inp option{background:#0C1440;}
 .plan-badge.free{background:rgba(160,210,255,.07);color:var(--dim);border:1px solid rgba(160,210,255,.12);}
 
 /* ── OTP AUTH MODAL ── */
-.otp-grid{display:flex;gap:.5rem;justify-content:center;margin:.7rem 0;}
+.otp-grid{display:flex;gap:.5rem;justify-content:center;margin:.7rem 0;direction:ltr;}
 .otp-cell{width:46px;height:54px;border-radius:10px;border:1.5px solid rgba(0,229,255,.22);
   background:rgba(0,229,255,.04);color:var(--text);
   font-family:"Cairo",sans-serif;font-size:1.5rem;font-weight:900;
@@ -669,6 +669,7 @@ select.inp option{background:#0C1440;}
       نبحث لك عن غرفة عامة متاحة وننضمّك إليها فوراً — بلا رمز ولا رابط
     </div>
     <div class="fg"><label>اسم فريقك</label><input type="text" id="qmName" class="inp" placeholder="اسم فريقك..." maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')doQuickMatch()"></div>
+    <div class="fg"><label>عدد الفرق المطلوب</label><select id="qmCount" class="inp"><option value="2">2 فرق</option><option value="3">3 فرق</option><option value="4">4 فرق</option></select></div>
     <div id="qmErr" class="err" style="display:none"></div>
     <button id="qmCreateBtn" class="btn-p" onclick="qmToCreate()" style="display:none;width:100%;margin-bottom:.6rem;background:linear-gradient(135deg,#A855F7,#7C3AED)">🌍 أنشئ غرفة عامة الآن</button>
     <div class="mo-btns"><button class="btn-p" id="qmBtn" onclick="doQuickMatch()">🔎 ابحث عن غرفة</button><button class="btn-s" onclick="closeQuickMatch()">إلغاء</button></div>
@@ -887,6 +888,7 @@ function openQuickMatch(){
   if(!fbDB){ntf("البحث الأونلاين يتطلب اتصالاً بالإنترنت","#FF3D5A");return;}
   _qmActive=false;
   document.getElementById("qmName").value="";
+  document.getElementById("qmCount").value="2";
   document.getElementById("qmErr").style.display="none";
   document.getElementById("qmCreateBtn").style.display="none";
   var btn=document.getElementById("qmBtn");
@@ -901,20 +903,20 @@ function closeQuickMatch(){
 }
 
 /* محاولة واحدة: افحص اللوبي وحاول الانضمام — ترجع code عند النجاح أو null */
-async function _qmTryOnce(name){
+async function _qmTryOnce(name,wantTc){
   const snap=await fbDB.ref("publicRooms").get();
   const all=snap.val()||{};
   const now=Date.now(), MAXAGE=10*60*1000; // 10 دقائق (كانت 30 — تقصير يقلل الغرف الميتة)
   let list=Object.values(all)
-    .filter(r=>r&&r.code&&(now-(r.createdAt||0))<MAXAGE&&(r.players||1)<(r.tc||4))
+    .filter(r=>r&&r.code&&(now-(r.createdAt||0))<MAXAGE&&(r.players||1)<(r.tc||4)&&(r.tc||2)===wantTc)
     .sort((a,b)=>(b.players-a.players)||(b.createdAt-a.createdAt));
   const COLORS=["red","green","yellow","cyan"];
   for(const cand of list){
     if(!_qmActive)return null;
     const rs=await fbDB.ref("rooms/"+cand.code).get();
     const room=rs.val();
-    // تحقق صارم: الغرفة موجودة فعلاً + في الانتظار + فيها مقعد + لها فرق حقيقية
-    if(!room||room.status!=="waiting"||!room.teams||room.teams.length>=room.tc||room.teams.length<1){
+    // تحقق صارم: الغرفة موجودة فعلاً + في الانتظار + فيها مقعد + لها فرق حقيقية + نفس عدد الفرق المطلوب
+    if(!room||room.status!=="waiting"||!room.teams||room.teams.length>=room.tc||room.teams.length<1||room.tc!==wantTc){
       // غرفة ميتة → احذفها من اللوبي فوراً
       fbDB.ref("publicRooms/"+cand.code).remove().catch(function(){});
       continue;
@@ -929,6 +931,7 @@ async function _qmTryOnce(name){
 
 async function doQuickMatch(){
   const name=document.getElementById("qmName").value.trim();
+  const wantTc=parseInt(document.getElementById("qmCount").value)||2;
   const err=document.getElementById("qmErr");err.style.display="none";
   document.getElementById("qmCreateBtn").style.display="none";
   if(!name){err.textContent="❗ أدخل اسم فريقك";err.style.display="block";return;}
@@ -941,25 +944,25 @@ async function doQuickMatch(){
   btn.disabled=true;
 
   try{
-    // محاولة أولى فورية: هل توجد غرفة عامة جاهزة؟
+    // محاولة أولى فورية: هل توجد غرفة عامة جاهزة بنفس عدد الفرق؟
     btn.textContent="🔎 جارٍ البحث...";
-    var code=await _qmTryOnce(name);
+    var code=await _qmTryOnce(name,wantTc);
     if(code){return _qmJoin(code,btn);}
     if(!_qmActive)return;
 
     // لا توجد غرفة → أنشئ غرفتك العامة وانتظر فيها (حتى يجدك باحث آخر)
     // هذا يحل تزاوج باحثَين: الأسرع ينشئ، والآخر يجده
     const myCode=Math.random().toString(36).slice(2,8).toUpperCase();
-    const room={code:myCode,tc:2,status:"waiting",createdAt:Date.now(),
+    const room={code:myCode,tc:wantTc,status:"waiting",createdAt:Date.now(),
       teams:[{id:"t"+Date.now(),name:name,color:"red",points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{remove:false,change:false,luck:false,audience:false,resetTime:false,freeze:false,shield:false,flip:false}}],
       ci:0,qi:0,phase:"sel",board:null,qs:null,cc:null,cq:null};
     if(!fbDB){throw new Error("no fb");}
     await fbDB.ref("rooms/"+myCode).set(room);
-    await fbDB.ref("publicRooms/"+myCode).set({code:myCode,host:name,tc:2,players:1,createdAt:Date.now()});
-    // تنظيف تلقائي: إن انقطع صاحب الغرفة (أغلق/خرج)، تُحذف الغرفة فوراً من اللوبي والغرف
+    await fbDB.ref("publicRooms/"+myCode).set({code:myCode,host:name,tc:wantTc,players:1,createdAt:Date.now()});
+    // تنظيف تلقائي: يقتصر على قائمة البحث فقط — لا نحذف الغرفة الحية
+    // (تبديل التطبيقات أو تصفّح شيء آخر يُخرج الصفحة للخلفية وقد يُعتبر انقطاعاً مؤقتاً)
     try{
       fbDB.ref("publicRooms/"+myCode).onDisconnect().remove();
-      fbDB.ref("rooms/"+myCode).onDisconnect().remove();
     }catch(e){}
     localStorage.setItem("tahadi_my_id",room.teams[0].id);
     localStorage.setItem("tahadi_is_host","1");
@@ -969,7 +972,7 @@ async function doQuickMatch(){
     var roomRef=fbDB.ref("rooms/"+myCode);
     roomRef.on("value",function(sn){
       var d=sn.val();
-      if(d&&d.teams&&d.teams.length>=2&&!joined){
+      if(d&&d.teams&&d.teams.length>=room.tc&&!joined){
         joined=true;_qmActive=false;
         roomRef.off();
         // ألغِ الحذف التلقائي قبل الانتقال — وإلا يحذف الغرفة لحظة الدخول للعبة
@@ -993,6 +996,7 @@ async function doQuickMatch(){
           var all=snap.val()||{}, now=Date.now();
           var older=Object.values(all).filter(function(r){
             return r&&r.code&&r.code!==myCode&&(r.players||1)<(r.tc||2)
+                   &&(r.tc||2)===wantTc
                    &&(r.createdAt||0)<room.createdAt; // أقدم مني فقط → يمنع الازدواج
           }).sort(function(a,b){return a.createdAt-b.createdAt;});
           if(older.length){
@@ -1045,9 +1049,11 @@ function _qmJoin(code,btn){
 function qmToCreate(){
   _qmActive=false;
   const name=document.getElementById("qmName").value.trim();
+  const tc=document.getElementById("qmCount").value;
   closeM("qmMo");
   openCreate();
   if(name)document.getElementById("cName").value=name;
+  const cCount=document.getElementById("cCount");if(cCount)cCount.value=tc;
   const pub=document.getElementById("cPublic");if(pub)pub.checked=true;
 }
 
