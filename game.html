@@ -392,6 +392,7 @@ select.inp option{background:#0C1440;}
 
   <!-- Board -->
   <div class="bwrap" id="bwrap">
+    <div id="selTimerInline" style="display:none;text-align:center;margin-bottom:.55rem;font-weight:900;font-size:.82rem;padding:.4rem .9rem;border-radius:20px;border:1px solid #FF3D5A;background:rgba(255,61,90,.12);color:#FF7090"></div>
     <div class="blbl">🔒 اختر خلية — المكافآت مخفية</div>
     <div class="bgrd" id="bgrd"></div>
   </div>
@@ -3384,18 +3385,14 @@ function initGame(){
 
 /* ── مؤقت اختيار الخلية: يمنع تعطّل اللعبة لو لم يختر اللاعب رقماً ── */
 var selIv=null, SEL_TS=20;
-function stopSelT(){clearInterval(selIv);selIv=null;var b=document.getElementById("selTimer");if(b)b.style.display="none";}
+function stopSelT(){clearInterval(selIv);selIv=null;var b=document.getElementById("selTimerInline");if(b)b.style.display="none";}
 function startSelT(){
   stopSelT();
   if(isOff)return; // الوضع المحلي لا يحتاجه
   // موعد مشترك لاختيار الخلية (يكتبه اللاعب الحالي)
   if(iM()&&G&&G.phase==="sel"&&!G.selDeadline){G.selDeadline=Date.now()+SEL_TS*1000;saveState();}
-  var b=document.getElementById("selTimer");
-  if(!b){
-    b=document.createElement("div");b.id="selTimer";
-    b.style.cssText="position:fixed;top:64px;left:50%;transform:translateX(-50%);background:rgba(255,61,90,.15);border:1px solid #FF3D5A;color:#FF7090;font-weight:900;font-size:.8rem;padding:.3rem .9rem;border-radius:20px;z-index:50;display:none";
-    document.body.appendChild(b);
-  }
+  var b=document.getElementById("selTimerInline");
+  if(!b)return;
   selIv=setInterval(function(){
     if(!G||G.phase!=="sel"){stopSelT();return;}
     var left=G.selDeadline?Math.max(0,Math.ceil((G.selDeadline-Date.now())/1000)):SEL_TS;
