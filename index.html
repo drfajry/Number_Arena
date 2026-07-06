@@ -714,18 +714,40 @@ try{if(typeof firebase!=="undefined"&&firebase.apps.length)fbDB=firebase.databas
   buildCpk("cCpk","c");buildCpk("jCpk","j");buildOff();
 })();
 
+/* ── تخزين الجلسة: يحترم اختيار "تذكرني" ──
+   محفوظ دائماً (localStorage) أو لجلسة المتصفح الحالية فقط (sessionStorage) */
+function authGet(key){
+  return localStorage.getItem(key) || sessionStorage.getItem(key);
+}
+function authSetAll(pairs,remember){
+  var store = remember ? localStorage : sessionStorage;
+  var other = remember ? sessionStorage : localStorage;
+  Object.keys(pairs).forEach(function(k){
+    store.setItem(k, pairs[k]);
+    other.removeItem(k); // امنع بقاء نسخة قديمة في التخزين الآخر
+  });
+}
+function authSetOne(key,val){
+  // اكتب في نفس التخزين الذي يحمل التوكن حالياً (يحترم اختيار تذكرني عند الدخول)
+  var remember = !!localStorage.getItem("tahadi_token");
+  (remember?localStorage:sessionStorage).setItem(key,val);
+}
+function authClearAll(keys){
+  keys.forEach(function(k){ localStorage.removeItem(k); sessionStorage.removeItem(k); });
+}
+
 function goSec(id){document.getElementById(id)?.scrollIntoView({behavior:"smooth"});}
 function closeM(id){document.getElementById(id).classList.remove("on");}
 /* ── بوابة الأونلاين: تسجيل دخول + اشتراك (Pro أو Elite) ── */
 function onlineGate(){
-  var token=localStorage.getItem("tahadi_token");
+  var token=authGet("tahadi_token");
   if(!token){
     ntf("🔐 سجّل دخولك أولاً للعب أونلاين","#FFD046");
     if(typeof showAuthModal==="function")setTimeout(showAuthModal,400);
     return false;
   }
-  var isPro=localStorage.getItem("tahadi_pro")==="1";
-  var isElite=localStorage.getItem("tahadi_elite")==="1";
+  var isPro=authGet("tahadi_pro")==="1";
+  var isElite=authGet("tahadi_elite")==="1";
   if(!isPro&&!isElite){
     if(window.IS_APP){
       // داخل التطبيق: رسالة محايدة بلا أي توجيه للشراء (سياسة Google Play)
@@ -752,7 +774,7 @@ function toggleNav(){
   if(navOpen){
     // داخل التطبيق: روابط التسويق مخفية، فاعرض إجراءات مفيدة فقط
     if(window.IS_APP){
-      var logged=!!localStorage.getItem("tahadi_token");
+      var logged=!!authGet("tahadi_token");
       nl.innerHTML = logged
         ? '<a class="nav-link" onclick="doLogout();toggleNav()">🚪 تسجيل الخروج</a>'
           +'<a class="nav-link" onclick="goSec(\'faq\');toggleNav()">❓ الأسئلة الشائعة</a>'
@@ -1076,7 +1098,7 @@ function ntf(msg,color="#00E5FF"){
 function openSubscribe(plan){
   // داخل التطبيق: لا واجهة شراء إطلاقاً (سياسة Google Play)
   if(window.IS_APP){ntf("هذه الميزة غير متاحة داخل التطبيق","#8AB8FF");return;}
-  var token=localStorage.getItem("tahadi_token");
+  var token=authGet("tahadi_token");
   if(!token){
     // غير مسجّل — احفظ الخطة وافتح تسجيل الدخول
     localStorage.setItem("tahadi_subscribe_plan", plan);
@@ -1088,8 +1110,8 @@ function openSubscribe(plan){
 
 function doSubscribe(plan){
   if(window.IS_APP){ntf("هذه الميزة غير متاحة داخل التطبيق","#8AB8FF");return;}
-  var isPro=localStorage.getItem("tahadi_pro")==="1";
-  var isElite=localStorage.getItem("tahadi_elite")==="1";
+  var isPro=authGet("tahadi_pro")==="1";
+  var isElite=authGet("tahadi_elite")==="1";
 
   // إذا مشترك Elite بالفعل
   if(isElite){ntf("✅ أنت مشترك Elite بالفعل!","#00E676");return;}
@@ -1116,7 +1138,7 @@ function doSubscribe(plan){
     return;
   }
   ntf("جارٍ التحويل لصفحة الدفع...","#00E5FF");
-  var email="";try{email=JSON.parse(localStorage.getItem("tahadi_user")||"{}").email||"";}catch(e){}
+  var email="";try{email=JSON.parse(authGet("tahadi_user")||"{}").email||"";}catch(e){}
   var cbUrl=window.location.origin+window.location.pathname+"?paid=1&plan="+plan+"_yearly";
   var params=[
     "publishable_api_key="+encodeURIComponent(pk),
@@ -1146,7 +1168,7 @@ function openManualPay(plan, info){
 function _renderManualPay(plan, info, s){
   s=s||{};
   var amount=(info.amount/100).toFixed(0);
-  var email="";try{email=JSON.parse(localStorage.getItem("tahadi_user")||"{}").email||"";}catch(e){}
+  var email="";try{email=JSON.parse(authGet("tahadi_user")||"{}").email||"";}catch(e){}
   var planAr = plan==="elite" ? "Elite" : "Pro";
   var rows="";
   function row(label,val,copy){
@@ -1214,10 +1236,10 @@ function closeManualPay(){var o=document.getElementById("mpOverlay");if(o)o.remo
   var paid=p.get("paid"), plan=p.get("plan")||"";
   if(paid==="1"&&plan){
     history.replaceState({},"",location.pathname);
-    localStorage.setItem("tahadi_pro","1");
-    if(plan.startsWith("elite")) localStorage.setItem("tahadi_elite","1");
+    authSetOne("tahadi_pro","1");
+    if(plan.startsWith("elite")) authSetOne("tahadi_elite","1");
     // Save subscription record in admin DB
-    var phone="";try{phone=JSON.parse(localStorage.getItem("tahadi_user")||"{}").phone||"";}catch(e){}
+    var phone="";try{phone=JSON.parse(authGet("tahadi_user")||"{}").phone||"";}catch(e){}
     var adminKey="tahadi_admin_v1";
     var data=JSON.parse(localStorage.getItem(adminKey)||'{"users":[],"subscriptions":[],"grants":[],"settings":{}}');
     var days=365;
@@ -1238,7 +1260,7 @@ function closeManualPay(){var o=document.getElementById("mpOverlay");if(o)o.remo
     // Affiliate: record commission
     if(window.Affiliate){
       try{
-        var _u=JSON.parse(localStorage.getItem("tahadi_user")||"{}");
+        var _u=JSON.parse(authGet("tahadi_user")||"{}");
         var _uid=_u.uid||("u_"+(_u.phone||"").replace(/[^0-9]/g,""));
         var _planMap={
           "pro_yearly":"pro_year",
@@ -1537,9 +1559,13 @@ function loginUser(user,skipStep){
   window._forceLoggedOut=false; // دخول جديد — أعد تفعيل درع الجلسة
   var uid=user.uid;
   var sessionId="s_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
-  localStorage.setItem("tahadi_token","tok_"+Date.now());
-  localStorage.setItem("tahadi_session",sessionId);
-  localStorage.setItem("tahadi_user",JSON.stringify({name:user.name,email:user.email,phone:"",uid:uid}));
+  var rememberEl=document.getElementById("authRemember");
+  var remember=rememberEl?rememberEl.checked:true; // افتراضياً مفعّل
+  authSetAll({
+    tahadi_token:"tok_"+Date.now(),
+    tahadi_session:sessionId,
+    tahadi_user:JSON.stringify({name:user.name,email:user.email,phone:"",uid:uid})
+  },remember);
 
   // جلسة واحدة نشطة لكل حساب: اكتب معرّف الجلسة، وراقبه — إن دخل جهاز آخر، اخرج من هنا
   if(window.TahadiDB&&TahadiDB.emailToUid){
@@ -1548,14 +1574,10 @@ function loginUser(user,skipStep){
       sref.set(sessionId).catch(function(){});
       sref.on("value",function(s){
         var cur=s.val();
-        if(cur&&cur!==localStorage.getItem("tahadi_session")){
+        if(cur&&cur!==authGet("tahadi_session")){
           // جهاز آخر سجّل الدخول بنفس الحساب — خروج فعلي كامل
           sref.off();
-          localStorage.removeItem("tahadi_token");
-          localStorage.removeItem("tahadi_session");
-          localStorage.removeItem("tahadi_user");
-          localStorage.removeItem("tahadi_pro");
-          localStorage.removeItem("tahadi_elite");
+          authClearAll(["tahadi_token","tahadi_session","tahadi_user","tahadi_pro","tahadi_elite"]);
           // امسح النسخة الأصلية (درع الجلسة) حتى لا يستعيدها بعد إعادة التحميل
           try{
             var Prefs=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Preferences;
@@ -1588,8 +1610,8 @@ function loginUser(user,skipStep){
     TahadiDB.saveUser({name:user.name,email:user.email,uid:uid}).then(function(){
       TahadiDB.getPlanByEmail(user.email).then(function(plan){
         if(plan&&plan.plan){
-          localStorage.setItem("tahadi_pro","1");
-          if(plan.plan.indexOf("elite")>-1)localStorage.setItem("tahadi_elite","1");
+          authSetOne("tahadi_pro","1");
+          if(plan.plan.indexOf("elite")>-1)authSetOne("tahadi_elite","1");
           renderUserBar();
         }
         resumePendingRoom(); // بعد مزامنة الباقة — حتى تمر البوابة للمشتركين
@@ -1627,19 +1649,18 @@ function sendOTPEmail(email,name,code,cb){
 
 /* ── Render user bar ── */
 function syncPlanFromDB(cb){
-  var user=JSON.parse(localStorage.getItem("tahadi_user")||"null");
+  var user=JSON.parse(authGet("tahadi_user")||"null");
   if(!user||!user.email){if(cb)cb();return;}
   if(window.TahadiDB&&window.firebase&&firebase.apps&&firebase.apps.length){
     TahadiDB.getPlanByEmail(user.email).then(function(plan){
       // Firebase هو المصدر النهائي — لا fallback بعد نجاح القراءة
       if(plan&&plan.plan){
-        localStorage.setItem("tahadi_pro","1");
-        if(plan.plan.indexOf("elite")>-1)localStorage.setItem("tahadi_elite","1");
-        else localStorage.removeItem("tahadi_elite");
+        authSetOne("tahadi_pro","1");
+        if(plan.plan.indexOf("elite")>-1)authSetOne("tahadi_elite","1");
+        else authClearAll(["tahadi_elite"]);
         console.log("[Plan] from Firebase:",plan.plan);
       } else {
-        localStorage.removeItem("tahadi_pro");
-        localStorage.removeItem("tahadi_elite");
+        authClearAll(["tahadi_pro","tahadi_elite"]);
         console.log("[Plan] no active plan (free)");
       }
       if(cb)cb();
@@ -1662,24 +1683,23 @@ function syncFromAdminLocal(user){
       return (s.email===user.email||s.uid===user.uid)&&new Date(s.expiresAt)>now;
     }).sort(function(a,b){return new Date(b.expiresAt)-new Date(a.expiresAt);})[0];
     if(sub){
-      localStorage.setItem("tahadi_pro","1");
-      if(sub.plan.indexOf("elite")>-1)localStorage.setItem("tahadi_elite","1");
-      else localStorage.removeItem("tahadi_elite");
+      authSetOne("tahadi_pro","1");
+      if(sub.plan.indexOf("elite")>-1)authSetOne("tahadi_elite","1");
+      else authClearAll(["tahadi_elite"]);
     } else {
-      localStorage.removeItem("tahadi_pro");
-      localStorage.removeItem("tahadi_elite");
+      authClearAll(["tahadi_pro","tahadi_elite"]);
     }
   }catch(e){}
 }
 
 function renderUserBar(){
-  var token=localStorage.getItem("tahadi_token");
+  var token=authGet("tahadi_token");
   // إظهار/إخفاء الأقسام التسويقية حسب حالة الدخول
   if(token) document.body.classList.add("logged-in");
   else document.body.classList.remove("logged-in");
-  var user =JSON.parse(localStorage.getItem("tahadi_user")||"null");
-  var isPro   =localStorage.getItem("tahadi_pro")==="1";
-  var isElite =localStorage.getItem("tahadi_elite")==="1";
+  var user =JSON.parse(authGet("tahadi_user")||"null");
+  var isPro   =authGet("tahadi_pro")==="1";
+  var isElite =authGet("tahadi_elite")==="1";
 
   // Update navbar button
   var navBtn=document.getElementById("navAuthBtn");
@@ -1758,11 +1778,7 @@ function scrollToAffiliate(){document.getElementById("affiliate-section").scroll
 
 function doLogout(){
   window._forceLoggedOut=true; // امنع درع الجلسة من الاستعادة
-  localStorage.removeItem("tahadi_token");
-  localStorage.removeItem("tahadi_session");
-  localStorage.removeItem("tahadi_user");
-  localStorage.removeItem("tahadi_pro");
-  localStorage.removeItem("tahadi_elite");
+  authClearAll(["tahadi_token","tahadi_session","tahadi_user","tahadi_pro","tahadi_elite"]);
   try{
     var Prefs=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Preferences;
     if(Prefs){["tahadi_token","tahadi_user","tahadi_pro","tahadi_elite"].forEach(function(k){Prefs.remove({key:k});});}
@@ -1777,10 +1793,10 @@ function doLogout(){
 
 function showUserMenu(){
   // Toggle small user menu or just go to dashboard
-  var user=JSON.parse(localStorage.getItem("tahadi_user")||"null");
+  var user=JSON.parse(authGet("tahadi_user")||"null");
   if(!user){showAuthModal();return;}
-  var isPro=localStorage.getItem("tahadi_pro")==="1";
-  var isElite=localStorage.getItem("tahadi_elite")==="1";
+  var isPro=authGet("tahadi_pro")==="1";
+  var isElite=authGet("tahadi_elite")==="1";
   var plan=isElite?"Elite":isPro?"Pro":"مجاني";
   ntf("👤 "+( user.name||"مستخدم")+" — "+plan,isPro?"#00E5FF":"#8AB8FF");
 }
@@ -1821,6 +1837,10 @@ function openContact(){document.getElementById("contactModal").classList.add("on
         <label>كلمة المرور *</label>
         <input type="password" id="authPass" class="inp" placeholder="6 أحرف على الأقل"
           onkeydown="if(event.key==='Enter')authSubmit()">
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin:-.3rem 0 .7rem">
+        <input type="checkbox" id="authRemember" checked style="width:17px;height:17px;accent-color:var(--cyan);flex-shrink:0">
+        <label for="authRemember" style="margin:0;font-size:.78rem;cursor:pointer;color:var(--dim)">تذكرني على هذا الجهاز</label>
       </div>
       <div class="fg" id="authNameWrap" style="display:none">
         <label>الاسم <span style="color:var(--dim);font-size:.64rem">(للحساب الجديد)</span></label>
