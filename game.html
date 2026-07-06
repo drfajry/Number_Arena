@@ -358,14 +358,14 @@ select.inp option{background:#0C1440;}
   <div id="guestWait" style="display:none;text-align:center;padding:0 1.1rem 1.1rem">
     <span style="color:var(--dim);font-size:.76rem;animation:wpls 1.5s ease-in-out infinite;display:inline-block">⏳ انتظار الهوست...</span>
   </div>
-  <button class="btn bgh sm" onclick="goHome()" style="align-self:center;width:auto;padding:.4rem 1.1rem;margin-bottom:1.1rem">← مغادرة</button>
+  <button class="btn bgh sm" onclick="confirmLeave()" style="align-self:center;width:auto;padding:.4rem 1.1rem;margin-bottom:1.1rem">← مغادرة</button>
 </div>
 
 <!-- ══ GAME ══ -->
 <div id="game" class="scr">
   <!-- Header -->
   <div class="ghdr">
-    <button onclick="goHome()" style="background:var(--card);border:1px solid var(--bd);border-radius:7px;
+    <button onclick="confirmLeave()" style="background:var(--card);border:1px solid var(--bd);border-radius:7px;
       padding:.22rem .55rem;font-size:.8rem;cursor:pointer;color:var(--dim);transition:all .18s;flex-shrink:0"
       title="رجوع للرئيسية">←</button>
     <div class="qn">سؤال <span id="qnum">1</span>/20</div>
@@ -3084,8 +3084,9 @@ function initFB(){
   }
 })();
 
-var _joinChecked=false, _joinGrace=Date.now()+6000;
+var _joinChecked=false, _joinGrace=0;
 function listenRoom(code){
+  _joinGrace=Date.now()+8000; // تبدأ الآن فعلياً — لا من وقت تحميل الصفحة
   if(fbDB){
     fbRef=fbDB.ref("rooms/"+code);
     // تنظيف تلقائي عند الانقطاع: يقتصر على قائمة "البحث عن لاعبين" فقط.
@@ -3102,7 +3103,14 @@ function listenRoom(code){
       if(!data){
         // خلال مهلة سماح بعد الانضمام لا نطرد فوراً (قد لا تكون الكتابة وصلت بعد)
         if(Date.now()<_joinGrace)return;
-        ntf("❌ الغرفة غير موجودة","#FF3D5A");setTimeout(goHome,2000);return;
+        // تأكيد أخير بقراءة مباشرة من الخادم (لا الذاكرة المحلية) قبل الحكم النهائي
+        fbDB.ref("rooms/"+code).get().then(function(freshSnap){
+          if(freshSnap.exists())return; // كانت قراءة عابرة فقط — الغرفة موجودة فعلاً
+          ntf("❌ الغرفة غير موجودة","#FF3D5A");setTimeout(goHome,2000);
+        }).catch(function(){
+          ntf("❌ الغرفة غير موجودة","#FF3D5A");setTimeout(goHome,2000);
+        });
+        return;
       }
       // تحويل زائر غير عضو لصفحة الانضمام — مرة واحدة فقط وفي طور الانتظار فقط
       if(!_joinChecked){
@@ -3192,6 +3200,14 @@ function ss(id){
 }
 function closeM(id){document.getElementById(id).classList.remove("on");}
 function oM(id){document.getElementById(id).classList.add("on");}
+function confirmLeave(){
+  // في الوضع المحلي أو بعد انتهاء اللعبة لا حاجة لتأكيد
+  if(isOff||(G&&G.status==="finished")){goHome();return;}
+  var msg = (G&&G.status==="playing")
+    ? "هل تريد مغادرة اللعبة؟ سيخسر فريقك ولن تتمكّن من العودة لنفس الجولة."
+    : "هل تريد مغادرة الغرفة؟";
+  if(confirm(msg))goHome();
+}
 function goHome(){
   clearInterval(pollIv);stopT&&stopT();
   try{
