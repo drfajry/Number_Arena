@@ -765,7 +765,7 @@ function openCreate(){if(!onlineGate())return;document.getElementById("cName").v
 function openJoin(){if(!onlineGate())return;document.getElementById("jName").value="";document.getElementById("joinMo").classList.add("on");}
 function openJoinDirect(){document.getElementById("joinMo").classList.add("on");}
 function openOffline(){buildOff();document.getElementById("offMo").classList.add("on");}
-document.querySelectorAll(".mo").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("on");}));
+function _bindModalBackdrops(){document.querySelectorAll(".mo").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("on");}));}
 
 function toggleNav(){
   navOpen=!navOpen;
@@ -1802,17 +1802,23 @@ function showUserMenu(){
 }
 
 // Init on load
-(function(){
+function _initApp(){
+  _bindModalBackdrops();
   // Capture referral code from URL (?ref=CODE)
   if(window.Affiliate) Affiliate.captureReferralFromURL();
   // مزامنة الخطة من قاعدة البيانات ثم عرض الشريط
   syncPlanFromDB(function(){ renderUserBar(); });
   renderUserBar();
-  // Close modals on backdrop
-  document.getElementById("authModal").addEventListener("click",function(e){
-    if(e.target.id==="authModal") closeM("authModal");
-  });
-})();
+  // Close modals on backdrop (بحماية — إن لم يوجد العنصر لا ننهار)
+  var _am=document.getElementById("authModal");
+  if(_am){
+    _am.addEventListener("click",function(e){
+      if(e.target.id==="authModal") closeM("authModal");
+    });
+  }
+}
+if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",_initApp);}
+else{_initApp();}
 
 
 function openContact(){document.getElementById("contactModal").classList.add("on");}
