@@ -3132,6 +3132,7 @@ function listenRoom(code){
         _odCancelled=true;
         try{fbRef.onDisconnect().cancel();fbDB.ref("publicRooms/"+code).onDisconnect().cancel();}catch(e){}
       }
+      handleLeaves();
       updateUI(prev);
     });
   } else {
@@ -3209,10 +3210,58 @@ function confirmLeave(){
     : "هل تريد مغادرة الغرفة؟";
   if(confirm(msg))goHome();
 }
+var _leaveSeen=0, _leaveHandled=false;
+function handleLeaves(){
+  if(!G||G.status!=="playing"||isOff)return;
+  // إشعار بانسحاب لاعب (يظهر مرة واحدة لكل انسحاب)
+  if(G.lastLeft&&G.lastLeft.stamp!==_leaveSeen){
+    _leaveSeen=G.lastLeft.stamp;
+    // لا نُشعر اللاعب المنسحب نفسه
+    var myTeam=G.teams.find(function(t){return t.id===myId;});
+    if(!myTeam||!myTeam.left){
+      ntf("🚪 انسحب فريق "+G.lastLeft.name,"#FFD046");
+    }
+  }
+  var active=G.teams.filter(function(t){return !t.left;});
+  // بقي فريق واحد فقط (أو أقل) → تنتهي اللعبة والباقي فائز
+  if(active.length<=1){
+    if(_leaveHandled)return;
+    _leaveHandled=true;
+    var winner=active[0];
+    var iAmActive=G.teams.find(function(t){return t.id===myId&&!t.left;});
+    if(iAmActive){
+      // اللاعب الفائز الوحيد ينهي اللعبة رسمياً
+      setTimeout(function(){
+        alert("🏆 انسحب بقية اللاعبين — فزت بالجولة!");
+        if(fbRef){G.status="finished";try{fbRef.child("status").set("finished");}catch(e){}}
+        endGame();
+      },800);
+    }
+    return;
+  }
+  // إن كان دور فريق منسحب الآن، خطِّ دوره تلقائياً (اللاعب الحالي النشط فقط ينفّذ)
+  if(G.phase==="sel"&&ct()&&ct().left){
+    // أول فريق نشط ينفّذ التخطي (يمنع الازدواج)
+    if(active.length&&active[0].id===myId){
+      G.ci=(G.ci+1)%G.teams.length;
+      G.selDeadline=null;
+      saveState();
+    }
+  }
+}
+
 function goHome(){
-  clearInterval(pollIv);stopT&&stopT();
+  clearInterval(pollIv);stopT&&stopT();stopSelT&&stopSelT();
   try{
-    // المضيف ينظّف غرفته عند المغادرة (تمنع تراكم الغرف المنتهية التي تسبب "الغرفة غير موجودة" لاحقاً)
+    // مغادرة أثناء اللعب: علّم فريقي بأنه انسحب (يُخطر البقية بدل الاختفاء الصامت)
+    if(fbDB&&fbRef&&G&&G.status==="playing"&&myId){
+      var idx=G.teams.findIndex(function(t){return t.id===myId;});
+      if(idx>-1&&!G.teams[idx].left){
+        fbRef.child("teams/"+idx+"/left").set(true).catch(function(){});
+        fbRef.child("lastLeft").set({name:G.teams[idx].name,stamp:Date.now()}).catch(function(){});
+      }
+    }
+    // المضيف ينظّف غرفته في الانتظار/الانتهاء فقط (لا أثناء اللعب — قد يكمل الباقون)
     if(fbDB&&G&&G.code&&localStorage.getItem("tahadi_is_host")==="1"){
       if(!G.status||G.status==="finished"||G.status==="waiting"){
         fbDB.ref("rooms/"+G.code).remove().catch(function(){});
@@ -3333,7 +3382,7 @@ function renderWait(){
 
 function hostStart(){
   if(!G||G.teams.length<2)return;
-  _lastAdvancedQi=-1;
+  _lastAdvancedQi=-1;_leaveHandled=false;_leaveSeen=0;
   if(!G.board)G.board=shuf([...BT]).map(function(t,i){return{i:i,n:i+1,t:t,used:false,by:null};});
   if(!G.qs)G.qs=pickQs();
   G.status="playing";G.phase="sel";
@@ -3792,7 +3841,10 @@ function nextT(){
   _lastAdvancedQi=G.qi;
   G.qi++;
   if(G.qi>=TOT){endGame();return;}
+  // تقدّم للفريق التالي، متخطياً أي فريق منسحب
   G.ci=(G.ci+1)%G.teams.length;
+  var _guard=0;
+  while(G.teams[G.ci]&&G.teams[G.ci].left&&_guard<G.teams.length){G.ci=(G.ci+1)%G.teams.length;_guard++;}
   G.phase="sel";G.cc=null;G.cq=null;yqPend=false;stealPending=false;
   G.answerDeadline=null;G.selDeadline=null;G.lastAns=null;
   dblPts=false;frozen=false;
@@ -4075,8 +4127,11 @@ function endGame(){
   }
   SFX.end();
   if(fbDB&&(iM()||isHost))fbDB.ref("publicRooms/"+G.code).remove().catch(function(){});
-  // اعرض دائماً من نسخة G المتزامنة (لا نعيد حساب أو حفظ النقاط)
-  var sorted=[...G.teams].sort(function(a,b){return b.points-a.points;});
+  // اعرض دائماً من نسخة G المتزامنة (المنسحبون في الأسفل، ثم ترتيب بالنقاط)
+  var sorted=[...G.teams].sort(function(a,b){
+    if(!!a.left!==!!b.left)return a.left?1:-1;
+    return b.points-a.points;
+  });
   ss("results");
   var list=document.getElementById("rlist");list.innerHTML="";
   ["🥇","🥈","🥉","4️⃣"].forEach(function(m,i){
