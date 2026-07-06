@@ -3268,6 +3268,7 @@ function rematch(){
   G.answerDeadline=null;G.selDeadline=null;
   G._roomState={frozenTeams:{},shieldTeams:{}};
   G._rematchStamp=Date.now(); // إشارة للطرف الآخر لإعادة الدخول للعبة
+  _rematchSeen=G._rematchStamp; // لا نعيد كشفها على أنفسنا
   saveState();
   SFX.start();ss("game");initGame();
   ntf("🔁 جولة جديدة! دور: "+ct().name,COLORS[ct().color].h);
@@ -3335,6 +3336,8 @@ function updateUI(prev){
       var e=document.getElementById("sc_"+t.id);if(e)e.textContent=t.points;
     });
     if(G.status==="waiting")renderWait();
+    // حافظ على مؤقت الاختيار شغّالاً في طور الاختيار (قد يصل selDeadline بعد تغيّر الطور)
+    if(G.status==="playing"&&G.phase==="sel"&&!isOff&&!selIv)startSelT();
     return;
   }
   if(G.status==="waiting"){ss("waiting");renderWait();return;}
@@ -3363,8 +3366,13 @@ function updateUI(prev){
       if(!iM()&&G.lastAns&&G.lastAns.stamp!==_lastAnsSeen){
         _lastAnsSeen=G.lastAns.stamp;
         var la=G.lastAns;
+        // تأكد أن شاشة السؤال ظاهرة قبل كشف النتيجة (قد يكون على اللوحة)
+        if(G.cc&&G.cq){
+          var qv=document.getElementById("qwrap").style.display==="flex";
+          if(!qv){rBoard();showQUI(G.cc);}
+        }
         rOpts_rev(la.chosen);
-        showAns(la.ok,la.base||0,la.bonus||0,la.tl||0,la.correct,false);
+        showAns(la.ok,la.base||0,la.bonus||0,la.tl||0,la.correct,false,la.correctText);
       }
     }
   } else if(G.status==="finished"){
@@ -3764,7 +3772,7 @@ function doSubmit(letter){
     G.cc.used=true;G.cc.by=ct().color;
   }
   // احفظ نتيجة الإجابة ليراها الجميع (الهدف التعليمي): الاختيار + الصحيح + النقاط
-  G.lastAns={chosen:letter,correct:q.correct,ok:ok,qtext:q.text,stamp:Date.now(),team:ct().name,base:base,bonus:bonus,tl:snap};
+  G.lastAns={chosen:letter,correct:q.correct,correctText:q[q.correct],ok:ok,qtext:q.text,stamp:Date.now(),team:ct().name,base:base,bonus:bonus,tl:snap};
   saveState();
   if(!ok&&stealPending){
     // Handled by steal banner
@@ -3861,7 +3869,7 @@ function rOpts_rev(chosen){
 /* ════════════════════════════════════════
    ANSWER OVERLAY
 ════════════════════════════════════════ */
-function showAns(ok,base,bonus,tl,corr,isDriver){
+function showAns(ok,base,bonus,tl,corr,isDriver,corrText){
   var ov=document.getElementById("ansov");
   document.getElementById("ansico").textContent=ok?"✅":"❌";
   var msg=document.getElementById("ansmsg");
@@ -3877,7 +3885,9 @@ function showAns(ok,base,bonus,tl,corr,isDriver){
     cor.style.display="none";
   } else {
     pts.style.display="none";det.style.display="none";bon.style.display="none";
-    if(corr&&G.cq){cor.textContent="الإجابة الصحيحة: "+corr+" — "+G.cq[corr];cor.style.display="block";}
+    // نص الإجابة الصحيحة: من المُمرَّر (كشف المنافس) أو من G.cq (اللاعب الحالي)
+    var ansTxt=corrText||(corr&&G.cq?G.cq[corr]:"");
+    if(corr&&ansTxt){cor.textContent="الإجابة الصحيحة: "+corr+" — "+ansTxt;cor.style.display="block";}
     else cor.style.display="none";
   }
   ov.classList.add("on");clearTimeout(ansTO);
@@ -3941,10 +3951,10 @@ function rLL(){
     var b=document.createElement("button");b.className="llb";
     b.disabled=used||!can||!hasTier||flipBlocked;
     var costLbl=ll.cost>0?("-"+ll.cost+"ن"):"مجاني";
-    var tierLbl=ll.tier==="pro"?'<span class="lpro">Pro</span>':ll.tier==="elite"?'<span class="lelite">Elite</span>':'';
+    var tierLbl=ll.tier==="pro"?'<span class="lpro">بطل</span>':ll.tier==="elite"?'<span class="lelite">أسطوري</span>':'';
     b.innerHTML="<span class=\"lic\">"+(hasTier?ll.ico:"🔒")+"</span><span>"+ll.lbl+"</span>"+(hasTier?"<span class=\"lcost\">"+costLbl+"</span>":"<span class=\"lcost\">"+ll.tier+"</span>")+tierLbl;
     b.onclick=function(){
-      if(!hasTier){ntf("🔒 يتطلب خطة "+(ll.tier==="pro"?"Pro":"Elite"),"#FFD046");return;}
+      if(!hasTier){ntf("🔒 يتطلب خطة "+(ll.tier==="pro"?"بطل":"أسطوري"),"#FFD046");return;}
       useLL(ll.id);
     };
     el.appendChild(b);
@@ -3960,7 +3970,7 @@ function useLL(id){
   var ll=LLS.find(function(l){return l.id===id;});if(!ll)return;
   // تحقق من توفر الوسيلة حسب الاشتراك (الأوفلاين يفتح الكل)
   var hasTier=(ll.tier==="free")||(ll.tier==="pro"&&TIERS.pro)||(ll.tier==="elite"&&TIERS.elite);
-  if(!hasTier){ntf("🔒 هذه الوسيلة تتطلب اشتراك "+(ll.tier==="elite"?"Elite":"Pro"),"#FFD046");return;}
+  if(!hasTier){ntf("🔒 هذه الوسيلة تتطلب اشتراك "+(ll.tier==="elite"?"أسطوري":"بطل"),"#FFD046");return;}
   if(ll.cost>0&&t.points<ll.cost){ntf("❌ نقاطك غير كافية ("+ll.cost+" مطلوبة)","#FFD046");return;}
   if(ll.cost>0){t.points=Math.max(0,t.points-ll.cost);bump(t);}
   t.ll[id]=true;
