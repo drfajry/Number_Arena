@@ -427,7 +427,7 @@ select.inp option{background:#0C1440;}
     <div class="rtit">🏆 النتائج النهائية</div>
     <div class="rsub">انتهت المسابقة!</div>
     <div id="rlist"></div>
-    <button id="rematchBtn" class="btn bn" style="margin-top:1.1rem;display:none" onclick="rematch()">🔁 جولة جديدة بنفس الفرق</button>
+    <button id="rematchBtn" class="btn bn" style="margin-top:1.1rem;display:none" onclick="proposeRematch()">🔁 اقترح جولة جديدة</button>
     <button class="btn bgh" style="margin-top:.6rem" onclick="goHome()">🚪 خروج</button>
   </div>
 </div>
@@ -473,6 +473,27 @@ select.inp option{background:#0C1440;}
 </div>
 
 <!-- Freeze team modal -->
+<div class="mo" id="rematchMo">
+  <div class="mb" style="max-width:340px">
+    <div class="mt_">🔁 جولة جديدة؟</div>
+    <p style="text-align:center;color:var(--dim);font-size:.8rem;margin-bottom:.5rem">
+      اقترح <strong id="rmProposer" style="color:var(--cyan)"></strong> لعب جولة جديدة<br>
+      <span style="font-size:.72rem;opacity:.8">تبدأ الجولة بالموافقين (لاعبان فأكثر)</span>
+    </p>
+    <div style="text-align:center;font-weight:900;font-size:1.4rem;color:#FF7090;margin-bottom:.7rem">
+      <span id="rmCount">30</span> <span style="font-size:.8rem">ث</span>
+    </div>
+    <div id="rmList" style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.9rem"></div>
+    <div id="rmActions" style="display:flex;gap:.6rem">
+      <button class="btn bn" style="flex:1" onclick="voteRematch(true)">✅ موافق</button>
+      <button class="btn bgh" style="flex:1" onclick="voteRematch(false)">❌ رفض</button>
+    </div>
+    <div id="rmWaiting" style="display:none;text-align:center;color:var(--dim);font-size:.78rem;padding:.5rem">
+      ⏳ بانتظار بقية اللاعبين...
+    </div>
+  </div>
+</div>
+
 <div class="mo" id="shareMo">
   <div class="mb" style="max-width:320px">
     <div class="mt_">📤 مشاركة الغرفة</div>
@@ -3251,10 +3272,140 @@ function handleLeaves(){
   }
 }
 
-function rematch(){
+/* ══ نظام التصويت على جولة جديدة ══
+   أي لاعب يقترح → يُسأل الجميع → موافقة الكل تبدأ الجولة
+   رفض أي لاعب أو انتهاء 30 ثانية → تنتهي الغرفة */
+var RM_TS=30, rmIv=null, _rmSeenStamp=0, _rmStarted=0;
+
+function proposeRematch(){
+  if(!G||isOff||!fbDB)return;
+  var active=G.teams.filter(function(t){return !t.left;});
+  if(active.length<2){ntf("يحتاج فريقين على الأقل","#FF3D5A");return;}
+  var me=G.teams.find(function(t){return t.id===myId;});
+  var votes={};
+  votes[myId]=true; // المقترِح موافق تلقائياً
+  G.rematchVote={
+    stamp:Date.now(),
+    by:(me&&me.name)||"لاعب",
+    deadline:Date.now()+RM_TS*1000,
+    votes:votes
+  };
+  saveVote();
+  // سيلتقطه المستمع ويفتح النافذة عند الجميع (بمن فيهم المقترِح)
+}
+
+function voteRematch(agree){
+  if(!G||!G.rematchVote)return;
+  if(!G.rematchVote.votes)G.rematchVote.votes={};
+  if(!G.rematchVote.refused)G.rematchVote.refused={};
+  if(agree){
+    G.rematchVote.votes[myId]=true;
+    delete G.rematchVote.refused[myId];
+  } else {
+    // رفض: يُستبعَد هذا اللاعب فقط — لا يوقف البقية
+    G.rematchVote.refused[myId]=true;
+    delete G.rematchVote.votes[myId];
+  }
+  saveVote();
+  document.getElementById("rmActions").style.display="none";
+  document.getElementById("rmWaiting").style.display="block";
+  document.getElementById("rmWaiting").textContent=agree?"⏳ بانتظار بقية اللاعبين...":"❌ رفضت — سيتم إخراجك";
+}
+
+function _rmClose(){
+  clearInterval(rmIv);rmIv=null;
+  var mo=document.getElementById("rematchMo");
+  if(mo)mo.classList.remove("on");
+}
+
+// يُستدعى من updateUI عند كل تحديث
+function handleRematchVote(){
   if(!G||isOff)return;
-  // أعد ضبط اللعبة مع الاحتفاظ بالفرق (تصفير النقاط واللوحة والأسئلة)
-  var freshTeams=G.teams.filter(function(t){return !t.left;}).map(function(t){
+  var rv=G.rematchVote;
+  if(!rv){_rmClose();return;}
+
+  var active=G.teams.filter(function(t){return !t.left;});
+  var votes=rv.votes||{};
+  var refused=rv.refused||{};
+  var agreedTeams=active.filter(function(t){return votes[t.id];});
+  var answered=active.filter(function(t){return votes[t.id]||refused[t.id];}).length;
+  var iRefused=!!refused[myId];
+
+  // من رفض: أخرجه فوراً (لا ينتظر البقية)
+  if(iRefused&&_rmSeenStamp!==rv.stamp+3){
+    _rmSeenStamp=rv.stamp+3;
+    _rmClose();
+    ntf("خرجت من الغرفة","#8AB8FF");
+    setTimeout(goHome,1200);
+    return;
+  }
+
+  var timeUp=Date.now()>rv.deadline;
+  var allAnswered=answered>=active.length;
+
+  // نبدأ عندما يجيب الجميع أو تنتهي المهلة
+  if(allAnswered||timeUp){
+    if(_rmStarted===rv.stamp)return;
+    _rmStarted=rv.stamp;
+    _rmClose();
+
+    // موافقان فأكثر → تبدأ الجولة بهم (من رفض أو لم يرد يُستبعَد)
+    if(agreedTeams.length>=2){
+      if(!votes[myId]){ // لم أوافق ولا رفضت (انتهت المهلة) → اخرج
+        ntf("⏱️ انتهت المهلة — لم توافق","#FFD046");
+        setTimeout(goHome,1800);
+        return;
+      }
+      // أول موافِق ينفّذ البدء (يمنع الازدواج)
+      if(agreedTeams[0].id===myId)startNewRound(agreedTeams);
+      return;
+    }
+
+    // أقل من موافقَين → تنتهي الغرفة
+    ntf("انتهت الغرفة — لم يوافق لاعبان على الأقل","#FFD046");
+    setTimeout(goHome,2500);
+    return;
+  }
+
+  // اعرض النافذة (مرة واحدة لكل اقتراح)
+  var mo=document.getElementById("rematchMo");
+  if(!mo)return;
+  if(_rmSeenStamp!==rv.stamp){
+    _rmSeenStamp=rv.stamp;
+    document.getElementById("rmProposer").textContent=rv.by||"لاعب";
+    var iVoted=!!votes[myId];
+    document.getElementById("rmActions").style.display=iVoted?"none":"flex";
+    var w=document.getElementById("rmWaiting");
+    w.textContent="⏳ بانتظار بقية اللاعبين...";
+    w.style.display=iVoted?"block":"none";
+    mo.classList.add("on");
+    clearInterval(rmIv);
+    rmIv=setInterval(function(){
+      if(!G||!G.rematchVote){_rmClose();return;}
+      var left=Math.max(0,Math.ceil((G.rematchVote.deadline-Date.now())/1000));
+      var c=document.getElementById("rmCount");if(c)c.textContent=left;
+      if(left<=0){clearInterval(rmIv);handleRematchVote();}
+    },400);
+  }
+  // حدّث قائمة اللاعبين وحالاتهم
+  var list=document.getElementById("rmList");
+  if(list){
+    list.innerHTML="";
+    active.forEach(function(t){
+      var st=votes[t.id]?"✅ موافق":(refused[t.id]?"❌ رفض":"⏳ ينتظر");
+      var row=document.createElement("div");
+      row.style.cssText="display:flex;justify-content:space-between;align-items:center;padding:.4rem .7rem;border-radius:8px;background:rgba(255,255,255,.04);font-size:.8rem";
+      row.innerHTML="<span style=\"color:"+COLORS[t.color].h+";font-weight:800\">"+t.name+"</span><span>"+st+"</span>";
+      list.appendChild(row);
+    });
+  }
+}
+
+function startNewRound(agreedTeams){
+  if(!G||isOff)return;
+  // الجولة الجديدة تضم الموافقين فقط (من رفض أو لم يرد يُستبعَد)
+  var src=agreedTeams||G.teams.filter(function(t){return !t.left;});
+  var freshTeams=src.map(function(t){
     return {id:t.id,name:t.name,color:t.color,points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,
       ll:{remove:false,change:false,luck:false,audience:false,resetTime:false,freeze:false,shield:false,flip:false}};
   });
@@ -3267,12 +3418,14 @@ function rematch(){
   G.cc=null;G.cq=null;G.lastAns=null;G.lastLeft=null;
   G.answerDeadline=null;G.selDeadline=null;
   G._roomState={frozenTeams:{},shieldTeams:{}};
-  G._rematchStamp=Date.now(); // إشارة للطرف الآخر لإعادة الدخول للعبة
-  _rematchSeen=G._rematchStamp; // لا نعيد كشفها على أنفسنا
+  G.rematchVote=null; // نظّف التصويت
+  G._rematchStamp=Date.now();
+  _rematchSeen=G._rematchStamp;
   saveState();
   SFX.start();ss("game");initGame();
   ntf("🔁 جولة جديدة! دور: "+ct().name,COLORS[ct().color].h);
 }
+
 
 function goHome(){
   clearInterval(pollIv);stopT&&stopT();stopSelT&&stopSelT();
@@ -3302,6 +3455,12 @@ function goHome(){
 function ct(){return G.teams[G.ci];}
 function iM(){return isOff||ct().id===myId;}
 function calcP(tl){return Math.max(1,10-Math.floor((TS-tl)/3));}
+
+function saveVote(){
+  // كتابة التصويت فقط (مسموحة للجميع حتى بعد انتهاء اللعبة)
+  if(!G||isOff||!fbDB||!fbRef)return;
+  try{fbRef.child("rematchVote").set(G.rematchVote);}catch(e){}
+}
 
 function saveState(){
   if(!G||isOff)return;
@@ -3336,6 +3495,8 @@ function updateUI(prev){
       var e=document.getElementById("sc_"+t.id);if(e)e.textContent=t.points;
     });
     if(G.status==="waiting")renderWait();
+    // تحديثات التصويت على جولة جديدة تصل دون تغيّر الحالة — عالجها
+    if(G.status==="finished")handleRematchVote();
     // حافظ على مؤقت الاختيار شغّالاً في طور الاختيار (قد يصل selDeadline بعد تغيّر الطور)
     if(G.status==="playing"&&G.phase==="sel"&&!isOff&&!selIv)startSelT();
     return;
@@ -3377,6 +3538,7 @@ function updateUI(prev){
     }
   } else if(G.status==="finished"){
     endGame();
+    handleRematchVote();
     // إعادة رسم النتائج عند وصول أي تحديث نقاط متأخر
     if(document.getElementById("results").classList.contains("on")){
       var sorted=[...G.teams].sort(function(a,b){return b.points-a.points;});
