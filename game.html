@@ -185,13 +185,16 @@ select.inp option{background:#0C1440;}
 .qlbl{font-size:.58rem;color:var(--dim);text-transform:uppercase;letter-spacing:.09em;}
 .qcbdg{padding:.16rem .54rem;border-radius:13px;font-size:.68rem;font-weight:700;border:1px solid;}
 .qtxt{font-size:clamp(.86rem,2.3vw,1rem);font-weight:700;line-height:1.54;color:#cce4ff;flex-shrink:0;}
+/* رموز الرياضيات: أوضح وأعرض (بلا تغيير الترتيب) */
+.mop{font-weight:900;font-size:1.22em;color:#FFD046;padding:0 .12em;letter-spacing:.02em;}
+.ob .mop{color:inherit;}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:.36rem;flex-shrink:0;}
 .ob{padding:.56rem .44rem;background:rgba(0,229,255,.05);border:1.5px solid rgba(0,229,255,.15);
   border-radius:9px;color:var(--text);font-family:"Tajawal",sans-serif;font-size:.76rem;font-weight:700;
   cursor:pointer;text-align:right;transition:all .17s;display:flex;gap:.3rem;align-items:center;}
 .ob:hover:not(:disabled){background:rgba(0,229,255,.11);border-color:var(--cyan);color:var(--cyan);transform:translateX(-2px);}
-.ob.ok{background:rgba(0,230,118,.12);border-color:var(--green);color:var(--green);}
-.ob.ng{background:rgba(255,61,90,.09);border-color:var(--red);color:var(--red);}
+.ob.ok{background:rgba(0,230,118,.22);border-color:var(--green);color:#7CFFC0;font-weight:900;box-shadow:0 0 14px rgba(0,230,118,.35);}
+.ob.ng{background:rgba(255,61,90,.2);border-color:var(--red);color:#FF8FA3;font-weight:900;box-shadow:0 0 12px rgba(255,61,90,.28);}
 .ob.rm{opacity:.1;cursor:not-allowed;border-style:dashed;transform:none!important;}
 .ob.hint-wrong{background:rgba(255,61,90,.06);border-color:rgba(255,61,90,.3);color:rgba(255,61,90,.55);}
 .ob:disabled{cursor:not-allowed;}
@@ -245,15 +248,16 @@ select.inp option{background:#0C1440;}
 .rbon{font-family:"Cairo",sans-serif;font-size:1.1rem;font-weight:900;}
 
 /* Answer overlay */
-.ansov{display:none;position:fixed;inset:0;z-index:150;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.8);backdrop-filter:blur(6px);flex-direction:column;
-  gap:.72rem;padding:2rem;text-align:center;}
+.ansov{display:none;position:fixed;left:0;right:0;bottom:0;z-index:150;align-items:center;justify-content:center;
+  background:rgba(7,11,31,.96);border-top:2px solid rgba(0,229,255,.25);
+  flex-direction:column;gap:.35rem;padding:.9rem 1.2rem calc(.9rem + env(safe-area-inset-bottom));text-align:center;
+  box-shadow:0 -8px 28px rgba(0,0,0,.6);}
 .ansov.on{display:flex;}
-.ansico{font-size:3rem;animation:popIn .33s cubic-bezier(.34,1.56,.64,1);}
-.ansmsg{font-family:"Cairo",sans-serif;font-size:1.3rem;font-weight:900;}
-.anspts{font-family:"Cairo",sans-serif;font-size:2.4rem;font-weight:900;color:var(--gold);}
-.ansdet{font-size:.74rem;color:rgba(255,255,255,.44);}
-.ansbon{font-size:.8rem;font-weight:700;}
+.ansico{font-size:1.9rem;animation:popIn .33s cubic-bezier(.34,1.56,.64,1);}
+.ansmsg{font-family:"Cairo",sans-serif;font-size:1.05rem;font-weight:900;}
+.anspts{font-family:"Cairo",sans-serif;font-size:1.7rem;font-weight:900;color:var(--gold);}
+.ansdet{font-size:.72rem;color:rgba(255,255,255,.44);}
+.ansbon{font-size:.78rem;font-weight:700;}
 .anscor{font-size:.76rem;color:rgba(255,255,255,.4);max-width:270px;}
 
 /* Results */
@@ -3421,6 +3425,8 @@ function startNewRound(agreedTeams){
   G.rematchVote=null; // نظّف التصويت
   G._rematchStamp=Date.now();
   _rematchSeen=G._rematchStamp;
+  // من يبدأ الجولة يصبح المضيف (المضيف السابق قد يكون خرج)
+  try{localStorage.setItem("tahadi_is_host","1");isHost=true;}catch(e){}
   saveState();
   SFX.start();ss("game");initGame();
   ntf("🔁 جولة جديدة! دور: "+ct().name,COLORS[ct().color].h);
@@ -3439,7 +3445,11 @@ function goHome(){
       }
     }
     // المضيف ينظّف غرفته في الانتظار/الانتهاء فقط (لا أثناء اللعب — قد يكمل الباقون)
-    if(fbDB&&G&&G.code&&localStorage.getItem("tahadi_is_host")==="1"){
+    // ولا يحذفها إن كان هناك تصويت على جولة جديدة أو موافقون سيكملون فيها
+    var rv=G&&G.rematchVote;
+    var votesCount=rv&&rv.votes?Object.keys(rv.votes).length:0;
+    var othersContinuing = !!rv && (votesCount>=1) && (Date.now() < (rv.deadline||0) + 60000);
+    if(fbDB&&G&&G.code&&localStorage.getItem("tahadi_is_host")==="1"&&!othersContinuing){
       if(!G.status||G.status==="finished"||G.status==="waiting"){
         fbDB.ref("rooms/"+G.code).remove().catch(function(){});
         fbDB.ref("publicRooms/"+G.code).remove().catch(function(){});
@@ -3532,7 +3542,7 @@ function updateUI(prev){
           var qv=document.getElementById("qwrap").style.display==="flex";
           if(!qv){rBoard();showQUI(G.cc);}
         }
-        rOpts_rev(la.chosen);
+        rOpts_rev(la.chosen,la.correct);
         showAns(la.ok,la.base||0,la.bonus||0,la.tl||0,la.correct,false,la.correctText);
       }
     }
@@ -3821,7 +3831,7 @@ function showQUI(cell){
   b.textContent=ci.i+" "+ci.l;b.style.background=ci.col+"13";b.style.color=ci.col;b.style.borderColor=ci.col+"3E";
   var cb=document.getElementById("catbdg");
   if(G.cq&&G.cq.cat){cb.textContent=G.cq.cat;cb.style.display="inline-block";}
-  document.getElementById("qtxt").textContent=G.cq.text;
+  document.getElementById("qtxt").innerHTML=mathFmt(G.cq.text);
   document.getElementById("audsec").style.display="none";
   // Double points indicator
   var tScore=document.getElementById("tscore");
@@ -3846,7 +3856,7 @@ function rOpts(q,rm,hintWrong){
     var btn=document.createElement("button"),r=rm.indexOf(l)>-1,hw=hintWrong.indexOf(l)>-1;
     btn.className="ob"+(r?" rm":"")+(hw?" hint-wrong":"");
     btn.disabled=r||!can;
-    btn.innerHTML="<span class=\"ol\">"+l+"</span><span>"+q[l]+"</span>";
+    btn.innerHTML="<span class=\"ol\">"+l+"</span><span>"+mathFmt(q[l])+"</span>";
     if(!r&&!hw&&can)btn.onclick=(function(letter){return function(){doSubmit(letter);};})(l);
     el.appendChild(btn);
   });
@@ -4017,13 +4027,23 @@ function doSteal(teamId){
   },1000);
 }
 
-function rOpts_rev(chosen){
-  var q=G.cq;
+/* يبرز رموز الرياضيات لتكون واضحة (بلا أي تغيير في الترتيب أو النص) */
+function mathFmt(txt){
+  if(!txt)return "";
+  // اهرب من HTML أولاً حفاظاً على الأمان
+  var esc=txt.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  // أبرز العوامل الرياضية فقط
+  return esc.replace(/([+\-×÷=%^√])/g,'<span class="mop">$1</span>');
+}
+
+function rOpts_rev(chosen,correctLetter){
+  var corr=correctLetter||(G.cq&&G.cq.correct);
   document.querySelectorAll(".ob").forEach(function(b,i){
     if(b.classList.contains("rm"))return;
     var l=["A","B","C","D"][i];
-    if(l===q.correct)b.classList.add("ok");
-    else if(l===chosen&&chosen!==q.correct)b.classList.add("ng");
+    b.classList.remove("ok","ng");
+    if(l===corr)b.classList.add("ok");            // الصحيحة دائماً خضراء
+    else if(l===chosen)b.classList.add("ng");     // اختياره الخاطئ أحمر
     b.disabled=true;
   });
 }
@@ -4047,10 +4067,8 @@ function showAns(ok,base,bonus,tl,corr,isDriver,corrText){
     cor.style.display="none";
   } else {
     pts.style.display="none";det.style.display="none";bon.style.display="none";
-    // نص الإجابة الصحيحة: من المُمرَّر (كشف المنافس) أو من G.cq (اللاعب الحالي)
-    var ansTxt=corrText||(corr&&G.cq?G.cq[corr]:"");
-    if(corr&&ansTxt){cor.textContent="الإجابة الصحيحة: "+corr+" — "+ansTxt;cor.style.display="block";}
-    else cor.style.display="none";
+    // لا نكرر نص الإجابة — الخيار الصحيح يظهر بالأخضر في القائمة نفسها
+    cor.style.display="none";
   }
   ov.classList.add("on");clearTimeout(ansTO);
   ansTO=setTimeout(function(){
@@ -4165,7 +4183,7 @@ function doChange(){
   if(!pool.length){ntf("لا توجد أسئلة للتغيير","#FF3D5A");return;}
   var nq=pool[Math.floor(Math.random()*pool.length)];
   G.cq=nq;G.qs[G.qi]=nq;
-  document.getElementById("qtxt").textContent=nq.text;
+  document.getElementById("qtxt").innerHTML=mathFmt(nq.text);
   document.getElementById("audsec").style.display="none";
   if(nq.cat){var cb=document.getElementById("catbdg");cb.textContent=nq.cat;cb.style.display="inline-block";}
   rOpts(nq);startT();
