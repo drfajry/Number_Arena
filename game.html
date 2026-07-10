@@ -306,16 +306,6 @@ select.inp option{background:#0C1440;}
 .flip-pts{font-family:"Cairo",sans-serif;font-size:1.3rem;font-weight:900;}
 .flip-name{font-size:.7rem;color:var(--dim);margin-top:.2rem;}
 
-/* Steal banner */
-.steal-banner{background:linear-gradient(135deg,rgba(255,208,70,.12),rgba(255,208,70,.06));
-  border:1.5px solid rgba(255,208,70,.3);border-radius:11px;padding:.65rem .9rem;
-  flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
-.steal-text{font-size:.75rem;color:var(--gold);font-weight:700;}
-.steal-btns{display:flex;gap:.4rem;flex-wrap:wrap;}
-.steal-btn{padding:.3rem .65rem;border:1px solid var(--gold);border-radius:8px;
-  background:rgba(255,208,70,.1);color:var(--gold);font-size:.68rem;font-weight:700;
-  cursor:pointer;transition:all .17s;font-family:"Tajawal",sans-serif;}
-.steal-btn:hover{background:rgba(255,208,70,.22);}
 
 /* Toast */
 .ntf{position:fixed;top:.85rem;left:50%;transform:translateX(-50%) translateY(-110px);
@@ -412,11 +402,6 @@ select.inp option{background:#0C1440;}
       <div class="auds"><div class="audlbl">📊 تصويت الجمهور</div><div class="audbars" id="audbars"></div></div>
     </div>
     <div class="opts" id="optg"></div>
-    <!-- Steal banner (shown after wrong answer) -->
-    <div id="stealBanner" style="display:none" class="steal-banner">
-      <div class="steal-text">⚡ فرصة سرقة السؤال!</div>
-      <div class="steal-btns" id="stealBtns"></div>
-    </div>
     <div class="sep"></div>
     <div class="lllbl" id="lllbl">🆘 وسائل المساعدة</div>
     <div class="llrow" id="llrow"></div>
@@ -2972,7 +2957,6 @@ var SFX=(function(){
     luck:   function(){beep({notes:[{freq:300,dur:.06,time:0,vol:.25},{freq:500,dur:.06,time:.07,vol:.25},{freq:700,dur:.06,time:.14,vol:.25},{freq:900,dur:.1,time:.21,vol:.3}]});},
     flip:   function(){beep({type:"square",notes:[{freq:880,dur:.08,time:0,vol:.22},{freq:440,dur:.08,time:.1,vol:.22},{freq:880,dur:.12,time:.2,vol:.28}]});},
     shield: function(){beep({type:"triangle",freq:700,freq2:900,dur:.16,vol:.22,attack:.01,decay:.05});},
-    steal:  function(){beep({notes:[{freq:600,dur:.08,time:0,vol:.28},{freq:800,dur:.08,time:.09,vol:.28},{freq:600,dur:.08,time:.18,vol:.28}]});},
     toggle: function(){en=!en;localStorage.setItem("tahadi_sound",en?"1":"0");if(en)this.click();return en;},
     isOn:   function(){return en;}
   };
@@ -3050,7 +3034,7 @@ refreshTiers();
 var G=null, myId=null, isHost=false, isOff=false;
 var _fbConnected=true, _wasDisconnected=false, _lastAnsSeen=0, _odCancelled=false, _lastAdvancedQi=-1;
 var tiv=null, tleft=TS, frozen=false, ftout=null;
-var yqPend=false, stealPending=false, dblPts=false;
+var yqPend=false, dblPts=false;
 var ansTO=null, fbDB=null, fbRef=null, pollIv=null, ntout=null;
 var sc="cyan", sj="cyan";
 
@@ -3662,7 +3646,7 @@ function initGame(){
   document.getElementById("fchip").style.display="none";
   document.getElementById("shieldChip").style.display="none";
   document.getElementById("dblChip").style.display="none";
-  dblPts=false;stealPending=false;
+  dblPts=false;
   stopT();resetTUI();rBanner();
   if(G.phase==="sel")startSelT();
 }
@@ -3709,7 +3693,6 @@ function showQ(){
   document.getElementById("bwrap").style.display="none";
   document.getElementById("qwrap").style.display="flex";
   document.getElementById("wban").style.display="none";
-  document.getElementById("stealBanner").style.display="none";
 }
 function rBanner(){
   if(isOff){document.getElementById("wban").style.display="none";return;}
@@ -3934,8 +3917,6 @@ function doSubmit(letter){
   } else {
     SFX.wrong();
     dblPts=false;
-    // Show steal banner if steal lifeline was active (always show for opposing teams)
-    showStealBanner();
   }
   if(G.cc){
     // علّم الخلية على اللوحة نفسها بالفهرس (G.cc قد يكون نسخة منفصلة بعد تزامن Firebase)
@@ -3946,86 +3927,9 @@ function doSubmit(letter){
   // احفظ نتيجة الإجابة ليراها الجميع (الهدف التعليمي): الاختيار + الصحيح + النقاط
   G.lastAns={chosen:letter,correct:q.correct,correctText:q[q.correct],ok:ok,qtext:q.text,stamp:Date.now(),team:ct().name,base:base,bonus:bonus,tl:snap};
   saveState();
-  if(!ok&&stealPending){
-    // Handled by steal banner
-    stealPending=false;
-    return;
-  }
   showAns(ok,base,bonus,snap,q.correct,true);
 }
 
-function showStealBanner(){
-  // Show steal opportunity to OTHER teams
-  var others=G.teams.filter(function(t){return t.id!==ct().id;});
-  if(!others.length||isOff)return; // offline: no steal
-  var banner=document.getElementById("stealBanner");
-  var btns=document.getElementById("stealBtns");
-  btns.innerHTML="";
-  others.forEach(function(t){
-    var b=document.createElement("button");b.className="steal-btn";
-    b.innerHTML="⚡ "+t.name+" يسرق!";
-    b.onclick=function(){doSteal(t.id);};
-    btns.appendChild(b);
-  });
-  banner.style.display="flex";
-  // Auto hide after 8s
-  setTimeout(function(){
-    if(document.getElementById("stealBanner").style.display!=="none"){
-      document.getElementById("stealBanner").style.display="none";
-      showAns(false,0,0,0,G.cq&&G.cq.correct,true);
-    }
-  },8000);
-}
-
-function doSteal(teamId){
-  var banner=document.getElementById("stealBanner");
-  banner.style.display="none";
-  SFX.steal();
-  // Switch current team to stealer temporarily
-  var origCi=G.ci;
-  var stealerIdx=G.teams.findIndex(function(t){return t.id===teamId;});
-  if(stealerIdx<0){showAns(false,0,0,0,G.cq&&G.cq.correct,true);return;}
-  // Re-enable options for stealer
-  stopT();
-  var snap=15; // give 15s to steal
-  tleft=snap;updTUI();
-  ntf("⚡ "+G.teams[stealerIdx].name+" لديه فرصة للسرقة!","#FFD046");
-  // Re-render opts for stealer
-  rOpts(G.cq,[],[]);
-  document.getElementById("optg").querySelectorAll(".ob").forEach(function(btn,i){
-    var l=["A","B","C","D"][i];
-    btn.disabled=false;
-    btn.onclick=function(){
-      stopT();
-      var ok=l===G.cq.correct;
-      rOpts_rev(l);
-      if(ok){
-        SFX.correct();
-        var pts=calcP(snap);
-        G.teams[stealerIdx].points+=pts;
-        bump(G.teams[stealerIdx]);
-        saveState();
-        ntf("🎉 "+G.teams[stealerIdx].name+" سرق النقاط!","#00E676");
-        setTimeout(function(){
-          G.ci=origCi;
-          showAns(false,0,0,0,G.cq.correct,true);
-        },1200);
-      } else {
-        SFX.wrong();
-        ntf("❌ فشلت السرقة!","#FF3D5A");
-        setTimeout(function(){
-          G.ci=origCi;
-          showAns(false,0,0,0,G.cq.correct,true);
-        },1200);
-      }
-    };
-  });
-  // Timer for steal
-  tiv=setInterval(function(){
-    if(snap<=0){stopT();banner.style.display="none";G.ci=origCi;showAns(false,0,0,0,G.cq.correct,true);}
-    snap--;tleft=snap;updTUI();
-  },1000);
-}
 
 /* يبرز رموز الرياضيات لتكون واضحة (بلا أي تغيير في الترتيب أو النص) */
 function mathFmt(txt){
@@ -4093,7 +3997,7 @@ function nextT(){
   G.ci=(G.ci+1)%G.teams.length;
   var _guard=0;
   while(G.teams[G.ci]&&G.teams[G.ci].left&&_guard<G.teams.length){G.ci=(G.ci+1)%G.teams.length;_guard++;}
-  G.phase="sel";G.cc=null;G.cq=null;yqPend=false;stealPending=false;
+  G.phase="sel";G.cc=null;G.cq=null;yqPend=false;
   G.answerDeadline=null;G.selDeadline=null;G.lastAns=null;
   dblPts=false;frozen=false;
   document.getElementById("fchip").style.display="none";
@@ -4107,7 +4011,6 @@ function nextT(){
   saveState();updH();rBar();rBoard();showBoard();
   document.getElementById("tscore").textContent="";
   document.getElementById("catbdg").style.display="none";
-  document.getElementById("stealBanner").style.display="none";
   stopT();resetTUI();rBanner();
   ntf("دور: "+ct().name,COLORS[ct().color].h);
 }
