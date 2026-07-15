@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
 <title>تحدي الأرقام — اللعبة</title>
 <link rel="icon" href="logo.png">
 <script>
@@ -19,6 +19,9 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
+/* دعم المنطقة الآمنة في iPhone (الكاميرا/النتوء وشريط الإيماءات) */
+html{background:#070B1F;}
+
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
   --bg:#070B1F;--bg2:#0C1130;--card:rgba(255,255,255,.04);--card2:rgba(255,255,255,.07);
@@ -30,7 +33,7 @@ body{font-family:"Tajawal",sans-serif;background:var(--bg);color:var(--text);min
 body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(ellipse 120% 50% at 50% -5%,rgba(10,50,200,.4),transparent 65%),
   radial-gradient(ellipse 50% 40% at 0% 100%,rgba(0,229,255,.09),transparent 55%);}
-.scr{display:none;flex-direction:column;min-height:100vh;position:relative;z-index:1;}
+.scr{display:none;flex-direction:column;min-height:100vh;position:relative;z-index:1;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);box-sizing:border-box;}
 .scr.on{display:flex;}
 
 /* ── BUTTONS ── */
@@ -102,7 +105,7 @@ select.inp option{background:#0C1440;}
 .tslot.filled{border-style:solid;}
 
 /* ══ GAME LAYOUT ══ */
-#game{padding:.5rem;gap:.42rem;height:100vh;max-height:100vh;overflow:hidden;}
+#game{padding:.5rem;gap:.42rem;height:100vh;max-height:100vh;overflow:hidden;box-sizing:border-box;}
 
 /* Header */
 .ghdr{display:flex;align-items:center;justify-content:space-between;
@@ -308,7 +311,7 @@ select.inp option{background:#0C1440;}
 
 
 /* Toast */
-.ntf{position:fixed;top:.85rem;left:50%;transform:translateX(-50%) translateY(-110px);
+.ntf{position:fixed;top:calc(.85rem + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-110px);
   background:linear-gradient(135deg,#060D28,#091240);border:1px solid rgba(0,229,255,.3);
   border-radius:11px;padding:.52rem 1rem;font-weight:700;font-size:.82rem;z-index:999;
   transition:transform .36s cubic-bezier(.34,1.56,.64,1);
