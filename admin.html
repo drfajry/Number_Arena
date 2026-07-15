@@ -548,7 +548,7 @@ function loadDashboard(){
   }
 
   var stats=[
-    {val:data.users.length,      lbl:"إجمالي المستخدمين", col:"var(--cyan)"},
+    {val:data.users.length,      lbl:"إجمالي المستخدمين", col:"var(--cyan)", id:"stat-users"},
     {val:activeSubs.length,      lbl:"اشتراكات نشطة",      col:"var(--green)"},
     {val:proCount,               lbl:"مشتركو Pro",          col:"var(--cyan)"},
     {val:eliteCount,             lbl:"مشتركو Elite",        col:"#C084FC"},
@@ -558,9 +558,17 @@ function loadDashboard(){
   var sg=document.getElementById("statsGrid");sg.innerHTML="";
   stats.forEach(function(s){
     var d=document.createElement("div");d.className="stat-card";
-    d.innerHTML="<div class=\"stat-val\" style=\"color:"+s.col+"\">"+s.val+"</div><div class=\"stat-lbl\">"+s.lbl+"</div>";
+    var idAttr=s.id?(" id=\""+s.id+"\""):"";
+    d.innerHTML="<div class=\"stat-val\""+idAttr+" style=\"color:"+s.col+"\">"+s.val+"</div><div class=\"stat-lbl\">"+s.lbl+"</div>";
     sg.appendChild(d);
   });
+  // ── العدد الحقيقي للمستخدمين من Firebase (حيّ) ──
+  if(window.TahadiDB&&TahadiDB.getAllUsers){
+    TahadiDB.getAllUsers().then(function(fbUsers){
+      var el=document.getElementById("stat-users");
+      if(el&&fbUsers)el.textContent=fbUsers.length;
+    }).catch(function(){});
+  }
   var recent=data.subscriptions.slice(-10).reverse();
   var tbody=document.getElementById("recentSubs");tbody.innerHTML="";
   if(!recent.length){
