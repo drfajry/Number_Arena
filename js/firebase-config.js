@@ -28,6 +28,103 @@ const FIREBASE_CONFIG = {
    * ═══════════════════════════════════════════════════ */
   var rtdb = firebase.database();
 
+  /* ═══════════════════════════════════════════════════
+   *  TahadiAuth — طبقة المصادقة الآمنة (Firebase Auth)
+   *  بريد + كلمة مرور، تحقق مرة واحدة، حفظ الجلسة
+   * ═══════════════════════════════════════════════════ */
+  var ADMIN_EMAIL = "dr.fajry@gmail.com";
+  var _auth = (typeof firebase.auth === "function") ? firebase.auth() : null;
+
+  // احفظ الجلسة محلياً (يبقى مسجّلاً حتى بعد إغلاق التطبيق)
+  if(_auth){
+    try{ _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); }catch(e){}
+  }
+
+  window.TahadiAuth = {
+    admin_email: ADMIN_EMAIL,
+
+    // هل المصادقة متاحة؟
+    ready: function(){ return !!_auth; },
+
+    // تسجيل جديد: ينشئ الحساب، يرسل بريد تحقق مرة واحدة، يحفظ الملف
+    signUp: function(email, password, name, phone){
+      if(!_auth) return Promise.reject(new Error("المصادقة غير متاحة"));
+      return _auth.createUserWithEmailAndPassword(email, password)
+        .then(function(cred){
+          var user = cred.user;
+          // احفظ ملف المستخدم في قاعدة البيانات
+          var uid = user.uid;
+          var profile = {
+            email: email,
+            name: name || "",
+            phone: phone || "",
+            uid: uid,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          return rtdb.ref("users/"+uid+"/profile").set(profile)
+            .then(function(){
+              // أرسل بريد التحقق مرة واحدة
+              return user.sendEmailVerification().catch(function(){});
+            })
+            .then(function(){ return user; });
+        });
+    },
+
+    // دخول: بريد + كلمة مرور
+    signIn: function(email, password){
+      if(!_auth) return Promise.reject(new Error("المصادقة غير متاحة"));
+      return _auth.signInWithEmailAndPassword(email, password)
+        .then(function(cred){ return cred.user; });
+    },
+
+    // خروج
+    signOut: function(){
+      if(!_auth) return Promise.resolve();
+      return _auth.signOut();
+    },
+
+    // نسيت كلمة المرور: يرسل رابط إعادة تعيين آمن
+    resetPassword: function(email){
+      if(!_auth) return Promise.reject(new Error("المصادقة غير متاحة"));
+      return _auth.sendPasswordResetEmail(email);
+    },
+
+    // إعادة إرسال بريد التحقق
+    resendVerification: function(){
+      var u = _auth && _auth.currentUser;
+      if(!u) return Promise.reject(new Error("لا يوجد مستخدم"));
+      return u.sendEmailVerification();
+    },
+
+    // المستخدم الحالي (أو null)
+    currentUser: function(){ return _auth ? _auth.currentUser : null; },
+
+    // هل البريد محقّق؟
+    isVerified: function(){
+      var u = _auth && _auth.currentUser;
+      return !!(u && u.emailVerified);
+    },
+
+    // هل المستخدم الحالي هو الأدمن؟
+    isAdmin: function(){
+      var u = _auth && _auth.currentUser;
+      return !!(u && u.email && u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+    },
+
+    // راقب حالة الدخول (تُستدعى عند كل تغيّر)
+    onChange: function(cb){
+      if(!_auth){ cb(null); return function(){}; }
+      return _auth.onAuthStateChanged(cb);
+    },
+
+    // معرّف المستخدم الحالي
+    uid: function(){
+      var u = _auth && _auth.currentUser;
+      return u ? u.uid : null;
+    }
+  };
+
   window.TahadiDB = {
     /* معرّف موحّد من الإيميل */
     emailToUid: function(email){
@@ -42,6 +139,39 @@ const FIREBASE_CONFIG = {
         email: email,
         expiresAt: expiresAt,
         updatedAt: new Date().toISOString()
+      });
+    },
+
+    /* ── جسر البريد↔المعرّف (لعمل لوحة التحكم بالبريد مع Firebase Auth) ── */
+    // يسجّل ربط البريد بمعرّف Auth عند التسجيل/الدخول
+    indexEmail: function(email, authUid){
+      var key = btoa(email.toLowerCase()).replace(/[^a-zA-Z0-9]/g,"");
+      return rtdb.ref("emailIndex/"+key).set({ email: email.toLowerCase(), uid: authUid });
+    },
+    // يجلب معرّف Auth من البريد (للوحة التحكم)
+    uidByEmail: function(email){
+      var key = btoa(email.toLowerCase()).replace(/[^a-zA-Z0-9]/g,"");
+      return rtdb.ref("emailIndex/"+key).once("value").then(function(s){
+        var v = s.val();
+        return v ? v.uid : null;
+      });
+    },
+
+    /* تفعيل خطة بمعرّف Auth مباشرة (النظام الجديد) */
+    setPlanByUid: function(uid, email, plan, expiresAt){
+      return rtdb.ref("users/"+uid+"/currentPlan").set({
+        plan: plan,
+        email: email,
+        expiresAt: expiresAt,
+        updatedAt: new Date().toISOString()
+      });
+    },
+    getPlanByUid: function(uid){
+      return rtdb.ref("users/"+uid+"/currentPlan").once("value").then(function(s){
+        var plan=s.val();
+        if(!plan)return null;
+        if(new Date(plan.expiresAt)<new Date())return null;
+        return plan;
       });
     },
 
