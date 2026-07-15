@@ -16,6 +16,7 @@
   <meta name="twitter:image" content="https://drfajry.github.io/Number_Arena/logo.png">
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="js/firebase-config.js"></script>
 <meta charset="UTF-8">
@@ -1315,74 +1316,38 @@ function authShowStep(n){
   });
 }
 
-/* ── نسيت كلمة المرور (استعادة ذاتية عبر رمز البريد) ── */
+/* ── نسيت كلمة المرور (رابط إعادة تعيين آمن من Firebase) ── */
 var _fpEmail="", _fpCode="", _fpUid="";
 function startForgot(){
   var email=(document.getElementById("authEmail").value||"").trim().toLowerCase();
   var err=document.getElementById("authS1Err");err.style.display="none";
   if(!email||email.indexOf("@")<0){err.textContent="❗ أدخل بريدك الإلكتروني أولاً ثم اضغط نسيت كلمة المرور";err.style.display="block";return;}
-  // تحقق أن الحساب موجود (محلياً أو سحابياً) قبل الإرسال
+  if(!window.TahadiAuth||!TahadiAuth.ready()){err.textContent="❗ نظام الدخول غير متاح، حدّث الصفحة";err.style.display="block";return;}
+
   var btn=document.getElementById("authSubmitBtn");
-  function proceed(){
-    _fpEmail=email;
-    _fpCode=String(Math.floor(100000+Math.random()*900000));
-    var nm=email.split("@")[0];
-    document.getElementById("fpEmailDisp").textContent=email;
-    authShowStep(4);
-    for(var i=0;i<6;i++)document.getElementById("fp"+i).value="";
-    sendOTPEmail(email,nm,_fpCode,function(ok){
-      document.getElementById("fpDemoHint").style.display=ok?"none":"block";
-      setTimeout(function(){document.getElementById("fp0").focus();},300);
-    });
-  }
-  // تحقق سحابي من وجود الحساب
-  if(window.TahadiDB&&TahadiDB.getPassHash){
-    TahadiDB.getPassHash(email).then(function(h){
-      var local=getUsers()[email];
-      if(h||local){proceed();}
-      else{err.textContent="❌ لا يوجد حساب بهذا البريد";err.style.display="block";}
-    }).catch(function(){
-      if(getUsers()[email])proceed();
-      else{err.textContent="❌ لا يوجد حساب بهذا البريد";err.style.display="block";}
-    });
-  } else {
-    if(getUsers()[email])proceed();
-    else{err.textContent="❌ لا يوجد حساب بهذا البريد";err.style.display="block";}
-  }
+  btn.disabled=true;
+  TahadiAuth.resetPassword(email).then(function(){
+    btn.disabled=false;
+    ntf("✅ أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك","#00E676");
+    err.style.display="none";
+  }).catch(function(e){
+    btn.disabled=false;
+    var code=(e&&e.code)||"";
+    if(code==="auth/user-not-found"){
+      // لأمانك، Firebase لا يكشف إن كان البريد مسجّلاً — نعرض نفس الرسالة
+      ntf("✅ إن كان البريد مسجّلاً، فستصلك رسالة إعادة التعيين","#00E676");
+    } else if(code==="auth/invalid-email"){
+      err.textContent="❗ البريد الإلكتروني غير صحيح";err.style.display="block";
+    } else {
+      err.textContent="❌ تعذّر الإرسال: "+(e&&e.message||code);err.style.display="block";
+    }
+  });
 }
-function fpIn(i){var el=document.getElementById("fp"+i);if(el.value&&i<5)document.getElementById("fp"+(i+1)).focus();}
-function fpKey(i,e){if(e.key==="Backspace"&&!document.getElementById("fp"+i).value&&i>0)document.getElementById("fp"+(i-1)).focus();}
-function fpVerify(){
-  var code="";for(var i=0;i<6;i++)code+=document.getElementById("fp"+i).value;
-  var err=document.getElementById("authS4Err");err.style.display="none";
-  if(code.length!==6){err.textContent="❗ أدخل الرمز كاملاً";err.style.display="block";return;}
-  if(code!==_fpCode){err.textContent="❌ رمز غير صحيح";err.style.display="block";return;}
-  authShowStep(5);
-  setTimeout(function(){document.getElementById("fpNewPass").focus();},300);
-}
-function fpSetNew(){
-  var p1=document.getElementById("fpNewPass").value;
-  var p2=document.getElementById("fpNewPass2").value;
-  var err=document.getElementById("authS5Err");err.style.display="none";
-  if(p1.length<6){err.textContent="❗ كلمة المرور 6 أحرف على الأقل";err.style.display="block";return;}
-  if(p1!==p2){err.textContent="❌ كلمتا المرور غير متطابقتين";err.style.display="block";return;}
-  var newHash=hashPass(p1);
-  // حدّث البصمة محلياً وسحابياً
-  var users=getUsers();
-  var uid="u_"+btoa(_fpEmail).replace(/[^a-zA-Z0-9]/g,"").slice(0,16);
-  var existing=users[_fpEmail];
-  var user=existing||{name:_fpEmail.split("@")[0],email:_fpEmail,phone:"",uid:uid};
-  user.pass=newHash;users[_fpEmail]=user;saveUsers(users);
-  function finish(){
-    ntf("✅ تم تغيير كلمة المرور","#00E676");
-    document.getElementById("authWelcome").textContent="أهلاً "+user.name+" 🎉";
-    authShowStep(3);
-    loginUser(user,true);
-  }
-  if(window.TahadiDB&&TahadiDB.savePassHash){
-    TahadiDB.savePassHash(_fpEmail,newHash).then(finish).catch(finish);
-  } else finish();
-}
+// دوال الرمز القديمة (لم تعد مستخدمة، أُبقيت فارغة لتفادي أخطاء الاستدعاء)
+function fpIn(i){}
+function fpKey(i,e){}
+function fpVerify(){}
+function fpSetNew(){}
 
 /* قاعدة المستخدمين المحلية + Firebase */
 function getUsers(){
@@ -1398,6 +1363,8 @@ function hashPass(p){
 function authSubmit(){
   var email=document.getElementById("authEmail").value.trim().toLowerCase();
   var pass =document.getElementById("authPass").value;
+  var nameEl=document.getElementById("authName");
+  var name =(nameEl?nameEl.value:"").trim();
   var err  =document.getElementById("authS1Err");
   err.style.display="none";
   if(!email||!email.includes("@")||!email.includes(".")){
@@ -1406,98 +1373,83 @@ function authSubmit(){
   if(!pass||pass.length<6){
     err.textContent="❗ كلمة المرور 6 أحرف على الأقل";err.style.display="block";return;
   }
+  if(_authBusy) return;
+  if(!window.TahadiAuth||!TahadiAuth.ready()){
+    err.textContent="❗ نظام الدخول غير متاح، حدّث الصفحة";err.style.display="block";return;
+  }
 
-  if(_authBusy) return; // طلب قيد التنفيذ — تجاهل Enter/النقرات الإضافية
-
-  var users=getUsers();
-  var existing=users[email];
   var btn=document.getElementById("authSubmitBtn");
+  _authBusy=true;
+  btn.disabled=true;btn.textContent="جارٍ الدخول...";
 
-  function proceedSignupOTP(){
-    // إنشاء حساب جديد — الرمز يُرسل مرة واحدة فقط هنا
-    _pendingEmail=email;
-    _pendingPass=pass;
-    _pendingName=(document.getElementById("authName").value||"").trim();
-    var emailName=_pendingName||email.split("@")[0];
-    // مانع التكرار: إن أُرسل رمز لنفس الإيميل خلال 45 ثانية، اعرض شاشة الإدخال بلا إرسال جديد
-    var last=_lastOtpSend[email]||0;
-    if(Date.now()-last<45000){
-      _authBusy=false;
-      document.getElementById("authEmailDisp").textContent=email;
-      authShowStep(2);
-      ntf("استخدم الرمز المُرسل سابقاً لإيميلك","#FFD046");
-      setTimeout(function(){document.getElementById("otp0").focus();},300);
-      return;
-    }
-    _lastOtpSend[email]=Date.now();
-    _authBusy=true;
-    _otpCode=String(Math.floor(100000+Math.random()*900000));
-    btn.disabled=true;btn.textContent="جارٍ الإرسال...";
-    sendOTPEmail(email,emailName,_otpCode,function(ok){
-      _authBusy=false;
-      btn.disabled=false;btn.textContent="دخول / تسجيل →";
-      document.getElementById("demoHint").style.display=ok?"none":"block";
-      document.getElementById("authEmailDisp").textContent=email;
-      authShowStep(2);
-      for(var i=0;i<6;i++)document.getElementById("otp"+i).value="";
-      startOtpTimer();
-      setTimeout(function(){document.getElementById("otp0").focus();},300);
-    });
-  }
-
-  if(existing){
-    // مستخدم موجود محلياً — دخول مباشر بدون أي رمز
-    if(existing.pass===hashPass(pass)){
-      loginUser(existing);
-      // مزامنة البصمة سحابياً (ترحيل الحسابات القديمة)
-      if(window.TahadiDB&&TahadiDB.savePassHash){
-        TahadiDB.savePassHash(email,existing.pass).catch(function(){});
-      }
-    } else {
+  // الشاشة الذكية: جرّب الدخول أولاً
+  TahadiAuth.signIn(email,pass).then(function(fbUser){
+    // نجح الدخول
+    _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
+    finishAuthLogin(fbUser);
+  }).catch(function(e){
+    var code=(e&&e.code)||"";
+    if(code==="auth/user-not-found"||code==="auth/invalid-credential"){
+      // قد يكون مستخدماً جديداً — حاول التسجيل
+      // (invalid-credential يشمل أحياناً "غير موجود" في النسخ الحديثة)
+      trySignup(email,pass,name,btn,err);
+    } else if(code==="auth/wrong-password"){
+      _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
       err.textContent="❌ كلمة المرور غير صحيحة";err.style.display="block";
+    } else if(code==="auth/too-many-requests"){
+      _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
+      err.textContent="❗ محاولات كثيرة، انتظر قليلاً ثم أعد المحاولة";err.style.display="block";
+    } else {
+      _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
+      err.textContent="❌ تعذّر الدخول: "+(e&&e.message||code);err.style.display="block";
     }
-    return;
-  }
+  });
+}
 
-  // لا يوجد سجل محلي — تحقق من Firebase قبل إرسال أي رمز
-  // (يحل مشكلة: طلب كود التحقق بعد مسح تخزين الجهاز أو الدخول من جهاز آخر)
-  if(window.TahadiDB&&TahadiDB.getPassHash){
-    _authBusy=true;
-    btn.disabled=true;btn.textContent="جارٍ التحقق...";
-    TahadiDB.getPassHash(email).then(function(cloudHash){
-      btn.disabled=false;btn.textContent="دخول / تسجيل →";
-      if(cloudHash){
-        _authBusy=false;
-        // حساب موجود سحابياً — دخول مباشر بدون رمز
-        if(cloudHash===hashPass(pass)){
-          var uid=TahadiDB.emailToUid(email);
-          TahadiDB.getUser(uid).then(function(prof){
-            var user={
-              name:(prof&&prof.name)||email.split("@")[0],
-              email:email, phone:(prof&&prof.phone)||"",
-              uid:uid, pass:cloudHash
-            };
-            var u2=getUsers(); u2[email]=user; saveUsers(u2);
-            loginUser(user);
-          }).catch(function(){
-            var user={name:email.split("@")[0],email:email,phone:"",uid:TahadiDB.emailToUid(email),pass:cloudHash};
-            var u2=getUsers(); u2[email]=user; saveUsers(u2);
-            loginUser(user);
-          });
-        } else {
-          err.textContent="❌ كلمة المرور غير صحيحة";err.style.display="block";
-        }
-      } else {
-        // لا حساب سحابياً — تسجيل جديد (رمز لمرة واحدة)
-        proceedSignupOTP();
-      }
+// محاولة التسجيل (عندما لا يوجد حساب بالبريد)
+function trySignup(email,pass,name,btn,err){
+  btn.textContent="جارٍ إنشاء الحساب...";
+  TahadiAuth.signUp(email,pass,name).then(function(fbUser){
+    _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
+    // سجّل جسر البريد↔المعرّف (للوحة التحكم)
+    if(window.TahadiDB&&TahadiDB.indexEmail){TahadiDB.indexEmail(email,fbUser.uid).catch(function(){});}
+    ntf("✅ تم إنشاء حسابك! تحقق من بريدك لتأكيده","#00E676");
+    finishAuthLogin(fbUser);
+  }).catch(function(e){
+    _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
+    var code=(e&&e.code)||"";
+    if(code==="auth/email-already-in-use"){
+      // الحساب موجود لكن كلمة المرور خاطئة (وصلنا هنا من فشل دخول)
+      err.textContent="❌ كلمة المرور غير صحيحة";err.style.display="block";
+    } else if(code==="auth/weak-password"){
+      err.textContent="❗ كلمة المرور ضعيفة (6 أحرف على الأقل)";err.style.display="block";
+    } else if(code==="auth/invalid-email"){
+      err.textContent="❗ البريد الإلكتروني غير صحيح";err.style.display="block";
+    } else {
+      err.textContent="❌ تعذّر إنشاء الحساب: "+(e&&e.message||code);err.style.display="block";
+    }
+  });
+}
+
+// بعد نجاح الدخول/التسجيل عبر Firebase Auth
+function finishAuthLogin(fbUser){
+  // اجلب ملف المستخدم لبناء كائن التطبيق
+  var uid=fbUser.uid;
+  var email=fbUser.email;
+  if(window.TahadiDB&&TahadiDB.indexEmail){TahadiDB.indexEmail(email,uid).catch(function(){});}
+  if(window.TahadiDB&&TahadiDB.getUser){
+    TahadiDB.getUser(uid).then(function(prof){
+      var user={
+        name:(prof&&prof.name)||email.split("@")[0],
+        email:email, phone:(prof&&prof.phone)||"",
+        uid:uid
+      };
+      loginUser(user);
     }).catch(function(){
-      _authBusy=false;
-      btn.disabled=false;btn.textContent="دخول / تسجيل →";
-      proceedSignupOTP();
+      loginUser({name:email.split("@")[0],email:email,phone:"",uid:uid});
     });
   } else {
-    proceedSignupOTP();
+    loginUser({name:email.split("@")[0],email:email,phone:"",uid:uid});
   }
 }
 
@@ -1662,7 +1614,11 @@ function syncPlanFromDB(cb){
   var user=JSON.parse(authGet("tahadi_user")||"null");
   if(!user||!user.email){if(cb)cb();return;}
   if(window.TahadiDB&&window.firebase&&firebase.apps&&firebase.apps.length){
-    TahadiDB.getPlanByEmail(user.email).then(function(plan){
+    // اقرأ الخطة بمعرّف Auth الحقيقي (النظام الجديد)، مع تراجع للبريد
+    var planPromise = (user.uid&&TahadiDB.getPlanByUid)
+      ? TahadiDB.getPlanByUid(user.uid)
+      : TahadiDB.getPlanByEmail(user.email);
+    planPromise.then(function(plan){
       // Firebase هو المصدر النهائي — لا fallback بعد نجاح القراءة
       if(plan&&plan.plan){
         authSetOne("tahadi_pro","1");
@@ -1788,6 +1744,8 @@ function scrollToAffiliate(){document.getElementById("affiliate-section").scroll
 
 function doLogout(){
   window._forceLoggedOut=true; // امنع درع الجلسة من الاستعادة
+  // خروج من Firebase Auth
+  if(window.TahadiAuth&&TahadiAuth.ready()){ TahadiAuth.signOut().catch(function(){}); }
   authClearAll(["tahadi_token","tahadi_session","tahadi_user","tahadi_pro","tahadi_elite"]);
   try{
     var Prefs=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Preferences;
@@ -1816,6 +1774,30 @@ function _initApp(){
   _bindModalBackdrops();
   // Capture referral code from URL (?ref=CODE)
   if(window.Affiliate) Affiliate.captureReferralFromURL();
+
+  // ── استعادة جلسة Firebase Auth تلقائياً عند فتح التطبيق ──
+  if(window.TahadiAuth&&TahadiAuth.ready()){
+    TahadiAuth.onChange(function(fbUser){
+      if(window._forceLoggedOut) return; // خرج يدوياً في هذه الجلسة
+      if(fbUser){
+        // مستخدم مسجّل — استعد بياناته إن لم تكن الجلسة محليّة بعد
+        if(!authGet("tahadi_token")){
+          if(window.TahadiDB&&TahadiDB.indexEmail){TahadiDB.indexEmail(fbUser.email,fbUser.uid).catch(function(){});}
+          if(window.TahadiDB&&TahadiDB.getUser){
+            TahadiDB.getUser(fbUser.uid).then(function(prof){
+              loginUser({
+                name:(prof&&prof.name)||fbUser.email.split("@")[0],
+                email:fbUser.email, phone:(prof&&prof.phone)||"", uid:fbUser.uid
+              },true);
+            }).catch(function(){
+              loginUser({name:fbUser.email.split("@")[0],email:fbUser.email,phone:"",uid:fbUser.uid},true);
+            });
+          }
+        }
+      }
+    });
+  }
+
   // مزامنة الخطة من قاعدة البيانات ثم عرض الشريط
   syncPlanFromDB(function(){ renderUserBar(); });
   renderUserBar();
