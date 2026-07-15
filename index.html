@@ -1384,8 +1384,12 @@ function authSubmit(){
 
   // الشاشة الذكية: جرّب الدخول أولاً
   TahadiAuth.signIn(email,pass).then(function(fbUser){
-    // نجح الدخول
     _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
+    // ── منع الدخول حتى تفعيل البريد ──
+    if(fbUser && !fbUser.emailVerified){
+      showVerifyGate(email);
+      return;
+    }
     finishAuthLogin(fbUser);
   }).catch(function(e){
     var code=(e&&e.code)||"";
@@ -1413,8 +1417,8 @@ function trySignup(email,pass,name,btn,err){
     _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
     // سجّل جسر البريد↔المعرّف (للوحة التحكم)
     if(window.TahadiDB&&TahadiDB.indexEmail){TahadiDB.indexEmail(email,fbUser.uid).catch(function(){});}
-    ntf("✅ تم إنشاء حسابك! تحقق من بريدك لتأكيده","#00E676");
-    finishAuthLogin(fbUser);
+    // لا ندخل مباشرة — نطلب تفعيل البريد أولاً
+    showVerifyGate(email);
   }).catch(function(e){
     _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
     var code=(e&&e.code)||"";
@@ -1429,6 +1433,62 @@ function trySignup(email,pass,name,btn,err){
       err.textContent="❌ تعذّر إنشاء الحساب: "+(e&&e.message||code);err.style.display="block";
     }
   });
+}
+
+// شاشة "فعّل بريدك" — تمنع الدخول حتى التفعيل
+function showVerifyGate(email){
+  var msg="📧 فعّل بريدك أولاً\n\n"+
+    "أرسلنا رابط تفعيل إلى:\n"+email+"\n\n"+
+    "افتح الرابط في بريدك (تحقق من مجلد الرسائل غير المرغوبة Spam)، ثم عُد واضغط \"لقد فعّلت\".";
+  // نافذة بسيطة داخل شاشة الدخول
+  var box=document.getElementById("verifyGate");
+  if(!box){
+    box=document.createElement("div");
+    box.id="verifyGate";
+    box.style.cssText="margin-top:1rem;padding:1rem;border-radius:12px;background:rgba(255,208,70,.08);border:1px solid rgba(255,208,70,.3);text-align:center;";
+    var s1=document.getElementById("authEmail");
+    if(s1&&s1.parentElement)s1.parentElement.parentElement.appendChild(box);
+  }
+  box.style.display="block";
+  box.innerHTML=
+    '<div style="font-weight:900;color:var(--gold);margin-bottom:.5rem">📧 فعّل بريدك أولاً</div>'+
+    '<div style="font-size:.82rem;color:var(--text2);margin-bottom:.4rem">أرسلنا رابط تفعيل إلى:</div>'+
+    '<div dir="ltr" style="font-weight:700;color:var(--cyan);margin-bottom:.6rem">'+email+'</div>'+
+    '<div style="font-size:.76rem;color:var(--dim);margin-bottom:.8rem">افتح الرابط في بريدك (تحقّق من مجلد <b>Spam</b>)، ثم اضغط "لقد فعّلت".</div>'+
+    '<button class="btn-p full" style="margin-bottom:.5rem" onclick="recheckVerify()">✅ لقد فعّلت — دخول</button>'+
+    '<button class="btn-ghost full" onclick="resendVerify()">🔄 إعادة إرسال الرابط</button>';
+  // أخفِ زر الدخول العادي مؤقتاً
+  var sb=document.getElementById("authSubmitBtn");
+  if(sb)sb.style.display="none";
+}
+
+// إعادة إرسال رابط التفعيل
+function resendVerify(){
+  if(!window.TahadiAuth||!TahadiAuth.currentUser()){ntf("سجّل الدخول أولاً","#FFD046");return;}
+  TahadiAuth.resendVerification().then(function(){
+    ntf("✅ أُعيد إرسال الرابط — تحقّق من بريدك و Spam","#00E676");
+  }).catch(function(e){
+    var code=(e&&e.code)||"";
+    if(code==="auth/too-many-requests")ntf("⏱️ انتظر قليلاً قبل إعادة الإرسال","#FFD046");
+    else ntf("تعذّر الإرسال، حاول لاحقاً","#FF3D5A");
+  });
+}
+
+// إعادة فحص التفعيل بعد أن يضغط المستخدم "لقد فعّلت"
+function recheckVerify(){
+  var u=window.TahadiAuth&&TahadiAuth.currentUser();
+  if(!u){ntf("سجّل الدخول أولاً","#FFD046");return;}
+  u.reload().then(function(){
+    if(u.emailVerified){
+      // نجح التفعيل — أخفِ الشاشة وادخل
+      var box=document.getElementById("verifyGate");if(box)box.style.display="none";
+      var sb=document.getElementById("authSubmitBtn");if(sb)sb.style.display="";
+      ntf("✅ تم تفعيل بريدك بنجاح!","#00E676");
+      finishAuthLogin(u);
+    } else {
+      ntf("❗ لم يُفعّل بعد — افتح الرابط في بريدك أولاً","#FFD046");
+    }
+  }).catch(function(){ntf("تعذّر التحقّق، حاول ثانية","#FF3D5A");});
 }
 
 // بعد نجاح الدخول/التسجيل عبر Firebase Auth
@@ -1779,8 +1839,8 @@ function _initApp(){
   if(window.TahadiAuth&&TahadiAuth.ready()){
     TahadiAuth.onChange(function(fbUser){
       if(window._forceLoggedOut) return; // خرج يدوياً في هذه الجلسة
-      if(fbUser){
-        // مستخدم مسجّل — استعد بياناته إن لم تكن الجلسة محليّة بعد
+      if(fbUser && fbUser.emailVerified){
+        // مستخدم مسجّل ومفعّل — استعد بياناته إن لم تكن الجلسة محليّة بعد
         if(!authGet("tahadi_token")){
           if(window.TahadiDB&&TahadiDB.indexEmail){TahadiDB.indexEmail(fbUser.email,fbUser.uid).catch(function(){});}
           if(window.TahadiDB&&TahadiDB.getUser){
