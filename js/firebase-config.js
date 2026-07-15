@@ -52,8 +52,8 @@ const FIREBASE_CONFIG = {
       return _auth.createUserWithEmailAndPassword(email, password)
         .then(function(cred){
           var user = cred.user;
-          // احفظ ملف المستخدم في قاعدة البيانات
           var uid = user.uid;
+          console.log("[Auth] تم إنشاء الحساب، uid:", uid);
           var profile = {
             email: email,
             name: name || "",
@@ -64,7 +64,14 @@ const FIREBASE_CONFIG = {
           };
           return rtdb.ref("users/"+uid+"/profile").set(profile)
             .then(function(){
-              // أرسل بريد التحقق مرة واحدة
+              console.log("[Auth] ✅ حُفظ الملف في users/"+uid+"/profile");
+              return user.sendEmailVerification()
+                .then(function(){ console.log("[Auth] ✅ أُرسل بريد التحقق إلى", email); })
+                .catch(function(e){ console.warn("[Auth] ⚠️ فشل إرسال بريد التحقق:", e&&e.message); });
+            })
+            .catch(function(e){
+              console.error("[Auth] ❌ فشل حفظ الملف (قواعد Firebase؟):", e&&e.message);
+              // لا نُفشل التسجيل — الحساب أُنشئ في Auth، لكن الملف لم يُحفظ
               return user.sendEmailVerification().catch(function(){});
             })
             .then(function(){ return user; });
