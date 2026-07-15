@@ -3,14 +3,24 @@
 <head>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="js/firebase-config.js"></script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>تحدي الأرقام — لوحة الأدمن</title>
 <link rel="icon" href="logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
+/* دعم المنطقة الآمنة في iPhone (الكاميرا/النتوء وشريط الإيماءات) */
+body{
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+  box-sizing:border-box;
+}
+
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{--bg:#070B1F;--bg2:#0C1130;--card:rgba(255,255,255,.04);--card2:rgba(255,255,255,.07);
   --border:rgba(0,229,255,.14);--cyan:#00E5FF;--gold:#FFD046;--green:#00E676;
@@ -109,7 +119,7 @@ select.inp option{background:#0C1440;}
 .search-inp:focus{outline:none;border-color:var(--cyan);}
 
 /* Toast */
-.ntf{position:fixed;top:.85rem;left:50%;transform:translateX(-50%) translateY(-110px);
+.ntf{position:fixed;top:calc(.85rem + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-110px);
   background:#060D28;border:1px solid rgba(0,229,255,.3);border-radius:11px;
   padding:.52rem 1rem;font-weight:700;font-size:.82rem;z-index:999;
   transition:transform .36s cubic-bezier(.34,1.56,.64,1);max-width:88vw;text-align:center;}
@@ -425,10 +435,30 @@ function saveDB(data){localStorage.setItem(ADMIN_KEY,JSON.stringify(data));}
 
 /* ── AUTH ── */
 function doLogin(){
-  var email=document.getElementById("loginEmail").value.trim();
+  var email=document.getElementById("loginEmail").value.trim().toLowerCase();
   var pwd  =document.getElementById("loginPwd").value;
   var err  =document.getElementById("loginErr");
-  if(email===ADMIN_EMAIL && pwd===ADMIN_PASS_H){
+  err.textContent="";
+
+  if(email!==ADMIN_EMAIL.toLowerCase()){
+    err.textContent="❌ هذا الحساب ليس للأدمن";
+    return;
+  }
+  // دخول عبر Firebase Auth (ليعمل مع القواعد الآمنة)
+  if(!window.firebase||typeof firebase.auth!=="function"){
+    err.textContent="❌ نظام المصادقة غير متاح";
+    return;
+  }
+  var btn=document.getElementById("loginBtn");
+  if(btn){btn.disabled=true;btn.textContent="جارٍ الدخول...";}
+  firebase.auth().signInWithEmailAndPassword(email,pwd).then(function(cred){
+    if(btn){btn.disabled=false;btn.textContent="دخول";}
+    // تأكّد أنه البريد الصحيح
+    if(!cred.user||cred.user.email.toLowerCase()!==ADMIN_EMAIL.toLowerCase()){
+      firebase.auth().signOut();
+      err.textContent="❌ هذا الحساب ليس للأدمن";
+      return;
+    }
     localStorage.setItem("tahadi_admin_session","1");
     document.getElementById("loginScreen").style.display="none";
     document.getElementById("appScreen").style.display="block";
@@ -436,22 +466,37 @@ function doLogin(){
     loadDashboard();
     loadSettings();
     ntf("مرحباً! تم تسجيل الدخول","#00E676");
-  } else {
-    err.textContent="❌ البريد أو كلمة المرور غير صحيحة";
-  }
+  }).catch(function(e){
+    if(btn){btn.disabled=false;btn.textContent="دخول";}
+    var code=(e&&e.code)||"";
+    if(code==="auth/wrong-password"||code==="auth/invalid-credential"){
+      err.textContent="❌ كلمة المرور غير صحيحة";
+    } else if(code==="auth/user-not-found"){
+      err.textContent="❌ حساب الأدمن غير موجود — أنشئه أولاً (انظر التعليمات)";
+    } else if(code==="auth/too-many-requests"){
+      err.textContent="❗ محاولات كثيرة، انتظر قليلاً";
+    } else {
+      err.textContent="❌ تعذّر الدخول: "+(e&&e.message||code);
+    }
+  });
 }
 function doLogout(){
   localStorage.removeItem("tahadi_admin_session");
+  if(window.firebase&&firebase.auth)firebase.auth().signOut().catch(function(){});
   document.getElementById("loginScreen").style.display="flex";
   document.getElementById("appScreen").style.display="none";
 }
 
-/* Check existing session */
-if(localStorage.getItem("tahadi_admin_session")==="1"){
-  document.getElementById("loginScreen").style.display="none";
-  document.getElementById("appScreen").style.display="block";
-  document.getElementById("adminEmail").textContent=ADMIN_EMAIL;
-  setTimeout(function(){loadDashboard();loadSettings();loadEmailJS();},100);
+/* Check existing session — تحقق من جلسة Firebase الفعلية */
+if(window.firebase&&typeof firebase.auth==="function"){
+  firebase.auth().onAuthStateChanged(function(u){
+    if(u && u.email && u.email.toLowerCase()===ADMIN_EMAIL.toLowerCase() && localStorage.getItem("tahadi_admin_session")==="1"){
+      document.getElementById("loginScreen").style.display="none";
+      document.getElementById("appScreen").style.display="block";
+      document.getElementById("adminEmail").textContent=u.email;
+      setTimeout(function(){loadDashboard();loadSettings();if(typeof loadEmailJS==="function")loadEmailJS();},100);
+    }
+  });
 }
 
 /* ── PAGES ── */
