@@ -925,8 +925,17 @@ function renderGrantLog(){
   var data=db();
   var tbody=document.getElementById("grantLog");tbody.innerHTML="";
   if(!data.grants.length){tbody.innerHTML="<tr><td colspan=\"6\" class=\"empty-state\">لا يوجد سجل منح</td></tr>";return;}
+  var now=Date.now();
   data.grants.slice().reverse().forEach(function(g,i){
-    tbody.innerHTML+="<tr><td dir=\"ltr\">"+(g.email||g.phone||"—")+"</td><td>"+g.plan+"</td><td>"+g.days+" يوم</td><td>"+fmtDate(g.date)+"</td><td>"+(g.note||"—")+"</td><td><button class=\"btn-danger\" onclick=\"removeGrant("+(data.grants.length-1-i)+")\">حذف</button></td></tr>";
+    // احسب المتبقي من تاريخ الانتهاء الفعلي للاشتراك المطابق
+    var sub=data.subscriptions.filter(function(s){return s.email===g.email;}).pop();
+    var durCell=(g.days||0)+" يوم";
+    if(sub&&sub.expiresAt){
+      var rem=Math.ceil((new Date(sub.expiresAt)-now)/86400000);
+      if(rem>0) durCell="<span style=\"color:var(--gold)\">"+rem+" يوم متبقٍ</span> <span style=\"color:var(--dim);font-size:.75em\">/ "+(g.days||0)+"</span>";
+      else durCell="<span style=\"color:var(--red)\">منتهٍ</span> <span style=\"color:var(--dim);font-size:.75em\">/ "+(g.days||0)+"</span>";
+    }
+    tbody.innerHTML+="<tr><td dir=\"ltr\">"+(g.email||g.phone||"—")+"</td><td>"+g.plan+"</td><td>"+durCell+"</td><td>"+fmtDate(g.date)+"</td><td>"+(g.note||"—")+"</td><td><button class=\"btn-danger\" onclick=\"removeGrant("+(data.grants.length-1-i)+")\">حذف</button></td></tr>";
   });
 }
 
