@@ -2916,6 +2916,8 @@ function refreshTiers(){
   TIERS.elite=isElite;
 }
 refreshTiers();
+// زامن الأسئلة المستخدمة من Firebase (منع التكرار عبر أجهزة المستخدم)
+try{ if(typeof syncUsedFromFirebase==="function") syncUsedFromFirebase(); }catch(e){}
 
 /* ════════════════════════════════════════
    STATE
@@ -3073,10 +3075,66 @@ function getBrowserSeed(){
   return parseInt(s);
 }
 
-function getUsed(){return JSON.parse(localStorage.getItem("tahadi_used")||"[]");}
+/* ═══ تتبّع الأسئلة المستخدمة (لكل مستخدم عبر Firebase + نسخة محلية سريعة) ═══ */
+var _usedCache = null;         // نسخة في الذاكرة
+var _usedPhase = 0;            // رقم المرحلة الحالية (يزيد عند نفاد كل الأسئلة)
+
+function _usedKey(){
+  // معرّف المستخدم إن كان مسجّلاً، وإلا محلي عام
+  try{
+    var u=JSON.parse(localStorage.getItem("tahadi_user")||sessionStorage.getItem("tahadi_user")||"null");
+    if(u&&u.uid) return u.uid;
+  }catch(e){}
+  return null;
+}
+function getUsed(){
+  if(_usedCache) return _usedCache;
+  _usedCache = JSON.parse(localStorage.getItem("tahadi_used")||"[]");
+  return _usedCache;
+}
 function markUsed(ids){
   var prev=getUsed();
-  localStorage.setItem("tahadi_used",JSON.stringify([...new Set(prev.concat(ids))]));
+  var merged=[...new Set(prev.concat(ids))];
+  _usedCache=merged;
+  localStorage.setItem("tahadi_used",JSON.stringify(merged));
+  // زامن مع Firebase إن كان المستخدم مسجّلاً
+  var uid=_usedKey();
+  if(uid && window.firebase && firebase.apps && firebase.apps.length){
+    try{
+      firebase.database().ref("users/"+uid+"/usedQuestions").set({
+        ids: merged, phase: _usedPhase, updatedAt: Date.now()
+      }).catch(function(){});
+    }catch(e){}
+  }
+}
+function resetUsed(){
+  _usedCache=[];
+  _usedPhase++;
+  localStorage.setItem("tahadi_used","[]");
+  var uid=_usedKey();
+  if(uid && window.firebase && firebase.apps && firebase.apps.length){
+    try{
+      firebase.database().ref("users/"+uid+"/usedQuestions").set({
+        ids: [], phase: _usedPhase, updatedAt: Date.now()
+      }).catch(function(){});
+    }catch(e){}
+  }
+}
+// حمّل المستخدمة من Firebase عند بدء التطبيق (لمزامنة الأجهزة)
+function syncUsedFromFirebase(cb){
+  var uid=_usedKey();
+  if(!uid || !window.firebase || !firebase.apps || !firebase.apps.length){ if(cb)cb(); return; }
+  try{
+    firebase.database().ref("users/"+uid+"/usedQuestions").once("value").then(function(s){
+      var v=s.val();
+      if(v && Array.isArray(v.ids)){
+        _usedCache=v.ids;
+        _usedPhase=v.phase||0;
+        localStorage.setItem("tahadi_used",JSON.stringify(v.ids));
+      }
+      if(cb)cb();
+    }).catch(function(){ if(cb)cb(); });
+  }catch(e){ if(cb)cb(); }
 }
 
 function pickQs(catFilter){
@@ -3089,7 +3147,12 @@ function pickQs(catFilter){
   if(catFilter)pool=pool.filter(function(q){return q.cat===catFilter;});
   var used=new Set(getUsed());
   var avail=pool.filter(function(q){return!used.has(q.id);});
-  if(avail.length<TOT){avail=pool;localStorage.removeItem("tahadi_used");}
+  // نفدت الأسئلة → مرحلة جديدة بترتيب عشوائي (كما طُلب)
+  if(avail.length<TOT){
+    resetUsed();
+    avail=pool;
+    if(!isOff){ try{ ntf("🎉 أكملت كل الأسئلة! تبدأ مرحلة جديدة",COLORS.cyan.h); }catch(e){} }
+  }
   var result=shuf(avail).slice(0,TOT);
   markUsed(result.map(function(q){return q.id;}));
   return result;
