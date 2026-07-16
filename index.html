@@ -1639,13 +1639,22 @@ function loginUser(user,skipStep){
   // Firebase
   if(window.TahadiDB){
     TahadiDB.saveUser({name:user.name,email:user.email,uid:uid}).then(function(){
-      TahadiDB.getPlanByEmail(user.email).then(function(plan){
+      // اقرأ الخطة بمعرّف Auth الحقيقي (كما يكتبها الأدمن) — مع تراجع للبريد
+      var planPromise = (uid&&TahadiDB.getPlanByUid)
+        ? TahadiDB.getPlanByUid(uid)
+        : TahadiDB.getPlanByEmail(user.email);
+      planPromise.then(function(plan){
         if(plan&&plan.plan){
           authSetOne("tahadi_pro","1");
           if(plan.plan.indexOf("elite")>-1)authSetOne("tahadi_elite","1");
+          else authClearAll(["tahadi_elite"]);
+          renderUserBar();
+        } else {
+          // لا خطة نشطة — تأكد أنه مجاني (يمنع بقاء حالة قديمة)
+          authClearAll(["tahadi_pro","tahadi_elite"]);
           renderUserBar();
         }
-        resumePendingRoom(); // بعد مزامنة الباقة — حتى تمر البوابة للمشتركين
+        resumePendingRoom();
       }).catch(function(){resumePendingRoom();});
     }).catch(function(){resumePendingRoom();});
   } else {
