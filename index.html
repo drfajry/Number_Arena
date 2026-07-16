@@ -347,7 +347,7 @@ select.inp option{background:#0C1440;}
   background:linear-gradient(135deg,var(--cyan),var(--gold));
   display:flex;align-items:center;justify-content:center;
   font-weight:900;font-size:.88rem;color:#000;flex-shrink:0;}
-.user-name{font-size:.84rem;font-weight:700;}
+.user-name{font-size:.84rem;font-weight:800;color:#EAF9FF;}
 .user-plan{font-size:.65rem;color:var(--dim);margin-top:.06rem;}
 .plan-badge{display:inline-flex;align-items:center;gap:.28rem;
   padding:.16rem .52rem;border-radius:6px;font-size:.68rem;font-weight:900;}
@@ -424,6 +424,8 @@ select.inp option{background:#0C1440;}
 <!-- HERO -->
 <section id="hero">
   <div class="container">
+    <!-- بانر إعلان الأدمن -->
+    <div id="announceBanner" style="display:none"></div>
     <div class="hero-grid">
       <div>
         <div class="hero-tag">🏆 منصة الأرقام التنافسية</div>
@@ -1732,7 +1734,7 @@ function renderUserBar(){
   if(navBtn){
     if(token&&user){
       var initial=(user.name||"م").charAt(0);
-      navBtn.innerHTML="<button class=\"nav-cta\" onclick=\"showUserMenu()\" style=\"background:rgba(0,229,255,.12);border:1.5px solid var(--cyan)\">"+initial+" "+( user.name||"حسابي")+"</button>";
+      navBtn.innerHTML="<button class=\"nav-cta\" onclick=\"showUserMenu()\" style=\"background:rgba(0,229,255,.18);border:1.5px solid var(--cyan);color:#EAF9FF;font-weight:800\">"+initial+" "+( user.name||"حسابي")+"</button>";
     } else {
       navBtn.innerHTML="<button class=\"nav-cta\" onclick=\"showAuthModal()\">👤 تسجيل الدخول</button>";
     }
@@ -1834,6 +1836,7 @@ function _initApp(){
   _bindModalBackdrops();
   // Capture referral code from URL (?ref=CODE)
   if(window.Affiliate) Affiliate.captureReferralFromURL();
+  loadAnnouncement();
 
   // ── استعادة جلسة Firebase Auth تلقائياً عند فتح التطبيق ──
   if(window.TahadiAuth&&TahadiAuth.ready()){
@@ -1868,6 +1871,35 @@ function _initApp(){
       if(e.target.id==="authModal") closeM("authModal");
     });
   }
+}
+// ── إعلان الأدمن الترويجي ──
+function loadAnnouncement(){
+  var el=document.getElementById("announceBanner");
+  if(!el||!window.firebase||!firebase.apps||!firebase.apps.length)return;
+  firebase.database().ref("admin/announcement").once("value").then(function(s){
+    var a=s.val();
+    if(!a||!a.active||!a.text){el.style.display="none";return;}
+    var dismissed=localStorage.getItem("tahadi_ann_dismissed");
+    if(dismissed && dismissed===String(a.updatedAt)){el.style.display="none";return;}
+    var color=a.color||"#FFD046";
+    el.innerHTML=
+      '<div style="position:relative;margin-bottom:1.2rem;padding:.9rem 2.4rem .9rem 1.1rem;'+
+      'border-radius:14px;background:linear-gradient(135deg,'+color+'22,'+color+'0a);'+
+      'border:1.5px solid '+color+'55;text-align:center;">'+
+      '<div style="font-weight:900;color:'+color+';font-size:.98rem;margin-bottom:.15rem">'+
+      (a.title||"📣 إعلان")+'</div>'+
+      '<div style="color:#EAF9FF;font-size:.85rem;line-height:1.5">'+a.text+'</div>'+
+      (a.link?'<a href="'+a.link+'" style="display:inline-block;margin-top:.5rem;color:'+color+';font-weight:800;font-size:.82rem;text-decoration:underline">'+(a.linkText||"اعرف المزيد")+' ←</a>':'')+
+      '<button onclick="dismissAnnounce('+a.updatedAt+')" style="position:absolute;top:.5rem;left:.6rem;'+
+      'background:none;border:none;color:'+color+';font-size:1.1rem;cursor:pointer;line-height:1">✕</button>'+
+      '</div>';
+    el.style.display="block";
+  }).catch(function(){});
+}
+function dismissAnnounce(id){
+  localStorage.setItem("tahadi_ann_dismissed",String(id));
+  var el=document.getElementById("announceBanner");
+  if(el)el.style.display="none";
 }
 if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",_initApp);}
 else{_initApp();}
