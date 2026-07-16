@@ -1734,7 +1734,7 @@ function renderUserBar(){
   if(navBtn){
     if(token&&user){
       var initial=(user.name||"م").charAt(0);
-      navBtn.innerHTML="<button class=\"nav-cta\" onclick=\"showUserMenu()\" style=\"background:rgba(0,229,255,.18);border:1.5px solid var(--cyan);color:#EAF9FF;font-weight:800\">"+initial+" "+( user.name||"حسابي")+"</button>";
+      navBtn.innerHTML="<button class=\"nav-cta\" onclick=\"showUserMenu()\" style=\"background:rgba(0,229,255,.18);border:1.5px solid var(--cyan);color:#EAF9FF;font-weight:800\">👤 "+( user.name||"حسابي")+"</button>";
     } else {
       navBtn.innerHTML="<button class=\"nav-cta\" onclick=\"showAuthModal()\">👤 تسجيل الدخول</button>";
     }
