@@ -625,52 +625,68 @@ async function loadProgress() {
 /* ═══ PROFILE ═════════════════════════ */
 // حذف الحساب نهائياً (مطلب Apple 5.1.1)
 async function deleteAccount() {
-  // تأكيد أول
   if(!confirm('⚠️ هل أنت متأكد من حذف حسابك نهائياً؟\n\nسيتم حذف كل بياناتك (الاسم، التقدّم، الاشتراك) ولا يمكن استرجاعها.')) return;
-  // تأكيد ثانٍ (يمنع الحذف بالخطأ)
   var typed = prompt('لتأكيد الحذف نهائياً، اكتب: حذف');
   if(typed === null) return;
   if(typed.trim() !== 'حذف'){ ntf('لم يتم تأكيد الحذف','#FFD046'); return; }
 
-  var user = window.TahadiAuth && TahadiAuth.currentUser();
+  var user = window.firebase && firebase.auth ? firebase.auth().currentUser : null;
   if(!user){ ntf('❌ سجّل دخولك أولاً','#FF3D5A'); return; }
   var uid = user.uid;
+  var email = user.email || '';
 
   ntf('جارٍ حذف حسابك...','#00E5FF');
-  try{
-    // 1) احذف بيانات المستخدم من قاعدة البيانات
-    if(window.firebase && firebase.database){
-      await firebase.database().ref('users/'+uid).remove().catch(function(){});
-      // احذف فهرس البريد
-      try{
-        var key = btoa((user.email||'').toLowerCase()).replace(/[^a-zA-Z0-9]/g,'');
-        await firebase.database().ref('emailIndex/'+key).remove().catch(function(){});
-      }catch(e){}
-    }
-    // 2) احذف حساب المصادقة نفسه
-    await user.delete();
-    // 3) سجّل خروجاً صريحاً من Firebase Auth (ضمان عدم بقاء الجلسة)
-    try{ if(window.firebase && firebase.auth) await firebase.auth().signOut(); }catch(e){}
-    // 4) نظّف كل الجلسة المحلية + امنع استعادتها
+
+  // دالة الخروج التام + التوجيه (تُستدعى في كل الحالات بعد الحذف)
+  function forceLogoutAndExit(){
+    try{ window._forceLoggedOut = true; }catch(e){}
+    try{ if(window.firebase && firebase.auth) firebase.auth().signOut(); }catch(e){}
     try{
-      window._forceLoggedOut = true;
-      localStorage.removeItem('tahadi_user'); localStorage.removeItem('tahadi_token');
-      localStorage.removeItem('tahadi_session'); localStorage.removeItem('tahadi_pro');
-      localStorage.removeItem('tahadi_elite'); localStorage.removeItem('tahadi_used');
-      localStorage.removeItem('tahadi_admin_session');
+      ['tahadi_user','tahadi_token','tahadi_session','tahadi_pro','tahadi_elite',
+       'tahadi_used','tahadi_admin_session'].forEach(function(k){ localStorage.removeItem(k); });
       sessionStorage.clear();
     }catch(e){}
+    setTimeout(function(){ window.location.href = 'index.html?loggedout=1'; }, 1200);
+  }
+
+  // 1) احذف بيانات قاعدة البيانات أولاً (مضمون قبل أي شيء)
+  try{
+    if(window.firebase && firebase.database){
+      await firebase.database().ref('users/'+uid).remove();
+      try{
+        var key = btoa(email.toLowerCase()).replace(/[^a-zA-Z0-9]/g,'');
+        await firebase.database().ref('emailIndex/'+key).remove();
+      }catch(e){}
+    }
+  }catch(e){ /* حتى لو فشل، نكمل لحذف الأوث */ }
+
+  // 2) احذف حساب المصادقة
+  try{
+    await user.delete();
     ntf('✅ تم حذف حسابك نهائياً','#00E676');
-    // 5) وجّه للرئيسية مع علامة تمنع أي استعادة تلقائية للجلسة
-    setTimeout(function(){ window.location.href = 'index.html?loggedout=1'; }, 1500);
+    forceLogoutAndExit();
   }catch(e){
     var code = (e && e.code) || '';
     if(code === 'auth/requires-recent-login'){
-      // Firebase يطلب إعادة دخول حديثة قبل الحذف الحسّاس
-      ntf('لأمانك، سجّل خروجاً ثم دخولاً وأعد المحاولة','#FFD046');
-      setTimeout(function(){ if(window.TahadiAuth) TahadiAuth.signOut(); window.location.href='index.html'; }, 2500);
+      // Firebase يطلب إعادة مصادقة حديثة — نطلب كلمة المرور ونعيد المحاولة فوراً
+      var pw = prompt('لأمانك، أعد إدخال كلمة المرور لتأكيد الحذف:');
+      if(pw === null){ ntf('أُلغي الحذف','#FFD046'); return; }
+      try{
+        var cred = firebase.auth.EmailAuthProvider.credential(email, pw);
+        await user.reauthenticateWithCredential(cred);
+        await user.delete();
+        ntf('✅ تم حذف حسابك نهائياً','#00E676');
+        forceLogoutAndExit();
+      }catch(e2){
+        var c2 = (e2 && e2.code) || '';
+        if(c2 === 'auth/wrong-password' || c2 === 'auth/invalid-credential'){
+          ntf('❌ كلمة المرور غير صحيحة — لم يُحذف الحساب','#FF3D5A');
+        } else {
+          ntf('❌ تعذّر الحذف: '+(e2 && e2.message || c2),'#FF3D5A');
+        }
+      }
     } else {
-      ntf('❌ تعذّر الحذف: '+(e&&e.message||code),'#FF3D5A');
+      ntf('❌ تعذّر الحذف: '+(e && e.message || code),'#FF3D5A');
     }
   }
 }
