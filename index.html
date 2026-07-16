@@ -397,6 +397,7 @@ select.inp option{background:#0C1440;}
 <script src="js/affiliate.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="js/capacitor-bridge.js"></script>
+<script src="js/iap.js"></script>
 </head>
 <body>
 
@@ -1109,8 +1110,6 @@ function ntf(msg,color="#00E5FF"){
   el.classList.add("on");clearTimeout(ntout);ntout=setTimeout(()=>el.classList.remove("on"),3000);
 }
 function openSubscribe(plan){
-  // داخل التطبيق: لا واجهة شراء إطلاقاً (سياسة Google Play)
-  if(window.IS_APP){ntf("هذه الميزة غير متاحة داخل التطبيق","#8AB8FF");return;}
   var token=authGet("tahadi_token");
   if(!token){
     // غير مسجّل — احفظ الخطة وافتح تسجيل الدخول
@@ -1118,7 +1117,65 @@ function openSubscribe(plan){
     showAuthModal();
     return;
   }
+  // داخل التطبيق: استخدم الشراء داخل التطبيق (IAP) — يُفعّل في تحديث 1.1
+  if(window.IS_APP){
+    if(window.IAP && IAP.available()){
+      doIAPPurchase(plan);
+    } else {
+      // النسخة النظيفة: لا شراء داخل التطبيق بعد
+      ntf("الاشتراك متاح قريباً","#8AB8FF");
+    }
+    return;
+  }
+  // في المتصفح: الطريقة المعتادة (دفع مباشر)
   doSubscribe(plan);
+}
+
+// ── الشراء داخل التطبيق عبر Apple/Google ──
+function doIAPPurchase(plan){
+  var isPro=authGet("tahadi_pro")==="1";
+  var isElite=authGet("tahadi_elite")==="1";
+  if(isElite){ntf("✅ أنت مشترك أسطوري بالفعل!","#00E676");return;}
+  if(isPro&&plan==="pro"){ntf("✅ أنت مشترك بطل بالفعل!","#00E676");return;}
+
+  if(!window.IAP || !IAP.available()){
+    ntf("نظام الشراء غير متاح على جهازك","#FF3D5A");
+    return;
+  }
+  ntf("جارٍ فتح نافذة الشراء...","#00E5FF");
+  IAP.purchase(plan).then(function(res){
+    if(res.success){
+      var planAr = res.tier==="elite" ? "أسطوري" : "بطل";
+      ntf("🎉 تم تفعيل اشتراك "+planAr+"!","#00E676");
+      if(typeof renderUserBar==="function") renderUserBar();
+      // أغلق أي نافذة اشتراك مفتوحة
+      try{ closeM("subModal"); }catch(e){}
+    } else if(res.cancelled){
+      ntf("أُلغيت عملية الشراء","#8AB8FF");
+    } else {
+      ntf("❌ "+(res.error||"تعذّر إتمام الشراء"),"#FF3D5A");
+    }
+  });
+}
+
+// ── استعادة المشتريات (للمستخدم الذي أعاد تثبيت التطبيق) ──
+function restorePurchases(){
+  if(!window.IAP || !IAP.available()){
+    ntf("الاستعادة متاحة داخل التطبيق فقط","#8AB8FF");
+    return;
+  }
+  ntf("جارٍ استعادة مشترياتك...","#00E5FF");
+  IAP.restore().then(function(res){
+    if(res.success && res.tier){
+      var planAr = res.tier==="elite" ? "أسطوري" : "بطل";
+      ntf("✅ استُعيد اشتراك "+planAr+"!","#00E676");
+      if(typeof renderUserBar==="function") renderUserBar();
+    } else if(res.success){
+      ntf("لا توجد مشتريات سابقة لاستعادتها","#8AB8FF");
+    } else {
+      ntf("❌ "+(res.error||"تعذّرت الاستعادة"),"#FF3D5A");
+    }
+  });
 }
 
 function doSubscribe(plan){
@@ -1506,6 +1563,12 @@ function finishAuthLogin(fbUser){
   var uid=fbUser.uid;
   var email=fbUser.email;
   if(window.TahadiDB&&TahadiDB.indexEmail){TahadiDB.indexEmail(email,uid).catch(function(){});}
+  // اربط IAP بحساب المستخدم (فتُنسب مشترياته لحسابه عبر أجهزته)
+  if(window.IS_APP && window.IAP){
+    IAP.init(uid).then(function(ok){
+      if(ok){ IAP.login(uid); IAP.getStatus().then(function(st){ if(st&&st.tier) IAP.syncToFirebase(st.tier); }); }
+    });
+  }
   if(window.TahadiDB&&TahadiDB.getUser){
     TahadiDB.getUser(uid).then(function(prof){
       var user={
@@ -1854,6 +1917,18 @@ function _initApp(){
   if(window.Affiliate) Affiliate.captureReferralFromURL();
   loadAnnouncement();
 
+  // إن جاء من حذف حساب أو خروج صريح — امنع استعادة الجلسة، ونظّف الرابط
+  try{
+    if(location.search.indexOf("loggedout=1")>-1){
+      window._forceLoggedOut=true;
+      try{ if(window.TahadiAuth && TahadiAuth.ready()) TahadiAuth.signOut(); }catch(e){}
+      try{
+        ["tahadi_user","tahadi_token","tahadi_session","tahadi_pro","tahadi_elite"].forEach(function(k){localStorage.removeItem(k);});
+      }catch(e){}
+      history.replaceState(null,"",location.pathname);
+    }
+  }catch(e){}
+
   // ── استعادة جلسة Firebase Auth تلقائياً عند فتح التطبيق ──
   if(window.TahadiAuth&&TahadiAuth.ready()){
     TahadiAuth.onChange(function(fbUser){
@@ -2077,23 +2152,55 @@ function openContact(){document.getElementById("contactModal").classList.add("on
    الشراء يتم من الموقع فقط.
 ══════════════════════════════════════ */
 (function(){
+  // ═══════════════════════════════════════════════
+  // وضع النسخة النظيفة (بلا اشتراكات ظاهرة) — للمراجعة الأولى
+  // كود IAP جاهز في iap.js لكنه معطّل هنا حتى تحديث 1.1
+  // لتفعيل IAP لاحقاً: غيّر IAP_ENABLED إلى true
+  // ═══════════════════════════════════════════════
+  var IAP_ENABLED = false;
+
   function applyAppMode(){
     if(!window.IS_APP) return;
-    // 1) قسم الأسعار كاملاً
-    var pr=document.getElementById("pricing"); if(pr)pr.style.display="none";
-    // 2) روابط "الأسعار" في القائمة والفوتر
-    document.querySelectorAll("a").forEach(function(a){
-      var oc=a.getAttribute("onclick")||"";
-      if(oc.indexOf("pricing")>-1) a.style.display="none";
-    });
-    // 3) سؤال الأسعار في الأسئلة الشائعة — نص محايد بلا دعوة للشراء
-    document.querySelectorAll(".faq-a").forEach(function(el){
-      if(el.textContent.indexOf("اشترك")>-1){
-        el.textContent="نعم! خطة منطلق المجانية تشمل 200 سؤال شهرياً، لعباً على نفس الجهاز، ووسيلة مساعدة واحدة. مزايا حسابك تُفعَّل تلقائياً عند تسجيل الدخول.";
-      }
-    });
-    // 4) أي نافذة دفع يدوي مفتوحة (احتياط)
-    var mp=document.getElementById("mpOverlay"); if(mp)mp.remove();
+
+    if(!IAP_ENABLED){
+      // النسخة النظيفة: أخفِ كل ما يخص الشراء داخل التطبيق
+      var pr=document.getElementById("pricing"); if(pr)pr.style.display="none";
+      document.querySelectorAll("a").forEach(function(a){
+        var oc=a.getAttribute("onclick")||"";
+        if(oc.indexOf("pricing")>-1) a.style.display="none";
+      });
+      document.querySelectorAll(".faq-a").forEach(function(el){
+        if(el.textContent.indexOf("اشترك")>-1){
+          el.textContent="نعم! خطة منطلق المجانية تشمل 200 سؤال، لعباً على نفس الجهاز، ووسيلة مساعدة واحدة. مزايا حسابك تُفعَّل تلقائياً عند تسجيل الدخول.";
+        }
+      });
+      var mp=document.getElementById("mpOverlay"); if(mp)mp.remove();
+      return;
+    }
+
+    // ── وضع IAP (يُفعّل في تحديث 1.1) ──
+    function initIAP(){
+      if(!window.IAP) return;
+      var uid=null;
+      try{
+        var u=JSON.parse(localStorage.getItem("tahadi_user")||sessionStorage.getItem("tahadi_user")||"null");
+        if(u&&u.uid)uid=u.uid;
+      }catch(e){}
+      IAP.init(uid).then(function(ok){
+        if(ok){
+          IAP.getStatus().then(function(st){ if(st && st.tier){ IAP.syncToFirebase(st.tier); } });
+          IAP.onStatusChange(function(tier){ if(typeof renderUserBar==="function"){ try{renderUserBar();}catch(e){} } });
+        }
+      });
+    }
+    setTimeout(initIAP, 1500);
+    var pricing=document.getElementById("pricing");
+    if(pricing && !document.getElementById("restoreBtn")){
+      var rb=document.createElement("div");
+      rb.style.cssText="text-align:center;margin-top:1rem";
+      rb.innerHTML='<button id="restoreBtn" onclick="restorePurchases()" style="background:none;border:1px solid var(--bd);color:var(--cyan);padding:.55rem 1.4rem;border-radius:10px;font-size:.82rem;cursor:pointer">🔄 استعادة المشتريات</button>';
+      pricing.appendChild(rb);
+    }
   }
   if(document.readyState==="loading"){
     document.addEventListener("DOMContentLoaded",applyAppMode);
