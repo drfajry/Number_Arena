@@ -1387,12 +1387,19 @@ function authSubmit(){
   // الشاشة الذكية: جرّب الدخول أولاً
   TahadiAuth.signIn(email,pass).then(function(fbUser){
     _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
-    // ── منع الدخول حتى تفعيل البريد ──
-    if(fbUser && !fbUser.emailVerified){
-      showVerifyGate(email);
-      return;
-    }
-    finishAuthLogin(fbUser);
+    // أعِد تحميل حالة المستخدم من Firebase (قد يكون فعّل بريده لكن الحالة قديمة)
+    fbUser.reload().then(function(){
+      var fresh=TahadiAuth.currentUser()||fbUser;
+      // ── منع الدخول حتى تفعيل البريد ──
+      if(fresh && !fresh.emailVerified){
+        showVerifyGate(email);
+        return;
+      }
+      finishAuthLogin(fresh);
+    }).catch(function(){
+      if(fbUser && !fbUser.emailVerified){ showVerifyGate(email); return; }
+      finishAuthLogin(fbUser);
+    });
   }).catch(function(e){
     var code=(e&&e.code)||"";
     if(code==="auth/user-not-found"||code==="auth/invalid-credential"){
