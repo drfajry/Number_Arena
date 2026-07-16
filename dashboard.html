@@ -2,10 +2,19 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
 <title>لوحة المستخدم — تحدي الأرقام</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
+/* دعم المنطقة الآمنة في iPhone (الكاميرا/النتوء وشريط الإيماءات) */
+body{
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+  box-sizing:border-box;
+}
+
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
   --bg:#07091C;--bg2:#0B0E26;--card:#0F1335;
@@ -164,7 +173,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:linear-gradient(135deg,var(--cyan),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
 /* NOTIFY */
-.notif{position:fixed;top:.9rem;left:50%;transform:translateX(-50%) translateY(-100px);
+.notif{position:fixed;top:calc(.9rem + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-100px);
   background:linear-gradient(135deg,#070E2C,#0A1345);border:1px solid rgba(0,229,255,.3);
   border-radius:11px;padding:.55rem 1.1rem;font-weight:700;font-size:.85rem;z-index:999;
   transition:transform .36s cubic-bezier(.34,1.56,.64,1);box-shadow:0 7px 18px rgba(0,0,0,.5);
@@ -173,6 +182,10 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 
 @media(max-width:400px){.plans-grid{flex-direction:column;}.stats-row{grid-template-columns:1fr 1fr;}}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="js/firebase-config.js"></script>
 <script src="js/db.js"></script>
 </head>
 <body>
@@ -349,58 +362,33 @@ function showLogin()    { document.getElementById('registerBox').style.display='
 function showRegister() { document.getElementById('loginBox').style.display='none'; document.getElementById('registerBox').style.display='block'; }
 
 async function doLogin() {
-  const btn = document.getElementById('loginBtn');
-  btn.disabled = true; btn.textContent = 'جارٍ الدخول...';
-  const err = document.getElementById('loginErr');
-  err.style.display = 'none';
-  try {
-    const r = await fetch(`${API}/auth/login`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ email: document.getElementById('loginEmail').value, password: document.getElementById('loginPwd').value })
-    });
-    const d = await r.json();
-    if (!r.ok) { err.textContent = d.error || 'خطأ'; err.style.display='block'; return; }
-    token = d.token;
-    localStorage.setItem('tahadi_token', token);
-    me = d.user;
-    initDash();
-  } catch { err.textContent='تعذر الاتصال بالخادم'; err.style.display='block'; }
-  finally { btn.disabled=false; btn.textContent='تسجيل الدخول'; }
+  // dashboard لم يعد فيه دخول مستقل — التوجيه للرئيسية
+  window.location.href = 'index.html';
 }
 
 async function doRegister() {
-  const btn = document.getElementById('regBtn');
-  btn.disabled = true; btn.textContent = 'جارٍ الإنشاء...';
-  const err = document.getElementById('regErr');
-  err.style.display = 'none';
-  try {
-    const r = await fetch(`${API}/auth/register`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        name: document.getElementById('regName').value,
-        email: document.getElementById('regEmail').value,
-        password: document.getElementById('regPwd').value
-      })
-    });
-    const d = await r.json();
-    if (!r.ok) { err.textContent = d.error || 'خطأ'; err.style.display='block'; return; }
-    token = d.token;
-    localStorage.setItem('tahadi_token', token);
-    me = d.user;
-    initDash();
-  } catch { err.textContent='تعذر الاتصال'; err.style.display='block'; }
-  finally { btn.disabled=false; btn.textContent='إنشاء الحساب'; }
+  window.location.href = 'index.html';
 }
 
-function doLogout() { localStorage.removeItem('tahadi_token'); location.reload(); }
+function doLogout() {
+  if(window.TahadiAuth && TahadiAuth.ready()){ TahadiAuth.signOut().catch(function(){}); }
+  localStorage.removeItem('tahadi_token');
+  localStorage.removeItem('tahadi_user');
+  window.location.href = 'index.html';
+}
 
 async function apiCall(path, opts={}) {
-  const r = await fetch(API+path, {
-    ...opts,
-    headers: { 'Authorization':`Bearer ${token}`, 'Content-Type':'application/json', ...opts.headers }
-  });
-  if (r.status===401) { doLogout(); return null; }
-  return r.json();
+  // الخادم القديم لم يعد مستخدماً — نرجع null بصمت (الميزات المعتمدة عليه معطّلة مؤقتاً)
+  try{
+    const r = await fetch(API+path, {
+      ...opts,
+      headers: { 'Authorization':`Bearer ${token||''}`, 'Content-Type':'application/json', ...opts.headers }
+    });
+    if (r.status===401) { return null; }
+    return await r.json();
+  }catch(e){
+    return null; // لا خادم — تجاهل بصمت
+  }
 }
 
 /* ═══ INIT DASHBOARD ══════════════════ */
@@ -408,30 +396,56 @@ async function initDash() {
   document.getElementById('authWrap').style.display = 'none';
   document.getElementById('dashWrap').style.display = 'block';
 
-  // Load full profile
-  const d = await apiCall('/auth/me');
-  if (!d) return;
-  me = d.user;
-  me.isPro = d.isPro;
-  me.subscription = d.subscription;
-  me.stats = d.stats;
+  // انتظر جلسة Firebase Auth، ثم حمّل الملف من قاعدة البيانات
+  if(!window.TahadiAuth || !TahadiAuth.ready()){
+    ntf('❌ نظام الدخول غير متاح','#FF3D5A'); return;
+  }
+  var fbUser = TahadiAuth.currentUser();
+  if(!fbUser){
+    // لم تُستعد الجلسة بعد — انتظر onChange
+    return;
+  }
+
+  var uid = fbUser.uid;
+  var prof = null;
+  try{
+    if(window.TahadiDB && TahadiDB.getUser){ prof = await TahadiDB.getUser(uid); }
+  }catch(e){}
+
+  me = {
+    uid: uid,
+    email: fbUser.email,
+    name: (prof && prof.name) || (fbUser.displayName) || fbUser.email.split('@')[0],
+    phone: (prof && prof.phone) || ""
+  };
+
+  // اقرأ الخطة (الاشتراك) من قاعدة البيانات بمعرّف Auth الحقيقي
+  me.subscription = null; me.isPro = false;
+  try{
+    if(window.TahadiDB && TahadiDB.getPlanByUid){
+      var plan = await TahadiDB.getPlanByUid(uid);
+      if(plan && plan.plan && plan.plan !== 'free'){
+        me.isPro = true;
+        me.subscription = { plan: 'yearly', expires_at: plan.expiresAt, tier: plan.plan };
+      }
+    }
+  }catch(e){}
 
   // Topbar
   document.getElementById('userName').textContent = me.name;
-  document.getElementById('userAvatar').textContent = me.name?.charAt(0) || '؟';
-  document.getElementById('profAvatar').textContent = me.name?.charAt(0) || '؟';
+  document.getElementById('userAvatar').textContent = me.name.charAt(0) || '؟';
+  document.getElementById('profAvatar').textContent = me.name.charAt(0) || '؟';
   document.getElementById('profName').value  = me.name;
   document.getElementById('profEmail').value = me.email;
 
-  // Stats
-  const s = me.stats;
+  // Stats (محلية إن وُجدت، وإلا أصفار — الإحصائيات التفصيلية لاحقاً)
+  var s = (prof && prof.stats) || {};
   document.getElementById('st-games').textContent = s.games || 0;
   document.getElementById('st-wins').textContent  = s.wins  || 0;
   document.getElementById('st-pts').textContent   = s.total_points || 0;
   document.getElementById('st-corr').textContent  = s.total_correct || 0;
 
   renderSubStatus();
-  checkPaymentCallback();
 }
 
 /* ═══ SUBSCRIPTION ════════════════════ */
@@ -597,16 +611,54 @@ async function loadGames() {
 async function saveName() {
   const name = document.getElementById('profName').value.trim();
   if (!name) return;
-  const r = await apiCall('/auth/me', { method:'PUT', body: JSON.stringify({ name }) });
-  if (r) { me.name=name; document.getElementById('userName').textContent=name; ntf('✅ تم حفظ الاسم','#00E676'); }
+  // احفظ الاسم في Firebase (الملف + Auth)
+  var uid = me && me.uid;
+  if(!uid && window.TahadiAuth && TahadiAuth.uid) uid = TahadiAuth.uid();
+  if(window.TahadiDB && uid && TahadiDB.adminUpdateUser){
+    try{
+      await TahadiDB.adminUpdateUser(uid, { name: name });
+      // حدّث اسم العرض في Auth أيضاً
+      if(window.TahadiAuth && TahadiAuth.currentUser()){
+        try{ await TahadiAuth.currentUser().updateProfile({ displayName: name }); }catch(e){}
+      }
+      me.name = name;
+      // حدّث الجلسة المحلية
+      try{
+        var u = JSON.parse(localStorage.getItem('tahadi_user')||sessionStorage.getItem('tahadi_user')||'null');
+        if(u){ u.name=name; (localStorage.getItem('tahadi_user')?localStorage:sessionStorage).setItem('tahadi_user',JSON.stringify(u)); }
+      }catch(e){}
+      document.getElementById('userName').textContent = name;
+      document.getElementById('userAvatar').textContent = name.charAt(0);
+      document.getElementById('profAvatar').textContent = name.charAt(0);
+      ntf('✅ تم حفظ الاسم','#00E676');
+    }catch(e){
+      ntf('❌ تعذّر حفظ الاسم','#FF3D5A');
+    }
+  } else {
+    ntf('❌ سجّل دخولك أولاً','#FF3D5A');
+  }
 }
 async function savePwd() {
   const cur = document.getElementById('curPwd').value;
   const nw  = document.getElementById('newPwd').value;
   if (!cur || !nw) { ntf('❌ أدخل كلمة المرور الحالية والجديدة','#FF3D5A'); return; }
-  const r = await apiCall('/auth/me', { method:'PUT', body: JSON.stringify({ currentPassword: cur, newPassword: nw }) });
-  if (r?.message) { ntf('✅ '+r.message,'#00E676'); document.getElementById('curPwd').value=''; document.getElementById('newPwd').value=''; }
-  else if (r?.error) ntf('❌ '+r.error,'#FF3D5A');
+  if (nw.length < 6) { ntf('❌ كلمة المرور الجديدة 6 أحرف على الأقل','#FF3D5A'); return; }
+  var user = window.TahadiAuth && TahadiAuth.currentUser();
+  if(!user){ ntf('❌ سجّل دخولك أولاً','#FF3D5A'); return; }
+  try{
+    // أعد المصادقة بكلمة المرور الحالية (شرط Firebase لتغيير كلمة المرور)
+    var cred = firebase.auth.EmailAuthProvider.credential(user.email, cur);
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(nw);
+    ntf('✅ تم تغيير كلمة المرور','#00E676');
+    document.getElementById('curPwd').value='';
+    document.getElementById('newPwd').value='';
+  }catch(e){
+    var code=(e&&e.code)||"";
+    if(code==="auth/wrong-password"||code==="auth/invalid-credential") ntf('❌ كلمة المرور الحالية غير صحيحة','#FF3D5A');
+    else if(code==="auth/weak-password") ntf('❌ كلمة المرور الجديدة ضعيفة','#FF3D5A');
+    else ntf('❌ تعذّر التغيير: '+(e&&e.message||code),'#FF3D5A');
+  }
 }
 async function cancelAutoRenew() {
   if (!confirm('إلغاء التجديد التلقائي؟ اشتراكك سيستمر حتى تاريخ انتهائه.')) return;
@@ -623,14 +675,31 @@ function ntf(msg, color='#00E5FF') {
   ntout = setTimeout(()=>el.classList.remove('show'), 3000);
 }
 
-/* ═══ INIT ════════════════════════════ */
-if (token) {
-  apiCall('/auth/me').then(d => {
-    if (!d || !d.user) { doLogout(); return; }
-    me = { ...d.user, isPro: d.isPro, subscription: d.subscription, stats: d.stats };
-    initDash();
+/* ═══ INIT — عبر جلسة Firebase Auth ════ */
+function _bootDashboard(){
+  if(!window.TahadiAuth || !TahadiAuth.ready()){
+    // Firebase لم يجهز بعد — أعد المحاولة
+    setTimeout(_bootDashboard, 300); return;
+  }
+  TahadiAuth.onChange(function(fbUser){
+    if(fbUser && fbUser.emailVerified){
+      // مسجّل ومفعّل — افتح اللوحة
+      initDash();
+    } else {
+      // غير مسجّل — وجّهه للرئيسية للدخول
+      document.getElementById('authWrap').style.display = 'block';
+      document.getElementById('dashWrap').style.display = 'none';
+      var aw = document.getElementById('authWrap');
+      if(aw) aw.innerHTML = '<div style="text-align:center;padding:3rem 1.5rem">'+
+        '<div style="font-size:2.5rem;margin-bottom:1rem">🔒</div>'+
+        '<div style="font-weight:900;font-size:1.1rem;margin-bottom:.6rem">سجّل دخولك أولاً</div>'+
+        '<div style="color:var(--dim);font-size:.85rem;margin-bottom:1.4rem">تحتاج تسجيل الدخول للوصول إلى لوحتك</div>'+
+        '<a href="index.html" class="btn btn-gold" style="text-decoration:none;display:inline-block;padding:.7rem 2rem">العودة للرئيسية →</a>'+
+        '</div>';
+    }
   });
 }
+_bootDashboard();
 document.addEventListener('keydown', e => {
   if (e.key==='Enter') {
     const lp=document.getElementById('loginBox'); const rp=document.getElementById('registerBox');
