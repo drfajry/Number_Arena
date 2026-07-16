@@ -237,8 +237,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   <div class="tabs">
     <div class="tab active" onclick="showTab('overview')">🏠 الرئيسية</div>
     <div class="tab" onclick="showTab('subscription')">💳 اشتراكي</div>
-    <div class="tab" onclick="showTab('payments')">💰 مدفوعاتي</div>
-    <div class="tab" onclick="showTab('games')">🎮 ألعابي</div>
+    <div class="tab" onclick="showTab('games')">🎮 تقدّمي</div>
     <div class="tab" onclick="showTab('profile')">👤 حسابي</div>
   </div>
 
@@ -272,23 +271,23 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <div class="card-title">🔓 ترقية الاشتراك</div>
       <div class="plans-grid" id="plansGrid">
         <div class="plan-card" id="plan-monthly" onclick="selectPlan('monthly')">
-          <div class="plan-name">شهري</div>
-          <div class="plan-price" style="color:var(--text)">19 <span style="font-size:.75rem;color:var(--dim)">ر.س</span></div>
-          <div class="plan-period">/ شهر</div>
+          <div class="plan-name">بطل (Pro)</div>
+          <div class="plan-price" style="color:var(--text)">9 <span style="font-size:.75rem;color:var(--dim)">ر.س</span></div>
+          <div class="plan-period">/ سنة</div>
         </div>
         <div class="plan-card" id="plan-yearly" onclick="selectPlan('yearly')">
-          <div class="plan-badge-hot">⭐ الأوفر</div>
-          <div class="plan-name">سنوي</div>
-          <div class="plan-price" style="color:var(--gold)">59 <span style="font-size:.75rem;color:var(--dim)">ر.س</span></div>
+          <div class="plan-badge-hot">⭐ الأقوى</div>
+          <div class="plan-name">أسطوري (Elite)</div>
+          <div class="plan-price" style="color:var(--gold)">19 <span style="font-size:.75rem;color:var(--dim)">ر.س</span></div>
           <div class="plan-period">/ سنة</div>
-          <div class="plan-save">وفّر 74% مقارنة بالشهري</div>
+          <div class="plan-save">كل المزايا + 6 وسائل</div>
         </div>
       </div>
       <div style="margin-top:1rem">
         <ul style="list-style:none;margin-bottom:1rem;">
-          <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ جميع الأسئلة (4000+)</li>
+          <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ جميع الأسئلة (2282 سؤالاً)</li>
           <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ أونلاين غير محدود</li>
-          <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ 5 وسائل مساعدة (تجميد + يحق لك)</li>
+          <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ وسائل مساعدة إضافية</li>
           <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ 4 فرق في نفس اللعبة</li>
         </ul>
         <button class="btn btn-gold" id="checkoutBtn" onclick="doCheckout()">اشترك الآن</button>
@@ -307,8 +306,8 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   <!-- ── GAMES ── -->
   <div id="tab-games" class="page-content" style="display:none">
     <div class="card">
-      <div class="card-title">🎮 سجل الألعاب</div>
-      <div id="gamesList"><div style="text-align:center;color:var(--dim);padding:1.5rem">جارٍ التحميل...</div></div>
+      <div class="card-title">🎯 تقدّمك في بنك الأسئلة</div>
+      <div id="progressBox"><div style="text-align:center;color:var(--dim);padding:1.5rem">جارٍ التحميل...</div></div>
     </div>
   </div>
 
@@ -497,7 +496,7 @@ function showTab(tab) {
   document.getElementById(`tab-${tab}`).style.display = 'block';
   const tabs = ['overview','subscription','payments','games','profile'];
   document.querySelectorAll('.tab')[tabs.indexOf(tab)]?.classList.add('active');
-  const loaders = { payments: loadPayments, games: loadGames };
+  const loaders = { games: loadProgress };
   loaders[tab]?.();
 }
 
@@ -586,25 +585,37 @@ async function loadPayments() {
 }
 
 /* ═══ GAME HISTORY ════════════════════ */
-async function loadGames() {
-  const r = await apiCall('/game/history');
-  if (!r) return;
-  const el = document.getElementById('gamesList');
-  if (!r.history?.length) { el.innerHTML='<div style="text-align:center;color:var(--dim);padding:1.5rem">لم تلعب أي لعبة بعد</div>'; return; }
-  el.innerHTML = r.history.map(g => `
-    <div class="game-row">
-      <div style="display:flex;align-items:center;gap:.65rem">
-        <div class="rank-badge rank-${g.rank<=3?g.rank:'n'}">${g.rank===1?'🥇':g.rank===2?'🥈':g.rank===3?'🥉':'#'+g.rank}</div>
-        <div>
-          <div style="font-size:.82rem;font-weight:700">${g.team_name||'فريق'}</div>
-          <div style="font-size:.66rem;color:var(--dim)">${g.played_at?.slice(0,10)||'—'}</div>
-        </div>
-      </div>
-      <div style="text-align:left">
-        <div style="font-family:'Cairo',sans-serif;font-weight:900;color:var(--gold)">${g.points} نقطة</div>
-        <div style="font-size:.66rem;color:var(--dim)">${g.correct_ans||0} إجابة صحيحة</div>
-      </div>
-    </div>`).join('');
+async function loadProgress() {
+  const el = document.getElementById('progressBox');
+  const uid = me && me.uid;
+  // إجمالي البنك حسب الخطة: المشترك = كامل البنك، المجاني = 200
+  const TOTAL_BANK = me && me.isPro ? 2282 : 200;
+  let usedCount = 0, phase = 0;
+  try{
+    if(window.firebase && firebase.database && uid){
+      const s = await firebase.database().ref('users/'+uid+'/usedQuestions').once('value');
+      const v = s.val();
+      if(v && Array.isArray(v.ids)){ usedCount = v.ids.length; phase = v.phase||0; }
+    }
+  }catch(e){}
+  const pct = Math.min(100, Math.round((usedCount / TOTAL_BANK) * 100));
+  const remaining = Math.max(0, TOTAL_BANK - usedCount);
+  el.innerHTML =
+    '<div style="text-align:center;padding:.5rem 0 1rem">'+
+      '<div style="font-size:2.2rem;font-weight:900;color:var(--gold);font-family:\'Cairo\',sans-serif">'+usedCount+' / '+TOTAL_BANK+'</div>'+
+      '<div style="color:var(--dim);font-size:.8rem">سؤال أكملته'+(phase>0?' — المرحلة '+(phase+1):'')+'</div>'+
+    '</div>'+
+    '<div style="background:rgba(255,255,255,.06);border-radius:99px;height:14px;overflow:hidden;margin:.5rem 0">'+
+      '<div style="width:'+pct+'%;height:100%;background:linear-gradient(90deg,#00E5FF,#FFD046);border-radius:99px;transition:width .5s"></div>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--dim);margin-top:.4rem">'+
+      '<span>'+pct+'% مكتمل</span>'+
+      '<span>'+remaining+' سؤال متبقٍ</span>'+
+    '</div>'+
+    (remaining===0
+      ? '<div style="text-align:center;color:var(--green);font-weight:800;margin-top:1rem">🎉 أكملت كل الأسئلة! المرحلة القادمة بترتيب جديد</div>'
+      : '<div style="text-align:center;color:var(--dim);font-size:.76rem;margin-top:1rem">الأسئلة لا تتكرر حتى تكمل البنك كاملاً، ثم تبدأ مرحلة جديدة بترتيب عشوائي</div>')+
+    (!me.isPro ? '<div style="text-align:center;margin-top:1rem"><button class="btn btn-gold btn-sm" onclick="showTab(\'subscription\')">اشترك لفتح كل الأسئلة ⚡</button></div>' : '');
 }
 
 /* ═══ PROFILE ═════════════════════════ */
