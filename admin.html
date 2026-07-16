@@ -325,7 +325,35 @@ select.inp option{background:#0C1440;}
       <button class="btn-primary" onclick="saveSettings()">💾 حفظ بيانات الدفع</button>
     </div>
     <div class="form-card">
-      <div class="section-title">📧 إعداد EmailJS (رمز التحقق على الإيميل)</div>
+      <div class="section-title">📣 إعلان ترويجي للمستخدمين</div>
+      <p style="font-size:.78rem;color:var(--dim);margin-bottom:.85rem">
+        يظهر كبانر أعلى الصفحة الرئيسية لكل المستخدمين. اتركه فارغاً أو ألغِ التفعيل لإخفائه.
+      </p>
+      <div class="form-group"><label>العنوان</label><input type="text" id="annTitle" class="inp" placeholder="🔥 خصم حصري!"></div>
+      <div class="form-group"><label>نص الرسالة</label><input type="text" id="annText" class="inp" placeholder="اشترك اليوم واحصل على خصم 50% لفترة محدودة"></div>
+      <div class="form-row">
+        <div class="form-group"><label>رابط (اختياري)</label><input type="text" id="annLink" class="inp" placeholder="https://..."></div>
+        <div class="form-group"><label>نص الرابط</label><input type="text" id="annLinkText" class="inp" placeholder="اشترك الآن"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>اللون</label>
+          <select id="annColor" class="inp">
+            <option value="#FFD046">ذهبي (خصومات)</option>
+            <option value="#00E676">أخضر (أخبار جيدة)</option>
+            <option value="#00E5FF">سماوي (معلومة)</option>
+            <option value="#FF3D5A">أحمر (تنبيه مهم)</option>
+            <option value="#C084FC">بنفسجي (مميّز)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>الحالة</label>
+          <select id="annActive" class="inp">
+            <option value="1">مفعّل (يظهر)</option>
+            <option value="0">مخفي</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveAnnouncement()">📣 نشر الإعلان</button>
+    </div>
       <p style="font-size:.78rem;color:var(--dim);margin-bottom:.85rem">
         أنشئ حساباً مجانياً على <a href="https://emailjs.com" target="_blank" style="color:var(--cyan)">emailjs.com</a>
         ثم أضف Service ID و Template ID و Public Key هنا.
@@ -434,6 +462,62 @@ function saveDB(data){localStorage.setItem(ADMIN_KEY,JSON.stringify(data));}
 })();
 
 /* ── AUTH ── */
+// نشر إعلان ترويجي لكل المستخدمين
+function saveAnnouncement(){
+  if(!window.firebase||!firebase.database){ntf("Firebase غير متصل","#FF3D5A");return;}
+  var ann={
+    title:(document.getElementById("annTitle").value||"").trim(),
+    text:(document.getElementById("annText").value||"").trim(),
+    link:(document.getElementById("annLink").value||"").trim(),
+    linkText:(document.getElementById("annLinkText").value||"").trim(),
+    color:document.getElementById("annColor").value,
+    active:document.getElementById("annActive").value==="1",
+    updatedAt:Date.now()
+  };
+  if(ann.active && !ann.text){ntf("❗ اكتب نص الرسالة أولاً","#FFD046");return;}
+  firebase.database().ref("admin/announcement").set(ann).then(function(){
+    ntf(ann.active?"✅ نُشر الإعلان لكل المستخدمين":"✅ أُخفي الإعلان","#00E676");
+  }).catch(function(e){
+    ntf("❌ تعذّر النشر: "+(e&&e.message||""),"#FF3D5A");
+  });
+}
+// حمّل الإعلان الحالي في النموذج
+function loadAnnouncementForm(){
+  if(!window.firebase||!firebase.database)return;
+  firebase.database().ref("admin/announcement").once("value").then(function(s){
+    var a=s.val();if(!a)return;
+    if(document.getElementById("annTitle"))document.getElementById("annTitle").value=a.title||"";
+    if(document.getElementById("annText"))document.getElementById("annText").value=a.text||"";
+    if(document.getElementById("annLink"))document.getElementById("annLink").value=a.link||"";
+    if(document.getElementById("annLinkText"))document.getElementById("annLinkText").value=a.linkText||"";
+    if(document.getElementById("annColor"))document.getElementById("annColor").value=a.color||"#FFD046";
+    if(document.getElementById("annActive"))document.getElementById("annActive").value=a.active?"1":"0";
+  }).catch(function(){});
+}
+function activatePlanForEmail(email, plan, expiresAt){
+  if(!window.TahadiDB)return;
+  email=(email||"").toLowerCase();
+  // جِد معرّف Auth الحقيقي من فهرس البريد
+  if(TahadiDB.uidByEmail){
+    TahadiDB.uidByEmail(email).then(function(realUid){
+      if(realUid&&TahadiDB.setPlanByUid){
+        // اكتب في المعرّف الحقيقي (يراه المستخدم فوراً)
+        TahadiDB.setPlanByUid(realUid, email, plan, expiresAt).catch(function(e){
+          console.error("[Admin] فشل تفعيل الخطة:",e&&e.message);
+        });
+      } else {
+        // المستخدم لم يسجّل بعد عبر Auth — نخزّن بالطريقة القديمة كاحتياط
+        TahadiDB.setUserPlan(email,plan,expiresAt).catch(function(){});
+        ntf("⚠️ المستخدم لم يسجّل دخوله بعد — سيُفعّل عند أول دخول","#FFD046");
+      }
+    }).catch(function(){
+      TahadiDB.setUserPlan(email,plan,expiresAt).catch(function(){});
+    });
+  } else {
+    TahadiDB.setUserPlan(email,plan,expiresAt).catch(function(){});
+  }
+}
+
 function doLogin(){
   var email=document.getElementById("loginEmail").value.trim().toLowerCase();
   var pwd  =document.getElementById("loginPwd").value;
@@ -826,8 +910,10 @@ function doGrant(){
   data.grants.push({email:email,uid:uid,plan:plan,days:days,note:note,date:new Date().toISOString()});
   saveDB(data);
 
-  // Firebase — مصدر الحقيقة الوحيد
-  if(window.TahadiDB){TahadiDB.setUserPlan(email,plan,expiresAt).catch(function(){});}
+  // Firebase — اكتب الخطة في معرّف Auth الحقيقي (عبر فهرس البريد)
+  if(window.TahadiDB){
+    activatePlanForEmail(email, plan, expiresAt);
+  }
 
   renderGrantLog();loadDashboard();renderSubs();
   document.getElementById("grantEmail").value="";
@@ -882,6 +968,7 @@ function removeQr(){
 }
 
 function loadSettings(){
+  loadAnnouncementForm();
   var data=db();var s=data.settings||{};
   document.getElementById("sPriceProM").value    =s.priceProM||9;
   document.getElementById("sPriceEliteM").value  =s.priceEliteM||19;
@@ -1038,9 +1125,9 @@ function saveEditSub(){
   if(u)u.plan=plan;
   saveDB(data);
 
-  // Firebase — مصدر الحقيقة
+  // Firebase — اكتب الخطة في معرّف Auth الحقيقي
   if(window.TahadiDB&&email.includes("@")){
-    TahadiDB.setUserPlan(email,plan,expiresAt).catch(function(){});
+    activatePlanForEmail(email, plan, expiresAt);
   }
   closeEditSub();
   renderSubs();loadDashboard();
