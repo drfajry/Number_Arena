@@ -649,15 +649,20 @@ async function deleteAccount() {
     }
     // 2) احذف حساب المصادقة نفسه
     await user.delete();
-    // 3) نظّف الجلسة المحلية
+    // 3) سجّل خروجاً صريحاً من Firebase Auth (ضمان عدم بقاء الجلسة)
+    try{ if(window.firebase && firebase.auth) await firebase.auth().signOut(); }catch(e){}
+    // 4) نظّف كل الجلسة المحلية + امنع استعادتها
     try{
+      window._forceLoggedOut = true;
       localStorage.removeItem('tahadi_user'); localStorage.removeItem('tahadi_token');
-      localStorage.removeItem('tahadi_pro'); localStorage.removeItem('tahadi_elite');
-      localStorage.removeItem('tahadi_used');
+      localStorage.removeItem('tahadi_session'); localStorage.removeItem('tahadi_pro');
+      localStorage.removeItem('tahadi_elite'); localStorage.removeItem('tahadi_used');
+      localStorage.removeItem('tahadi_admin_session');
       sessionStorage.clear();
     }catch(e){}
     ntf('✅ تم حذف حسابك نهائياً','#00E676');
-    setTimeout(function(){ window.location.href = 'index.html'; }, 1500);
+    // 5) وجّه للرئيسية مع علامة تمنع أي استعادة تلقائية للجلسة
+    setTimeout(function(){ window.location.href = 'index.html?loggedout=1'; }, 1500);
   }catch(e){
     var code = (e && e.code) || '';
     if(code === 'auth/requires-recent-login'){
