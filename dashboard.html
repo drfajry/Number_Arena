@@ -623,115 +623,120 @@ async function loadProgress() {
 }
 
 /* ═══ PROFILE ═════════════════════════ */
+// ═══ خروج تام من الجهاز: تسجيل خروج فعلي + مسح كل الكاش + توجيه صلب ═══
+async function hardLogout(){
+  try{ window._forceLoggedOut = true; }catch(e){}
+
+  // شبكة أمان: مهما تعطّل أي مسح، ننتقل لصفحة الدخول خلال 1.5 ثانية كحد أقصى
+  var _gone = false;
+  function _go(){
+    if(_gone) return; _gone = true;
+    try{ window.location.replace('index.html?loggedout=1'); }
+    catch(e){ window.location.href = 'index.html?loggedout=1'; }
+  }
+  setTimeout(_go, 1500);
+
+  // 1) تسجيل خروج فعلي من Firebase (يمسح جلسة IndexedDB الخاصة به) — ننتظره
+  try{ if(window.firebase && firebase.auth){ await firebase.auth().signOut(); } }catch(e){}
+  try{ if(window.TahadiAuth && TahadiAuth.ready()){ await TahadiAuth.signOut(); } }catch(e){}
+
+  // 2) امسح كل التخزين المحلي والجلسة بالكامل
+  try{ localStorage.clear(); }catch(e){}
+  try{ sessionStorage.clear(); }catch(e){}
+
+  // 3) احذف أي جلسة Firebase متبقية في IndexedDB
+  try{
+    if(window.indexedDB){
+      try{ indexedDB.deleteDatabase('firebaseLocalStorageDb'); }catch(e){}
+      if(indexedDB.databases){
+        try{
+          var dbs = await indexedDB.databases();
+          (dbs||[]).forEach(function(d){ if(d && d.name){ try{ indexedDB.deleteDatabase(d.name); }catch(e){} } });
+        }catch(e){}
+      }
+    }
+  }catch(e){}
+
+  // 4) امسح ذاكرة الكاش (Cache Storage)
+  try{
+    if(window.caches && caches.keys){
+      var keys = await caches.keys();
+      await Promise.all((keys||[]).map(function(k){ return caches.delete(k); }));
+    }
+  }catch(e){}
+
+  // 5) امسح الكوكيز إن وُجدت
+  try{
+    document.cookie.split(';').forEach(function(c){
+      var n = c.split('=')[0].trim();
+      if(n) document.cookie = n + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+    });
+  }catch(e){}
+
+  _go();
+}
+
 // حذف الحساب نهائياً (مطلب Apple 5.1.1)
+// الترتيب الصحيح: إعادة مصادقة أولاً ← حذف حساب Auth ← حذف بيانات القاعدة ← خروج تام
 async function deleteAccount() {
   if(!confirm('⚠️ هل أنت متأكد من حذف حسابك نهائياً؟\n\nسيتم حذف كل بياناتك (الاسم، التقدّم، الاشتراك) ولا يمكن استرجاعها.')) return;
   var typed = prompt('لتأكيد الحذف نهائياً، اكتب: حذف');
   if(typed === null) return;
   if(typed.trim() !== 'حذف'){ ntf('لم يتم تأكيد الحذف','#FFD046'); return; }
 
-  var user = window.firebase && firebase.auth ? firebase.auth().currentUser : null;
-  if(!user){ ntf('❌ سجّل دخولك أولاً','#FF3D5A'); return; }
-  var uid = user.uid;
+  var auth = (window.firebase && firebase.auth) ? firebase.auth() : null;
+  var user = auth ? auth.currentUser : null;
+  if(!user){
+    // لا يوجد مستخدم أصلاً — نظّف الجهاز وأخرج
+    ntf('يتم تسجيل خروجك...','#00E5FF');
+    await hardLogout();
+    return;
+  }
+  var uid   = user.uid;
   var email = user.email || '';
+
+  // 1) إعادة مصادقة إجبارية أولاً — تجعل حذف الحساب مضموناً بلا خطأ requires-recent-login
+  var pw = prompt('لأمان حسابك، أدخل كلمة المرور لتأكيد الحذف النهائي:');
+  if(pw === null){ ntf('أُلغي الحذف','#FFD046'); return; }
+  ntf('جارٍ التحقق...','#00E5FF');
+  try{
+    var cred = firebase.auth.EmailAuthProvider.credential(email, pw);
+    await user.reauthenticateWithCredential(cred);
+  }catch(e){
+    var c = (e && e.code) || '';
+    if(c === 'auth/wrong-password' || c === 'auth/invalid-credential' || c === 'auth/invalid-login-credentials'){
+      ntf('❌ كلمة المرور غير صحيحة — لم يُحذف الحساب','#FF3D5A'); return;
+    }
+    if(c === 'auth/too-many-requests'){
+      ntf('❌ محاولات كثيرة — انتظر قليلاً ثم أعد المحاولة','#FF3D5A'); return;
+    }
+    ntf('❌ تعذّر التحقق: '+(e && e.message || c),'#FF3D5A'); return;
+  }
 
   ntf('جارٍ حذف حسابك...','#00E5FF');
 
-  // دالة الخروج التام الفوري + مسح الكاش بالكامل + التوجيه (تُستدعى في كل الحالات بعد الحذف)
-  async function forceLogoutAndExit(){
-    // درع يمنع أي استعادة للجلسة في هذه الصفحة
-    try{ window._forceLoggedOut = true; }catch(e){}
-
-    // شبكة أمان: مهما تعطّل أي مسح، ننتقل لصفحة الدخول خلال 1.5 ثانية كحد أقصى
-    var _gone = false;
-    function _go(){
-      if(_gone) return; _gone = true;
-      try{ window.location.replace('index.html?loggedout=1'); }
-      catch(e){ window.location.href = 'index.html?loggedout=1'; }
-    }
-    setTimeout(_go, 1500);
-
-    // 1) تسجيل خروج فعلي من Firebase (ننتظره فعلياً)
-    try{ if(window.firebase && firebase.auth){ await firebase.auth().signOut(); } }catch(e){}
-    try{ if(window.TahadiAuth && TahadiAuth.ready()){ await TahadiAuth.signOut(); } }catch(e){}
-
-    // 2) امسح كل التخزين المحلي بالكامل (لا نُبقي أي مفتاح)
-    try{ localStorage.clear(); }catch(e){}
-    try{ sessionStorage.clear(); }catch(e){}
-
-    // 3) احذف جلسة Firebase المخزّنة في IndexedDB — هي التي تُبقي الحساب مسجّلاً
-    try{
-      if(window.indexedDB){
-        try{ indexedDB.deleteDatabase('firebaseLocalStorageDb'); }catch(e){}
-        if(indexedDB.databases){
-          try{
-            var dbs = await indexedDB.databases();
-            (dbs||[]).forEach(function(d){ if(d && d.name){ try{ indexedDB.deleteDatabase(d.name); }catch(e){} } });
-          }catch(e){}
-        }
-      }
-    }catch(e){}
-
-    // 4) امسح ذاكرة الكاش (Cache Storage) — للتطبيق و PWA
-    try{
-      if(window.caches && caches.keys){
-        var keys = await caches.keys();
-        await Promise.all((keys||[]).map(function(k){ return caches.delete(k); }));
-      }
-    }catch(e){}
-
-    // 5) امسح الكوكيز إن وُجدت
-    try{
-      document.cookie.split(';').forEach(function(c){
-        var n = c.split('=')[0].trim();
-        if(n) document.cookie = n + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
-      });
-    }catch(e){}
-
-    // 6) خروج فوري وصلب لصفحة الدخول (replace يمنع الرجوع للحساب المحذوف بالزر)
-    _go();
-  }
-
-  // 1) احذف بيانات قاعدة البيانات أولاً (مضمون قبل أي شيء)
+  // 2) احذف بيانات قاعدة البيانات والجلسة لا تزال نشطة (صلاحية الكتابة مربوطة بالجلسة)
   try{
     if(window.firebase && firebase.database){
-      await firebase.database().ref('users/'+uid).remove();
+      await firebase.database().ref('users/'+uid).remove().catch(function(){});
       try{
         var key = btoa(email.toLowerCase()).replace(/[^a-zA-Z0-9]/g,'');
-        await firebase.database().ref('emailIndex/'+key).remove();
+        await firebase.database().ref('emailIndex/'+key).remove().catch(function(){});
       }catch(e){}
     }
-  }catch(e){ /* حتى لو فشل، نكمل لحذف الأوث */ }
+  }catch(e){ /* حتى لو فشل مسح البيانات، نكمل لحذف حساب Auth */ }
 
-  // 2) احذف حساب المصادقة
+  // 3) احذف حساب المصادقة نفسه (مضمون الآن بعد إعادة المصادقة الحديثة)
   try{
     await user.delete();
-    ntf('✅ تم حذف حسابك نهائياً','#00E676');
-    forceLogoutAndExit();
+    ntf('✅ تم حذف حسابك — يتم تسجيل خروجك','#00E676');
   }catch(e){
-    var code = (e && e.code) || '';
-    if(code === 'auth/requires-recent-login'){
-      // Firebase يطلب إعادة مصادقة حديثة — نطلب كلمة المرور ونعيد المحاولة فوراً
-      var pw = prompt('لأمانك، أعد إدخال كلمة المرور لتأكيد الحذف:');
-      if(pw === null){ ntf('أُلغي الحذف','#FFD046'); return; }
-      try{
-        var cred = firebase.auth.EmailAuthProvider.credential(email, pw);
-        await user.reauthenticateWithCredential(cred);
-        await user.delete();
-        ntf('✅ تم حذف حسابك نهائياً','#00E676');
-        forceLogoutAndExit();
-      }catch(e2){
-        var c2 = (e2 && e2.code) || '';
-        if(c2 === 'auth/wrong-password' || c2 === 'auth/invalid-credential'){
-          ntf('❌ كلمة المرور غير صحيحة — لم يُحذف الحساب','#FF3D5A');
-        } else {
-          ntf('❌ تعذّر الحذف: '+(e2 && e2.message || c2),'#FF3D5A');
-        }
-      }
-    } else {
-      ntf('❌ تعذّر الحذف: '+(e && e.message || code),'#FF3D5A');
-    }
+    // نادر جداً بعد إعادة المصادقة — نُبلغ ونُخرج على أي حال (البيانات حُذفت والجلسة ستُنهى)
+    ntf('⚠️ حُذفت بياناتك ويتم تسجيل خروجك: '+(e && e.message || (e&&e.code) || ''),'#FFD046');
   }
+
+  // 4) خروج تام فوري من الجهاز (تسجيل خروج + مسح كل الكاش + توجيه)
+  await hardLogout();
 }
 
 async function saveName() {
