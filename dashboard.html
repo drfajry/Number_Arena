@@ -705,6 +705,7 @@ function askDeletePassword(){
 // إصلاح جذري: نأخذ currentUser طازجاً قبل كل خطوة (يمنع المرجع القديم الذي لا يحذف)
 async function deleteAccount() {
   console.log('[DELETE] deleteAccount v6 يعمل ✅');
+  alert('▶️ بدأ تنفيذ الحذف (v6)'); // إثبات أن الدالة تعمل على هذه النسخة
 
   var auth = (window.firebase && firebase.auth) ? firebase.auth() : null;
   if(!auth){ ntf('❌ نظام المصادقة غير متاح','#FF3D5A'); return; }
@@ -762,6 +763,10 @@ async function deleteAccount() {
     console.error('[DELETE] ⚠️ currentUser لا يزال موجوداً بعد delete()');
     try{ await auth.currentUser.delete(); }catch(e){}
   }
+  // نتيجة قاطعة على الشاشة (بلا حاجة لـ Console)
+  alert(auth.currentUser
+    ? '❌ الحساب لم يُحذف — currentUser ما زال موجوداً. صوّر هذه الرسالة.'
+    : '✅ تم حذف الحساب بنجاح — سيتم تسجيل خروجك.');
 
   // 5) تنظيف الجلسة المحلية بالكامل فوراً قبل التوجيه
   window._forceLoggedOut = true;
