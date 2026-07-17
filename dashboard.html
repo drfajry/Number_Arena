@@ -441,12 +441,18 @@ async function initDash() {
   document.getElementById('profName').value  = me.name;
   document.getElementById('profEmail').value = me.email;
 
-  // Stats (محلية إن وُجدت، وإلا أصفار — الإحصائيات التفصيلية لاحقاً)
-  var s = (prof && prof.stats) || {};
-  document.getElementById('st-games').textContent = s.games || 0;
+  // Stats — تُقرأ من المسار الصحيح users/uid/stats (وليس prof.stats)
+  var s = {};
+  try{
+    if(window.firebase && firebase.database){
+      var ss = await firebase.database().ref('users/'+uid+'/stats').once('value');
+      s = ss.val() || {};
+    }
+  }catch(e){}
+  document.getElementById('st-games').textContent = s.games || s.gamesPlayed || 0;
   document.getElementById('st-wins').textContent  = s.wins  || 0;
-  document.getElementById('st-pts').textContent   = s.total_points || 0;
-  document.getElementById('st-corr').textContent  = s.total_correct || 0;
+  document.getElementById('st-pts').textContent   = s.total_points || s.points || 0;
+  document.getElementById('st-corr').textContent  = s.total_correct || s.correct || 0;
 
   renderSubStatus();
 }
@@ -705,7 +711,6 @@ function askDeletePassword(){
 // إصلاح جذري: نأخذ currentUser طازجاً قبل كل خطوة (يمنع المرجع القديم الذي لا يحذف)
 async function deleteAccount() {
   console.log('[DELETE] deleteAccount v6 يعمل ✅');
-  alert('▶️ بدأ تنفيذ الحذف (v6)'); // إثبات أن الدالة تعمل على هذه النسخة
 
   var auth = (window.firebase && firebase.auth) ? firebase.auth() : null;
   if(!auth){ ntf('❌ نظام المصادقة غير متاح','#FF3D5A'); return; }
