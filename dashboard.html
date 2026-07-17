@@ -701,16 +701,17 @@ function askDeletePassword(){
   });
 }
 
-// حذف الحساب نهائياً (مطلب Apple 5.1.1) — نسخة v5 (لا تتعلّق أبداً + تُظهر الخطأ الحقيقي)
+// حذف الحساب نهائياً (مطلب Apple 5.1.1) — نسخة v6
+// إصلاح جذري: نأخذ currentUser طازجاً قبل كل خطوة (يمنع المرجع القديم الذي لا يحذف)
 async function deleteAccount() {
-  console.log('[DELETE] deleteAccount v5 يعمل ✅');
+  console.log('[DELETE] deleteAccount v6 يعمل ✅');
 
   var auth = (window.firebase && firebase.auth) ? firebase.auth() : null;
-  var user = auth ? auth.currentUser : null;
-  if(!user){ ntf('يتم تسجيل خروجك...','#00E5FF'); await hardLogout(); return; }
+  if(!auth){ ntf('❌ نظام المصادقة غير متاح','#FF3D5A'); return; }
+  if(!auth.currentUser){ ntf('يتم تسجيل خروجك...','#00E5FF'); await hardLogout(); return; }
 
-  var uid   = user.uid;
-  var email = user.email || '';
+  var email = auth.currentUser.email || '';
+  var uid   = auth.currentUser.uid;
 
   // خطوة واحدة: كلمة المرور المخفية = التأكيد نفسه
   var pw = await askDeletePassword();
@@ -719,49 +720,60 @@ async function deleteAccount() {
 
   ntf('جارٍ التحقق...','#00E5FF');
 
-  // 1) إعادة مصادقة (بمهلة 12ث حتى لا تتعلّق على شبكة بطيئة)
+  // 1) إعادة مصادقة على المستخدم الطازج (وليس مرجعاً قديماً التُقط قبل النافذة)
   try{
+    var u1 = auth.currentUser;
+    if(!u1){ ntf('❌ انتهت الجلسة — أعد الدخول','#FF3D5A'); return; }
     var cred = firebase.auth.EmailAuthProvider.credential(email, pw);
-    await _delTimeout(user.reauthenticateWithCredential(cred), 12000, 'reauth');
+    await u1.reauthenticateWithCredential(cred);
+    console.log('[DELETE] ✅ إعادة المصادقة نجحت');
   }catch(e){
     var c = (e && e.code) || '';
     if(c === 'auth/wrong-password' || c === 'auth/invalid-credential' || c === 'auth/invalid-login-credentials'){
-      ntf('❌ كلمة المرور غير صحيحة — لم يُحذف الحساب','#FF3D5A'); return;
+      alert('❌ كلمة المرور غير صحيحة — لم يُحذف الحساب'); return;
     }
-    if(c === 'auth/too-many-requests'){ ntf('❌ محاولات كثيرة — انتظر ثم أعد المحاولة','#FF3D5A'); return; }
-    ntf('❌ تعذّر التحقق: '+(e && (e.message||e.code) || ''),'#FF3D5A'); return;
+    if(c === 'auth/too-many-requests'){ alert('❌ محاولات كثيرة — انتظر ثم أعد المحاولة'); return; }
+    alert('❌ تعذّر التحقق: '+(e && (e.code||e.message) || '')); return;
   }
 
   ntf('جارٍ حذف حسابك...','#00E5FF');
 
-  // 2) احذف بيانات القاعدة (لا نتعلّق: مهلة 5ث، ولو فشلت نكمل — الأهم حذف حساب Auth)
-  try{ await _delTimeout(firebase.database().ref('users/'+uid).remove(), 5000, 'db'); }catch(e){ console.warn('[DELETE] db remove:', e && e.message); }
+  // 2) احذف بيانات القاعدة والجلسة نشطة (لا نتعلّق)
+  try{ await _delTimeout(firebase.database().ref('users/'+uid).remove(), 6000, 'db'); }catch(e){ console.warn('[DELETE] db remove:', e && e.message); }
   try{
     var key = btoa(email.toLowerCase()).replace(/[^a-zA-Z0-9]/g,'');
-    await _delTimeout(firebase.database().ref('emailIndex/'+key).remove(), 5000, 'idx');
+    await _delTimeout(firebase.database().ref('emailIndex/'+key).remove(), 6000, 'idx');
   }catch(e){ console.warn('[DELETE] idx remove:', e && e.message); }
 
-  // 3) احذف حساب المصادقة نفسه — نُظهر الخطأ الحقيقي لو فشل.
+  // 3) احذف حساب المصادقة نفسه — على المستخدم الطازج، بلا مهلة مصطنعة قد تُفشل عملية ناجحة
   try{
-    await _delTimeout(user.delete(), 12000, 'delete');
-    console.log('[DELETE] ✅ حُذف حساب Auth');
+    var u2 = auth.currentUser;
+    if(!u2){ throw new Error('لا يوجد مستخدم حالي لحذفه'); }
+    await u2.delete();
+    console.log('[DELETE] ✅ نُفّذ user.delete()');
   }catch(e){
     console.error('[DELETE] ❌ فشل user.delete():', e && (e.code||e.message));
-    ntf('❌ فشل حذف الحساب: '+(e && (e.code||e.message) || 'خطأ'),'#FF3D5A');
-    return; // لا نُظهر نجاحاً وهمياً — نوقف ليظهر الخطأ
+    alert('❌ فشل حذف الحساب: '+(e && (e.code||e.message) || 'خطأ')+'\n\nصوّر هذه الرسالة وأرسلها.');
+    return;
   }
 
-  // 4) تنظيف الجلسة المحلية بالكامل فوراً (متزامن) قبل التوجيه — هذا هو الإصلاح الجوهري
+  // 4) تحقّق فعلي أن الحساب اختفى (currentUser صار null بعد الحذف الناجح)
+  if(auth.currentUser){
+    console.error('[DELETE] ⚠️ currentUser لا يزال موجوداً بعد delete()');
+    try{ await auth.currentUser.delete(); }catch(e){}
+  }
+
+  // 5) تنظيف الجلسة المحلية بالكامل فوراً قبل التوجيه
   window._forceLoggedOut = true;
   try{ me = null; }catch(e){}
   try{ window.me = null; }catch(e){}
   try{ if(window.DB && DB.clearUser) DB.clearUser(); }catch(e){}
   try{ localStorage.clear(); }catch(e){}
   try{ sessionStorage.clear(); }catch(e){}
-  try{ firebase.auth().signOut(); }catch(e){}                 // بلا await — لا نعتمد عليه في التوجيه
+  try{ auth.signOut(); }catch(e){}
   try{ indexedDB.deleteDatabase('firebaseLocalStorageDb'); }catch(e){}
 
-  // 5) توجيه فوري (replace يمنع الرجوع للحساب المحذوف)
+  // 6) توجيه فوري
   window.location.replace('index.html?loggedout=1');
 }
 
