@@ -637,16 +637,59 @@ async function deleteAccount() {
 
   ntf('جارٍ حذف حسابك...','#00E5FF');
 
-  // دالة الخروج التام + التوجيه (تُستدعى في كل الحالات بعد الحذف)
-  function forceLogoutAndExit(){
+  // دالة الخروج التام الفوري + مسح الكاش بالكامل + التوجيه (تُستدعى في كل الحالات بعد الحذف)
+  async function forceLogoutAndExit(){
+    // درع يمنع أي استعادة للجلسة في هذه الصفحة
     try{ window._forceLoggedOut = true; }catch(e){}
-    try{ if(window.firebase && firebase.auth) firebase.auth().signOut(); }catch(e){}
+
+    // شبكة أمان: مهما تعطّل أي مسح، ننتقل لصفحة الدخول خلال 1.5 ثانية كحد أقصى
+    var _gone = false;
+    function _go(){
+      if(_gone) return; _gone = true;
+      try{ window.location.replace('index.html?loggedout=1'); }
+      catch(e){ window.location.href = 'index.html?loggedout=1'; }
+    }
+    setTimeout(_go, 1500);
+
+    // 1) تسجيل خروج فعلي من Firebase (ننتظره فعلياً)
+    try{ if(window.firebase && firebase.auth){ await firebase.auth().signOut(); } }catch(e){}
+    try{ if(window.TahadiAuth && TahadiAuth.ready()){ await TahadiAuth.signOut(); } }catch(e){}
+
+    // 2) امسح كل التخزين المحلي بالكامل (لا نُبقي أي مفتاح)
+    try{ localStorage.clear(); }catch(e){}
+    try{ sessionStorage.clear(); }catch(e){}
+
+    // 3) احذف جلسة Firebase المخزّنة في IndexedDB — هي التي تُبقي الحساب مسجّلاً
     try{
-      ['tahadi_user','tahadi_token','tahadi_session','tahadi_pro','tahadi_elite',
-       'tahadi_used','tahadi_admin_session'].forEach(function(k){ localStorage.removeItem(k); });
-      sessionStorage.clear();
+      if(window.indexedDB){
+        try{ indexedDB.deleteDatabase('firebaseLocalStorageDb'); }catch(e){}
+        if(indexedDB.databases){
+          try{
+            var dbs = await indexedDB.databases();
+            (dbs||[]).forEach(function(d){ if(d && d.name){ try{ indexedDB.deleteDatabase(d.name); }catch(e){} } });
+          }catch(e){}
+        }
+      }
     }catch(e){}
-    setTimeout(function(){ window.location.href = 'index.html?loggedout=1'; }, 1200);
+
+    // 4) امسح ذاكرة الكاش (Cache Storage) — للتطبيق و PWA
+    try{
+      if(window.caches && caches.keys){
+        var keys = await caches.keys();
+        await Promise.all((keys||[]).map(function(k){ return caches.delete(k); }));
+      }
+    }catch(e){}
+
+    // 5) امسح الكوكيز إن وُجدت
+    try{
+      document.cookie.split(';').forEach(function(c){
+        var n = c.split('=')[0].trim();
+        if(n) document.cookie = n + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+      });
+    }catch(e){}
+
+    // 6) خروج فوري وصلب لصفحة الدخول (replace يمنع الرجوع للحساب المحذوف بالزر)
+    _go();
   }
 
   // 1) احذف بيانات قاعدة البيانات أولاً (مضمون قبل أي شيء)
