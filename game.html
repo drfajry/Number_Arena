@@ -12,7 +12,9 @@
   window._fbReady=false;
   ls("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",function(){
     ls("https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js",function(){
-      window._fbReady=true;if(window._fbInitCb)window._fbInitCb();
+      ls("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js",function(){
+        window._fbReady=true;if(window._fbInitCb)window._fbInitCb();
+      });
     });
   });
 })();
@@ -524,7 +526,7 @@ select.inp option{background:#0C1440;}
 <!-- Questions -->
 <script>
 const QB = [
-  {id:1,text:"إذا كان لديك 6 تفاحات وأخذت 4 كم تبقى معك؟",A:"2",B:"4",C:"6",D:"1",correct:"B",cat:"ألغاز"},
+  {id:1,text:"إذا كان لديك 6 تفاحات وأخذت منها 4، كم تبقّى؟",A:"2",B:"4",C:"6",D:"1",correct:"A",cat:"ألغاز"},
   {id:138,text:"كم يساوي 513 - 220؟",A:"284",B:"297",C:"293",D:"289",correct:"C",cat:"رياضيات"},
   {id:493,text:"في أي دولة نشأ الكاراتيه؟",A:"الصين",B:"اليابان",C:"كوريا",D:"تايلاند",correct:"B",cat:"رياضة"},
   {id:764,text:"أين تقع قناة السويس؟",A:"تونس",B:"المغرب",C:"مصر",D:"ليبيا",correct:"C",cat:"جغرافيا"},
@@ -803,7 +805,7 @@ const QB = [
   {id:98,text:"ما هو الشيء الذي له وجه وليس له عينان؟",A:"الكتاب",B:"الساعة",C:"القمر",D:"المرآة",correct:"B",cat:"ألغاز"},
   {id:99,text:"أنا شيء إذا وضعته في الثلاجة لا يبرد، وإذا تركته لا يحترق، فما أنا؟",A:"النور",B:"الظل",C:"الصوت",D:"الحرارة",correct:"B",cat:"ألغاز"},
   {id:100,text:"ما هو الشيء الذي كلما أكلت منه يزيد؟",A:"النار",B:"الجوع",C:"الظل",D:"العطش",correct:"B",cat:"ألغاز"},
-  {id:102,text:"ما هو الشيء الذي له بداية وليس له نهاية؟",A:"العمر",B:"الحياة",C:"الدائرة",D:"الطريق",correct:"D",cat:"ألغاز"},
+  {id:102,text:"ما الشيء الذي له رقبة وليس له رأس؟",A:"القميص",B:"الكرسي",C:"الباب",D:"الشجرة",correct:"A",cat:"ألغاز"},
   {id:103,text:"ما هو الشيء الذي إذا سقط من يدك لا يتحطم؟",A:"الضوء",B:"الريح",C:"الظل",D:"الصوت",correct:"C",cat:"ألغاز"},
   {id:104,text:"ما هو الشيء الذي كلما مشى زاد طوله؟",A:"الصوت",B:"النور",C:"الظل",D:"الريح",correct:"C",cat:"ألغاز"},
   {id:105,text:"ما هو الشيء الذي كلما زادت حرارته زاد انتفاخه؟",A:"الزجاج",B:"الهواء",C:"المعدن",D:"الخشب",correct:"A",cat:"ألغاز"},
@@ -3350,7 +3352,7 @@ function startNewRound(agreedTeams){
       ll:{remove:false,change:false,luck:false,audience:false,resetTime:false,freeze:false,shield:false,flip:false}};
   });
   if(freshTeams.length<2){ntf("يحتاج فريقين على الأقل","#FF3D5A");return;}
-  _lastAdvancedQi=-1;_leaveHandled=false;_leaveSeen=0;_lastAnsSeen=0;
+  _lastAdvancedQi=-1;_leaveHandled=false;_leaveSeen=0;_lastAnsSeen=0;_gameStatsSaved=false;
   G.teams=freshTeams;
   G.board=shuf([...BT]).map(function(t,i){return{i:i,n:i+1,t:t,used:false,by:null};});
   G.qs=pickQs();
@@ -4226,6 +4228,32 @@ function showYovModal(){
 function closeYov(){document.getElementById("yov").classList.remove("on");}
 
 /* ════════════════════════════════════════
+   USER STATS — تُكتب في users/uid/stats (أونلاين فقط، للمسجّل دخوله)
+════════════════════════════════════════ */
+var _gameStatsSaved=false;
+function recordUserStats(sorted){
+  try{
+    if(isOff) return;                       // أوفلاين: عدة فرق على جهاز واحد — لا تُنسب لمستخدم
+    if(_gameStatsSaved) return;             // مرة واحدة لكل لعبة
+    var auth = (window.firebase && firebase.auth) ? firebase.auth() : null;
+    var u = auth ? auth.currentUser : null;
+    if(!u) return;                          // غير مسجّل دخول — لا إحصائيات (ولن تُصرّح القاعدة بالكتابة)
+    var mine = G.teams.filter(function(t){ return t.id===myId; })[0];
+    if(!mine) return;
+    var didWin = !!(sorted && sorted[0] && sorted[0].id===myId);
+    _gameStatsSaved = true;
+    firebase.database().ref("users/"+u.uid+"/stats").transaction(function(s){
+      s = s || {games:0,wins:0,total_points:0,total_correct:0};
+      s.games         = (s.games||0)+1;
+      s.wins          = (s.wins||0)+(didWin?1:0);
+      s.total_points  = (s.total_points||0)+(mine.points||0);
+      s.total_correct = (s.total_correct||0)+(mine.ca||0);
+      return s;
+    }).catch(function(){ _gameStatsSaved=false; }); // فشل → اسمح بإعادة المحاولة لاحقاً
+  }catch(e){}
+}
+
+/* ════════════════════════════════════════
    END GAME
 ════════════════════════════════════════ */
 function endGame(){
@@ -4242,6 +4270,7 @@ function endGame(){
     if(!!a.left!==!!b.left)return a.left?1:-1;
     return b.points-a.points;
   });
+  recordUserStats(sorted); // سجّل إحصائيات المستخدم المسجّل دخوله (أونلاين فقط)
   ss("results");
   // زر "جولة جديدة بنفس الفرق" للأونلاين فقط (المضيف يبدأها، الجميع ينتقل)
   var rb=document.getElementById("rematchBtn");
