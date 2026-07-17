@@ -1876,7 +1876,7 @@ function renderUserBar(){
     +"</div>"
     +"</div></div>"
     +"<div style=\"display:flex;align-items:center;gap:.5rem\">"
-    +((plan==="free"&&!window.IS_APP)?"<button class=\"btn-p\" onclick=\"openSubscribe(\'pro\')\" style=\"padding:.38rem .85rem;font-size:.76rem\">🔓 اشترك</button>":"")
+    +((plan==="free"&&!window.IS_APP)?"<button class=\"btn-p\" onclick=\"goSec('pricing')\" style=\"padding:.38rem .85rem;font-size:.76rem\">🔓 ترقية</button>":"")
     +"<button class=\"btn-s\" onclick=\"doLogout()\" style=\"padding:.38rem .75rem;font-size:.72rem\">خروج</button>"
     +"</div>"
     +"</div>";
@@ -1934,22 +1934,36 @@ function _initApp(){
   if(window.TahadiAuth&&TahadiAuth.ready()){
     TahadiAuth.onChange(function(fbUser){
       if(window._forceLoggedOut) return; // خرج يدوياً في هذه الجلسة
-      if(fbUser && fbUser.emailVerified){
-        // مستخدم مسجّل ومفعّل — استعد بياناته إن لم تكن الجلسة محليّة بعد
-        if(!authGet("tahadi_token")){
-          if(window.TahadiDB&&TahadiDB.indexEmail){TahadiDB.indexEmail(fbUser.email,fbUser.uid).catch(function(){});}
-          if(window.TahadiDB&&TahadiDB.getUser){
-            TahadiDB.getUser(fbUser.uid).then(function(prof){
-              loginUser({
-                name:(prof&&prof.name)||fbUser.email.split("@")[0],
-                email:fbUser.email, phone:(prof&&prof.phone)||"", uid:fbUser.uid
-              },true);
-            }).catch(function(){
-              loginUser({name:fbUser.email.split("@")[0],email:fbUser.email,phone:"",uid:fbUser.uid},true);
-            });
+      if(!fbUser){ return; }
+      // ── تحقّق فعلي أن الحساب لا يزال موجوداً (يكشف الحساب المحذوف قطعياً) ──
+      fbUser.reload().then(function(){
+        var u = (window.TahadiAuth && TahadiAuth.currentUser()) || fbUser;
+        if(window._forceLoggedOut) return;
+        if(u && u.emailVerified){
+          // مستخدم مسجّل ومفعّل وموجود — استعد بياناته إن لم تكن الجلسة محليّة بعد
+          if(!authGet("tahadi_token")){
+            if(window.TahadiDB&&TahadiDB.indexEmail){TahadiDB.indexEmail(u.email,u.uid).catch(function(){});}
+            if(window.TahadiDB&&TahadiDB.getUser){
+              TahadiDB.getUser(u.uid).then(function(prof){
+                loginUser({
+                  name:(prof&&prof.name)||u.email.split("@")[0],
+                  email:u.email, phone:(prof&&prof.phone)||"", uid:u.uid
+                },true);
+              }).catch(function(){
+                loginUser({name:u.email.split("@")[0],email:u.email,phone:"",uid:u.uid},true);
+              });
+            }
           }
         }
-      }
+      }).catch(function(err){
+        // reload فشل ⇒ الحساب محذوف/غير صالح (user-not-found / user-token-expired)
+        // خروج تام فوري ولا تعرض أي اسم قديم
+        window._forceLoggedOut = true;
+        try{ if(window.TahadiAuth && TahadiAuth.ready()) TahadiAuth.signOut(); }catch(e){}
+        try{ authClearAll(["tahadi_user","tahadi_token","tahadi_session","tahadi_pro","tahadi_elite"]); }catch(e){}
+        try{ indexedDB.deleteDatabase("firebaseLocalStorageDb"); }catch(e){}
+        try{ renderUserBar(); }catch(e){}
+      });
     });
   }
 
