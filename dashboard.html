@@ -741,23 +741,28 @@ async function deleteAccount() {
     await _delTimeout(firebase.database().ref('emailIndex/'+key).remove(), 5000, 'idx');
   }catch(e){ console.warn('[DELETE] idx remove:', e && e.message); }
 
-  // 3) احذف حساب المصادقة نفسه — هذا ما يمنع عودة الجلسة. نُظهر الخطأ الحقيقي لو فشل.
-  var deleted = false;
+  // 3) احذف حساب المصادقة نفسه — نُظهر الخطأ الحقيقي لو فشل.
   try{
     await _delTimeout(user.delete(), 12000, 'delete');
-    deleted = true;
     console.log('[DELETE] ✅ حُذف حساب Auth');
   }catch(e){
     console.error('[DELETE] ❌ فشل user.delete():', e && (e.code||e.message));
     ntf('❌ فشل حذف الحساب: '+(e && (e.code||e.message) || 'خطأ'),'#FF3D5A');
-    // لا نُخرج المستخدم حتى لا نُظهر "نجاح" وهمياً — نوقف هنا ليُبلّغنا بالخطأ الظاهر
-    return;
+    return; // لا نُظهر نجاحاً وهمياً — نوقف ليظهر الخطأ
   }
 
-  ntf('✅ تم حذف حسابك نهائياً — يتم تسجيل خروجك','#00E676');
+  // 4) تنظيف الجلسة المحلية بالكامل فوراً (متزامن) قبل التوجيه — هذا هو الإصلاح الجوهري
+  window._forceLoggedOut = true;
+  try{ me = null; }catch(e){}
+  try{ window.me = null; }catch(e){}
+  try{ if(window.DB && DB.clearUser) DB.clearUser(); }catch(e){}
+  try{ localStorage.clear(); }catch(e){}
+  try{ sessionStorage.clear(); }catch(e){}
+  try{ firebase.auth().signOut(); }catch(e){}                 // بلا await — لا نعتمد عليه في التوجيه
+  try{ indexedDB.deleteDatabase('firebaseLocalStorageDb'); }catch(e){}
 
-  // 4) خروج تام من الجهاز
-  await hardLogout();
+  // 5) توجيه فوري (replace يمنع الرجوع للحساب المحذوف)
+  window.location.replace('index.html?loggedout=1');
 }
 
 async function saveName() {
