@@ -1801,6 +1801,7 @@ function syncFromAdminLocal(user){
 
 function renderUserBar(){
   var token=authGet("tahadi_token");
+  if(window._forceLoggedOut){ token=null; } // بعد الحذف/الخروج: لا تعرض أي اسم قديم
   // إظهار/إخفاء الأقسام التسويقية حسب حالة الدخول
   if(token) document.body.classList.add("logged-in");
   else document.body.classList.remove("logged-in");
@@ -1923,7 +1924,7 @@ function _initApp(){
       window._forceLoggedOut=true;
       try{ if(window.TahadiAuth && TahadiAuth.ready()) TahadiAuth.signOut(); }catch(e){}
       try{
-        ["tahadi_user","tahadi_token","tahadi_session","tahadi_pro","tahadi_elite"].forEach(function(k){localStorage.removeItem(k);});
+        authClearAll(["tahadi_user","tahadi_token","tahadi_session","tahadi_pro","tahadi_elite"]);
       }catch(e){}
       history.replaceState(null,"",location.pathname);
     }
