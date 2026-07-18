@@ -1882,7 +1882,7 @@ function renderUserBar(){
     +"</div>"
     +"</div></div>"
     +"<div style=\"display:flex;align-items:center;gap:.5rem\">"
-    +((plan==="free")?"<button class=\"btn-p\" onclick=\"goSec('pricing')\" style=\"padding:.38rem .85rem;font-size:.76rem\">🔓 ترقية</button>":"")
+    +((plan==="free" && window.IAP_ENABLED!==false)?"<button class=\"btn-p\" onclick=\"goSec('pricing')\" style=\"padding:.38rem .85rem;font-size:.76rem\">🔓 ترقية</button>":"")
     +"<button class=\"btn-s\" onclick=\"doLogout()\" style=\"padding:.38rem .75rem;font-size:.72rem\">خروج</button>"
     +"</div>"
     +"</div>";
@@ -2183,12 +2183,30 @@ function openContact(){document.getElementById("contactModal").classList.add("on
   // ═══════════════════════════════════════════════
   // وضع النسخة النظيفة (بلا اشتراكات ظاهرة) — للمراجعة الأولى
   // كود IAP جاهز في iap.js لكنه معطّل هنا حتى تحديث 1.1
-  // لتفعيل IAP لاحقاً: غيّر IAP_ENABLED إلى true
   // ═══════════════════════════════════════════════
-  var IAP_ENABLED = true;
+  // كشف المنصة: على iOS نسخة نظيفة (بلا اشتراكات ولا أونلاين) حتى تُقبل مراجعة Apple.
+  // على Android: كل المزايا مفعّلة. iOS تُضاف في تحديث لاحق.
+  // ═══════════════════════════════════════════════
+  var _IS_IOS = false;
+  try{ _IS_IOS = !!(window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform()==="ios"); }catch(e){}
+  var IAP_ENABLED    = !_IS_IOS;   // اشتراكات: Android الآن، iOS لاحقاً
+  var ONLINE_ENABLED = !_IS_IOS;   // أونلاين/بحث/انضمام: Android فقط حتى تقبل Apple
+  try{ window.IAP_ENABLED = IAP_ENABLED; window.ONLINE_ENABLED = ONLINE_ENABLED; }catch(e){}
 
   function applyAppMode(){
     if(!window.IS_APP) return;
+
+    // على iOS: أخفِ أزرار أونلاين والبحث والانضمام برمز (يبقى «على نفس الجهاز»)
+    if(!ONLINE_ENABLED){
+      document.querySelectorAll("button").forEach(function(b){
+        var oc=b.getAttribute("onclick")||"";
+        if(oc.indexOf("openCreate")>-1 || oc.indexOf("openQuickMatch")>-1 || oc.indexOf("openJoin")>-1){
+          b.style.display="none";
+        }
+      });
+      // أخفِ إعلان الأدمن الترويجي (قد يذكر الاشتراك)
+      var ann=document.getElementById("announceBanner"); if(ann)ann.style.display="none";
+    }
 
     if(!IAP_ENABLED){
       // النسخة النظيفة: أخفِ كل ما يخص الشراء داخل التطبيق
