@@ -438,6 +438,18 @@ async function initDash() {
         me.subscription = { plan: 'yearly', expires_at: plan.expiresAt, tier: plan.plan };
       }
     }
+    // لا خطة في Firebase؟ احترم اشتراك IAP المحلي (RevenueCat مصدر الحقيقة داخل التطبيق)
+    if(!me.isPro){
+      var iapTier = localStorage.getItem('tahadi_iap_tier');
+      var localPro = (localStorage.getItem('tahadi_pro')||sessionStorage.getItem('tahadi_pro'))==='1';
+      var localElite = (localStorage.getItem('tahadi_elite')||sessionStorage.getItem('tahadi_elite'))==='1';
+      if(iapTier || localPro || localElite){
+        me.isPro = true;
+        var t = iapTier || (localElite ? 'elite' : 'pro');
+        var exp = new Date(); exp.setFullYear(exp.getFullYear()+1);
+        me.subscription = { plan:'yearly', expires_at: exp.toISOString(), tier: t };
+      }
+    }
   }catch(e){}
 
   // Topbar
