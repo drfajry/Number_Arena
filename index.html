@@ -439,7 +439,7 @@ select.inp option{background:#0C1440;}
           <button id="heroOnline" class="btn-p" onclick="openCreate()">🌐 ابدأ لعبة أونلاين</button>
           <button id="heroSearch" class="btn-p" onclick="openQuickMatch()" style="background:linear-gradient(135deg,#A855F7,#7C3AED)">🔎 ابحث عن لاعبين</button>
           <button id="heroJoin" class="btn-s" onclick="openJoin()">🔑 انضمام برمز</button>
-          <button class="btn-s" onclick="openOffline()">📱 على نفس الجهاز</button>
+          <button id="heroOffline" class="btn-s" onclick="openOffline()">📱 على نفس الجهاز</button>
         </div>
         <div class="hero-stats">
           <div class="hero-stat"><div class="val">2300+</div><div class="lbl">سؤال</div></div>
@@ -2226,6 +2226,27 @@ function openContact(){document.getElementById("contactModal").classList.add("on
           window.openJoin       = function(){ window.openOffline(); };
         }
       }catch(e){}
+
+      // «على نفس الجهاز» → «العب الآن»
+      var _off=document.getElementById("heroOffline"); if(_off)_off.textContent="🎮 العب الآن";
+
+      // أخفِ روابط أونلاين في التذييل (عناصر a)
+      document.querySelectorAll("a[onclick]").forEach(function(a){
+        var oc=a.getAttribute("onclick")||"";
+        if(oc.indexOf("openCreate")>-1 || oc.indexOf("openJoin")>-1 || oc.indexOf("openQuickMatch")>-1){ a.style.display="none"; }
+      });
+
+      // أخفِ أسئلة FAQ وبطاقات الميزات التي تذكر «أونلاين»
+      document.querySelectorAll(".faq-item").forEach(function(el){
+        if((el.textContent||"").indexOf("أونلاين")>-1 || (el.textContent||"").indexOf("أوفلاين")>-1) el.style.display="none";
+      });
+      document.querySelectorAll(".feat-card").forEach(function(el){
+        if((el.textContent||"").indexOf("أونلاين")>-1) el.style.display="none";
+      });
+
+      // نصّ العنوان الفرعي بلا ذكر أونلاين
+      var _hs=document.querySelector(".hero-sub");
+      if(_hs) _hs.textContent="اختبر ذكاءك في 10 مجالات مختلفة. اجمع النقاط، واكتشف الخلايا المخفية!";
     }
 
     if(!IAP_ENABLED){
