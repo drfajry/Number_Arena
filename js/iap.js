@@ -107,6 +107,7 @@
         }catch(e){}
         return self.init(_uid).then(function(ok){
           if(!ok || !_ready){
+            alert("تشخيص: فشلت تهيئة RevenueCat (init).\nمتاح؟ "+self.available()+"\nمنصة: "+((window.Capacitor&&window.Capacitor.getPlatform&&window.Capacitor.getPlatform())||"?"));
             return {success:false, error:"نظام الشراء لم يجهز بعد، حاول ثانية"};
           }
           return self.purchase(planKey); // أعد المحاولة بعد نجاح التهيئة
@@ -120,10 +121,18 @@
       // اجلب العرض (Offering) ثم اشترِ الحزمة المطابقة
       return self.getOfferings().then(function(offering){
         console.log("[IAP] Offering =", offering);
+        // تشخيص على الشاشة (بلا حاجة لـ Console)
+        try{
+          if(!offering){
+            alert("تشخيص: Offering = null\n(لا يوجد عرض حالي في RevenueCat — تأكد أن default هو Current وأن المنتجات مفعّلة)");
+          } else {
+            var _pk = (offering.availablePackages||[]).map(function(p){ return (p.product&&p.product.identifier)||p.identifier; });
+            alert("تشخيص: العرض موجود\nعدد الحزم: "+(offering.availablePackages||[]).length+"\nالحزم: "+_pk.join(" | "));
+          }
+        }catch(e){}
         if(!offering || !offering.availablePackages || !offering.availablePackages.length){
           return Promise.reject({ _cfg:true, message:"لا توجد عروض (Offerings) في RevenueCat. تأكد من إنشاء Offering افتراضي وإضافة الخطتين، وأن المنتجات مفعّلة في Google Play." });
         }
-        // اطبع معرّفات الحزم المتاحة للتشخيص
         try{
           console.log("[IAP] Packages =", offering.availablePackages.map(function(p){
             return { pkg:p.identifier, product:(p.product && p.product.identifier) };
