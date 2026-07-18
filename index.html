@@ -2198,6 +2198,14 @@ function openContact(){document.getElementById("contactModal").classList.add("on
   function applyAppMode(){
     if(!window.IS_APP) return;
 
+    // ── شارة تشخيص مرئية (مؤقتة): تُظهر النسخة والمنصة المكتشفة ──
+    try{
+      var _b=document.createElement("div");
+      _b.style.cssText="position:fixed;bottom:6px;left:6px;z-index:99999;background:rgba(0,0,0,.7);color:#0ff;font-size:11px;padding:3px 7px;border-radius:6px;font-family:monospace;pointer-events:none";
+      _b.textContent="v12 | plat="+(window.PLATFORM||"?")+" | iOS="+(window.IS_IOS?"1":"0")+" | online="+(window.ONLINE_ENABLED?"1":"0");
+      document.body.appendChild(_b);
+    }catch(e){}
+
     // على iOS: أخفِ أزرار أونلاين والبحث والانضمام برمز (يبقى «على نفس الجهاز»)
     if(!ONLINE_ENABLED){
       ["heroOnline","heroSearch","heroJoin"].forEach(function(id){
