@@ -1,34 +1,14 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-
-  <!-- SEO & Social Preview -->
-  <meta name="description" content="العب مع فريقك أونلاين، اختبر ذكاءك في 10 مجالات، اكتشف الخلايا المخفية واجمع النقاط!">
-  <meta property="og:title" content="تحدي الأرقام ⚡ | منصة المسابقات الجماعية">
-  <meta property="og:description" content="العب مع فريقك أونلاين، اختبر ذكاءك في 10 مجالات، اكتشف الخلايا المخفية واجمع النقاط!">
-  <meta property="og:image" content="https://drfajry.github.io/Number_Arena/logo.png">
-  <meta property="og:url" content="https://drfajry.github.io/Number_Arena/">
-  <meta property="og:type" content="website">
-  <meta property="og:locale" content="ar_SA">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="تحدي الأرقام ⚡ | منصة المسابقات الجماعية">
-  <meta name="twitter:description" content="العب مع فريقك أونلاين، اختبر ذكاءك في 10 مجالات!">
-  <meta name="twitter:image" content="https://drfajry.github.io/Number_Arena/logo.png">
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-<script src="js/firebase-config.js"></script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>تحدي الأرقام ⚡ | منصة المسابقات الجماعية</title>
-<link rel="icon" href="logo.png">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
-
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>لوحة المستخدم — تحدي الأرقام</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 /* دعم المنطقة الآمنة في iPhone (الكاميرا/النتوء وشريط الإيماءات) */
-html{background:#070B1F;}
 body{
+  padding-top:env(safe-area-inset-top);
   padding-bottom:env(safe-area-inset-bottom);
   padding-left:env(safe-area-inset-left);
   padding-right:env(safe-area-inset-right);
@@ -37,2190 +17,877 @@ body{
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
-  --bg:#070B1F;--bg2:#0C1130;--bg3:#111840;
-  --card:rgba(255,255,255,.04);--card2:rgba(255,255,255,.07);
-  --border:rgba(0,229,255,.14);
-  --cyan:#00E5FF;--cyan2:#00B8CC;--gold:#FFD046;
-  --green:#00E676;--red:#FF3D5A;
-  --text:#D8EEFF;--text2:#A0C4E8;--dim:rgba(160,210,255,.5);
+  --bg:#07091C;--bg2:#0B0E26;--card:#0F1335;
+  --cyan:#00E5FF;--gold:#FFD046;--green:#00E676;
+  --red:#FF3D5A;--text:#D8EEFF;--dim:rgba(160,210,255,.42);
+  --border:rgba(0,229,255,.13);
 }
-html{scroll-behavior:smooth;}
-body{font-family:"Tajawal",sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;}
-body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:radial-gradient(ellipse 80% 40% at 50% 0%,rgba(0,80,200,.32),transparent 60%),
-  radial-gradient(ellipse 40% 50% at 0% 80%,rgba(0,229,255,.06),transparent 50%),
-  radial-gradient(ellipse 35% 40% at 100% 90%,rgba(255,208,70,.05),transparent 50%);}
+body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 120% 50% at 50% -5%,rgba(10,50,200,.4),transparent 65%),
+  radial-gradient(ellipse 50% 40% at 0% 100%,rgba(0,229,255,.08),transparent 55%);}
 
-/* ── NAVBAR ── */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;
-  background:rgba(7,11,31,.9);backdrop-filter:blur(16px);
-  border-bottom:1px solid var(--border);
-  padding-top:env(safe-area-inset-top);}
-.nav-inner{max-width:1140px;margin:0 auto;padding:.72rem 1.5rem;
-  display:flex;align-items:center;justify-content:space-between;gap:1rem;}
-.nav-logo{display:flex;align-items:center;gap:.6rem;text-decoration:none;cursor:pointer;}
-.nav-logo img{width:36px;height:36px;border-radius:8px;filter:drop-shadow(0 0 8px rgba(0,229,255,.4));}
-.nav-logo-text{font-family:"Cairo",sans-serif;font-size:1.05rem;font-weight:900;color:var(--text);}
-.nav-logo-text span{color:var(--cyan);}
-.nav-links{display:flex;align-items:center;gap:.1rem;}
-.nav-link{padding:.42rem .82rem;border-radius:8px;color:var(--dim);font-size:.87rem;
-  font-weight:600;cursor:pointer;transition:all .18s;background:none;border:none;
-  font-family:"Tajawal",sans-serif;text-decoration:none;}
-.nav-link:hover{color:var(--text);background:var(--card2);}
-.nav-cta{display:inline-flex;align-items:center;gap:.4rem;
-  padding:.48rem 1.1rem;background:linear-gradient(135deg,var(--cyan),var(--cyan2));
-  color:#000;font-family:"Cairo",sans-serif;font-size:.88rem;font-weight:900;
-  border:none;border-radius:10px;cursor:pointer;transition:all .2s;
-  box-shadow:0 0 16px rgba(0,229,255,.28);}
-.nav-cta:hover{box-shadow:0 0 28px rgba(0,229,255,.5);transform:translateY(-1px);}
-.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:.35rem;background:none;border:none;}
-.hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.3s;}
+/* AUTH PAGES */
+.auth-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:1rem;z-index:100;background:var(--bg);}
+.auth-box{background:var(--card);border:1px solid var(--border);border-radius:20px;
+  padding:2rem 1.8rem;width:100%;max-width:400px;
+  box-shadow:0 0 50px rgba(0,229,255,.08),0 25px 50px rgba(0,0,0,.5);}
+.auth-logo{text-align:center;margin-bottom:1.2rem;}
+.auth-logo img{width:70px;height:70px;border-radius:14px;object-fit:contain;
+  filter:drop-shadow(0 0 14px rgba(0,229,255,.4));}
+.auth-logo-fb{font-size:2.5rem;}
+.auth-title{font-family:'Cairo',sans-serif;font-size:1.3rem;font-weight:900;text-align:center;margin-bottom:.2rem;
+  background:linear-gradient(135deg,var(--cyan),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.auth-sub{text-align:center;color:var(--dim);font-size:.78rem;margin-bottom:1.4rem;}
+.form-group{margin-bottom:.9rem;}
+.form-group label{display:block;font-size:.76rem;color:var(--dim);margin-bottom:.28rem;font-weight:700;}
+.form-group input{width:100%;padding:.68rem .9rem;background:rgba(0,229,255,.04);
+  border:1px solid rgba(0,229,255,.17);border-radius:9px;color:var(--text);
+  font-family:'Tajawal',sans-serif;font-size:.93rem;}
+.form-group input:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,229,255,.09);}
+.auth-switch{text-align:center;font-size:.78rem;color:var(--dim);margin-top:1rem;}
+.auth-switch a{color:var(--cyan);cursor:pointer;text-decoration:none;}
+.err-box{background:rgba(255,61,90,.1);border:1px solid rgba(255,61,90,.28);color:var(--red);
+  padding:.5rem .8rem;border-radius:8px;font-size:.78rem;margin-bottom:.8rem;}
 
-/* ── BUTTONS ── */
-.btn-p{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;
-  padding:.75rem 1.55rem;background:linear-gradient(135deg,var(--cyan),var(--cyan2));
-  color:#000;font-family:"Cairo",sans-serif;font-size:.93rem;font-weight:900;
-  border:none;border-radius:12px;cursor:pointer;transition:all .2s;
-  box-shadow:0 0 18px rgba(0,229,255,.25);}
-.btn-p:hover{box-shadow:0 0 30px rgba(0,229,255,.48);transform:translateY(-2px);}
-.btn-s{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;
-  padding:.75rem 1.5rem;background:var(--card);border:1.5px solid var(--border);
-  color:var(--text);font-family:"Cairo",sans-serif;font-size:.93rem;font-weight:700;
-  border-radius:12px;cursor:pointer;transition:all .2s;}
-.btn-s:hover{background:var(--card2);border-color:var(--cyan);color:var(--cyan);transform:translateY(-2px);}
+/* BUTTONS */
+.btn{display:block;width:100%;padding:.78rem;border:none;border-radius:11px;
+  font-family:'Cairo',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-cyan{background:linear-gradient(135deg,#071640,#0d2068);color:var(--cyan);
+  border:1.5px solid var(--cyan);box-shadow:0 0 14px rgba(0,229,255,.2);}
+.btn-cyan:hover{box-shadow:0 0 24px rgba(0,229,255,.42);transform:translateY(-1px);}
+.btn-gold{background:linear-gradient(135deg,#3A2000,#5A3500);color:var(--gold);
+  border:1.5px solid var(--gold);box-shadow:0 0 14px rgba(255,208,70,.2);}
+.btn-gold:hover{box-shadow:0 0 24px rgba(255,208,70,.42);transform:translateY(-1px);}
+.btn-ghost{background:rgba(255,255,255,.05);color:var(--dim);border:1px solid rgba(255,255,255,.1);}
+.btn-sm{padding:.42rem .85rem;font-size:.78rem;border-radius:8px;display:inline-block;width:auto;}
+.btn-red{background:rgba(255,61,90,.1);color:var(--red);border:1px solid rgba(255,61,90,.25);}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;}
 
-/* ── SECTION COMMON ── */
-section{position:relative;z-index:1;}
-.container{max-width:1140px;margin:0 auto;padding:0 1.5rem;}
-.sec-badge{display:inline-flex;align-items:center;gap:.4rem;
-  background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.22);
-  color:var(--cyan);padding:.3rem .82rem;border-radius:20px;font-size:.76rem;font-weight:700;margin-bottom:.85rem;}
-.sec-title{font-family:"Cairo",sans-serif;font-size:clamp(1.55rem,3.2vw,2.3rem);
-  font-weight:900;line-height:1.3;margin-bottom:.75rem;}
-.sec-title .hl{color:var(--cyan);}
-.sec-title .hl2{color:var(--gold);}
-.sec-sub{color:var(--dim);font-size:.92rem;line-height:1.75;max-width:540px;}
-.sec-divider{border-top:1px solid rgba(255,255,255,.05);}
+/* MAIN DASHBOARD */
+#dashWrap{display:none;min-height:100vh;position:relative;z-index:1;}
 
-/* ── HERO ── */
-#hero{padding:6.5rem 0 3.5rem;min-height:100vh;display:flex;align-items:center;}
-.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:3.5rem;align-items:center;}
-.hero-tag{display:inline-flex;align-items:center;gap:.4rem;
-  background:rgba(255,208,70,.1);border:1px solid rgba(255,208,70,.28);
-  color:var(--gold);padding:.28rem .78rem;border-radius:20px;font-size:.75rem;font-weight:700;margin-bottom:.85rem;}
-.hero-h1{font-family:"Cairo",sans-serif;font-size:clamp(1.9rem,3.8vw,2.85rem);
-  font-weight:900;line-height:1.25;margin-bottom:.95rem;}
-.hero-h1 .name{color:var(--cyan);}
-.hero-sub{color:var(--text2);font-size:.93rem;line-height:1.78;margin-bottom:1.7rem;max-width:480px;}
-.hero-btns{display:flex;gap:.7rem;flex-wrap:wrap;}
-.hero-stats{display:flex;gap:1.8rem;margin-top:1.8rem;flex-wrap:wrap;}
-.hero-stat .val{font-family:"Cairo",sans-serif;font-size:1.5rem;font-weight:900;color:var(--cyan);}
-.hero-stat .lbl{font-size:.72rem;color:var(--dim);margin-top:.05rem;}
+/* TOPBAR */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);
+  padding:.7rem 1.2rem;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50;}
+.topbar-logo{font-family:'Cairo',sans-serif;font-size:.95rem;font-weight:900;color:var(--gold);}
+.topbar-user{display:flex;align-items:center;gap:.7rem;}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--gold));
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;color:#000;}
+.user-name{font-size:.82rem;font-weight:700;}
 
-/* Hero preview card */
-.hero-preview{position:relative;}
-.preview-glow{position:absolute;inset:-25px;border-radius:35px;z-index:-1;
-  background:radial-gradient(ellipse at center,rgba(0,229,255,.09),transparent 70%);}
-.preview-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;
-  padding:1.25rem;box-shadow:0 0 60px rgba(0,229,255,.1),0 30px 60px rgba(0,0,0,.45);
-  animation:float 4s ease-in-out infinite;}
-@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
-.p-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;}
-.p-qn{font-size:.72rem;color:var(--dim);}
-.p-live{display:flex;align-items:center;gap:.28rem;font-size:.68rem;color:var(--green);font-weight:700;}
-.p-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1.2s ease-in-out infinite;}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
-.p-q{background:var(--card2);border-radius:11px;padding:.8rem;margin-bottom:.75rem;}
-.p-cat{font-size:.65rem;color:var(--cyan);font-weight:700;margin-bottom:.3rem;}
-.p-txt{font-size:.8rem;font-weight:700;line-height:1.5;}
-.p-opts{display:flex;flex-direction:column;gap:.38rem;}
-.p-opt{padding:.48rem .72rem;border-radius:8px;border:1.5px solid var(--border);
-  font-size:.76rem;display:flex;justify-content:space-between;align-items:center;background:var(--card);}
-.p-opt.ok{border-color:var(--green);background:rgba(0,230,118,.1);color:var(--green);}
-.p-opt.ng{border-color:var(--red);background:rgba(255,61,90,.08);color:var(--red);}
-.p-foot{display:flex;justify-content:space-between;margin-top:.75rem;font-size:.7rem;}
-.p-xp{color:var(--gold);font-weight:700;}
-.p-time{color:var(--dim);}
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--card);
+  overflow-x:auto;padding:0 1rem;}
+.tab{padding:.75rem 1.1rem;font-size:.82rem;font-weight:700;color:var(--dim);
+  cursor:pointer;transition:all .18s;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+.tab:hover{color:var(--text);}
 
-/* ── FEATURES ── */
-#features{padding:5rem 0;}
-.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;margin-top:2.5rem;}
-.feat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;
-  padding:1.4rem 1.2rem;transition:all .25s;}
-.feat-card:hover{background:var(--card2);border-color:rgba(0,229,255,.28);
-  transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,229,255,.07);}
-.feat-ico{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;
-  justify-content:center;font-size:1.3rem;margin-bottom:.95rem;}
-.feat-title{font-family:"Cairo",sans-serif;font-size:.9rem;font-weight:900;margin-bottom:.38rem;}
-.feat-desc{font-size:.76rem;color:var(--dim);line-height:1.65;}
+.page-content{padding:1.2rem;max-width:640px;margin:0 auto;}
 
-/* ── HOW ── */
-#how{padding:5rem 0;text-align:center;}
-.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;margin-top:2.5rem;}
-.how-card{background:var(--card);border:1px solid var(--border);border-radius:16px;
-  padding:2rem 1.4rem;position:relative;transition:all .25s;}
-.how-card:hover{background:var(--card2);transform:translateY(-4px);}
-.how-num{position:absolute;top:-13px;left:50%;transform:translateX(-50%);
-  width:27px;height:27px;border-radius:50%;
-  background:linear-gradient(135deg,var(--cyan),var(--cyan2));
-  color:#000;font-family:"Cairo",sans-serif;font-size:.78rem;font-weight:900;
-  display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(0,229,255,.38);}
-.how-ico{font-size:2.2rem;margin-bottom:.85rem;}
-.how-title{font-family:"Cairo",sans-serif;font-size:.9rem;font-weight:900;margin-bottom:.38rem;}
-.how-desc{font-size:.76rem;color:var(--dim);line-height:1.65;}
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.1rem;margin-bottom:1rem;}
+.card-title{font-size:.9rem;font-weight:900;margin-bottom:.9rem;color:var(--text);}
 
-/* ── CELLS ── */
-#cells{padding:4.5rem 0;}
-.cells-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.95rem;margin-top:2rem;}
-.cell-card{border-radius:14px;padding:1.2rem;border:1.5px solid;text-align:center;transition:all .25s;}
-.cell-card:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,.3);}
-.cell-ico{font-size:1.8rem;margin-bottom:.45rem;}
-.cell-name{font-family:"Cairo",sans-serif;font-size:.86rem;font-weight:900;margin-bottom:.3rem;}
-.cell-desc{font-size:.7rem;opacity:.78;line-height:1.55;}
-.cell-bonus{display:inline-block;margin-top:.48rem;padding:.15rem .5rem;
-  border-radius:6px;font-size:.68rem;font-weight:700;}
+/* SUBSCRIPTION CARD */
+.sub-card{background:linear-gradient(135deg,rgba(0,229,255,.07),rgba(255,208,70,.04));
+  border:1.5px solid rgba(0,229,255,.22);border-radius:16px;padding:1.3rem;margin-bottom:1rem;position:relative;overflow:hidden;}
+.sub-card::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,.04),transparent);
+  animation:scan 3s linear infinite;}
+@keyframes scan{0%{transform:translateX(-100%);}100%{transform:translateX(200%);}}
+.sub-plan{font-family:'Cairo',sans-serif;font-size:1.6rem;font-weight:900;color:var(--gold);}
+.sub-badge{display:inline-block;background:rgba(0,230,118,.15);border:1px solid var(--green);
+  color:var(--green);padding:.15rem .6rem;border-radius:6px;font-size:.72rem;font-weight:700;margin-right:.5rem;}
+.sub-expire{font-size:.78rem;color:var(--dim);margin-top:.3rem;}
+.sub-features{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.8rem;}
+.sub-feat{background:rgba(255,255,255,.05);border:1px solid rgba(0,229,255,.12);
+  border-radius:7px;padding:.2rem .55rem;font-size:.68rem;color:var(--text);}
+.sub-feat::before{content:'✓ ';color:var(--green);}
 
-/* ── LIFELINES ── */
-#lifelines{padding:4.5rem 0;}
-.ll-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-top:2rem;}
-.ll-full{grid-column:1/-1;}
-.ll-item{display:flex;align-items:center;gap:.9rem;
-  background:var(--card);border:1px solid var(--border);border-radius:13px;
-  padding:.95rem 1.2rem;transition:all .2s;}
-.ll-item:hover{background:var(--card2);border-color:rgba(0,229,255,.26);}
-.ll-ico{font-size:1.45rem;flex-shrink:0;width:42px;text-align:center;}
-.ll-info{flex:1;}
-.ll-name{font-family:"Cairo",sans-serif;font-size:.86rem;font-weight:900;margin-bottom:.12rem;}
-.ll-desc{font-size:.73rem;color:var(--dim);line-height:1.55;}
-.ll-tags{display:flex;gap:.38rem;flex-shrink:0;flex-wrap:wrap;}
-.tag{padding:.14rem .48rem;border-radius:6px;font-size:.66rem;font-weight:700;}
-.tag-cost{background:rgba(255,61,90,.1);color:var(--red);border:1px solid rgba(255,61,90,.2);}
-.tag-pro{background:rgba(255,208,70,.1);color:var(--gold);border:1px solid rgba(255,208,70,.25);}
-.tag-free{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);}
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:1rem;}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:.9rem;text-align:center;}
+.stat-num{font-family:'Cairo',sans-serif;font-size:1.5rem;font-weight:900;color:var(--gold);}
+.stat-lbl{font-size:.65rem;color:var(--dim);margin-top:.1rem;}
 
-/* ── PRICING ── */
-#pricing{padding:5rem 0;text-align:center;}
-.ptog{display:inline-flex;background:var(--card);border:1px solid var(--border);
-  border-radius:12px;padding:.28rem;margin:1.4rem auto 2.4rem;gap:.28rem;}
-.ptog-btn{padding:.45rem 1.15rem;border-radius:9px;border:none;cursor:pointer;
-  font-family:"Tajawal",sans-serif;font-size:.86rem;font-weight:700;
-  transition:all .2s;background:none;color:var(--dim);}
-.ptog-btn.on{background:linear-gradient(135deg,var(--cyan),var(--cyan2));color:#000;
-  box-shadow:0 0 14px rgba(0,229,255,.28);}
-.save-bdg{display:inline-block;background:rgba(0,230,118,.15);color:var(--green);
-  font-size:.62rem;font-weight:700;padding:.1rem .4rem;border-radius:20px;margin-right:.28rem;}
-.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;}
-.price-card{background:var(--card);border:1px solid var(--border);border-radius:18px;
-  padding:1.75rem 1.35rem;position:relative;transition:all .25s;text-align:right;}
-.price-card.feat{border-color:var(--gold);
-  background:linear-gradient(155deg,rgba(255,208,70,.07),rgba(255,208,70,.02));
-  box-shadow:0 0 28px rgba(255,208,70,.1);}
-.price-card:hover{transform:translateY(-5px);}
-.feat-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);
-  background:var(--gold);color:#000;font-size:.66rem;font-weight:900;
-  padding:.18rem .68rem;border-radius:20px;white-space:nowrap;}
-.price-ico{font-size:1.75rem;margin-bottom:.55rem;}
-.price-plan{font-size:.78rem;color:var(--dim);font-weight:600;margin-bottom:.28rem;}
-.price-plan.feat-txt{color:var(--gold);}
-.price-amt{font-family:"Cairo",sans-serif;font-size:2.1rem;font-weight:900;line-height:1;}
-.price-per{font-size:.7rem;color:var(--dim);margin-bottom:1.1rem;}
-.price-btn{width:100%;padding:.72rem;border:none;border-radius:11px;
-  font-family:"Cairo",sans-serif;font-size:.88rem;font-weight:900;cursor:pointer;
-  transition:all .2s;margin-bottom:1.1rem;}
-.price-btn:hover{transform:translateY(-1px);filter:brightness(1.1);}
-.price-btn.c{background:linear-gradient(135deg,var(--cyan),var(--cyan2));color:#000;box-shadow:0 0 14px rgba(0,229,255,.22);}
-.price-btn.g{background:linear-gradient(135deg,#FFD046,#F0A800);color:#000;box-shadow:0 0 14px rgba(255,208,70,.22);}
-.price-btn.gh{background:var(--card2);color:var(--text);border:1.5px solid var(--border);}
-.price-feats{list-style:none;display:flex;flex-direction:column;gap:.48rem;}
-.price-feats li{font-size:.76rem;color:var(--dim);display:flex;align-items:center;gap:.48rem;}
-.price-feats li::before{content:"✓";color:var(--green);font-weight:900;flex-shrink:0;}
+/* PLANS */
+.plans-grid{display:flex;gap:.8rem;}
+.plan-card{flex:1;background:rgba(255,255,255,.04);border:1.5px solid var(--border);
+  border-radius:14px;padding:.9rem .7rem;text-align:center;transition:all .2s;cursor:pointer;position:relative;}
+.plan-card.selected,.plan-card:hover{border-color:var(--gold);background:rgba(255,208,70,.06);}
+.plan-badge-hot{position:absolute;top:-.5rem;left:50%;transform:translateX(-50%);
+  background:var(--gold);color:#000;font-size:.58rem;font-weight:900;
+  padding:.1rem .48rem;border-radius:20px;white-space:nowrap;}
+.plan-name{font-size:.72rem;color:var(--dim);font-weight:700;margin-bottom:.2rem;}
+.plan-price{font-family:'Cairo',sans-serif;font-size:1.4rem;font-weight:900;}
+.plan-period{font-size:.6rem;color:var(--dim);}
+.plan-save{font-size:.62rem;color:var(--green);margin-top:.1rem;}
 
-/* ── FAQ ── */
-#faq{padding:5rem 0;}
-.faq-wrap{max-width:700px;margin:2rem auto 0;display:flex;flex-direction:column;gap:.55rem;}
-.faq-item{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden;}
-.faq-q{display:flex;align-items:center;justify-content:space-between;
-  padding:.95rem 1.15rem;cursor:pointer;font-size:.88rem;font-weight:700;transition:background .18s;}
-.faq-q:hover{background:var(--card2);}
-.faq-q.open{color:var(--cyan);}
-.faq-ico{font-size:1rem;transition:transform .25s;flex-shrink:0;color:var(--cyan);}
-.faq-q.open .faq-ico{transform:rotate(45deg);}
-.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s;
-  font-size:.8rem;color:var(--dim);line-height:1.72;padding:0 1.15rem;}
-.faq-a.open{max-height:200px;padding:.15rem 1.15rem .85rem;}
+/* HISTORY */
+.history-item{display:flex;align-items:center;justify-content:space-between;
+  padding:.65rem 0;border-bottom:1px solid rgba(31,45,69,.5);}
+.history-item:last-child{border-bottom:none;}
+.hist-left{display:flex;align-items:center;gap:.65rem;}
+.hist-ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.hist-title{font-size:.82rem;font-weight:700;}
+.hist-date{font-size:.68rem;color:var(--dim);}
+.hist-right{text-align:left;}
+.hist-amount{font-family:'Cairo',sans-serif;font-weight:900;font-size:.95rem;}
+.badge{padding:.15rem .5rem;border-radius:5px;font-size:.65rem;font-weight:700;}
+.b-paid{background:rgba(0,230,118,.14);color:var(--green);}
+.b-pending{background:rgba(255,208,70,.12);color:var(--gold);}
+.b-failed{background:rgba(255,61,90,.11);color:var(--red);}
 
-/* ── CTA ── */
-#cta{padding:4.5rem 0;}
-.cta-box{background:linear-gradient(135deg,rgba(0,229,255,.1),rgba(255,208,70,.07),rgba(0,229,255,.05));
-  border:1px solid rgba(0,229,255,.18);border-radius:22px;
-  padding:3rem 2rem;text-align:center;
-  box-shadow:0 0 60px rgba(0,229,255,.05) inset;}
-.cta-title{font-family:"Cairo",sans-serif;font-size:clamp(1.35rem,2.8vw,1.95rem);font-weight:900;margin-bottom:.55rem;}
-.cta-sub{color:var(--dim);font-size:.9rem;margin-bottom:1.75rem;}
+/* GAME HISTORY */
+.game-row{display:flex;align-items:center;justify-content:space-between;
+  padding:.6rem 0;border-bottom:1px solid rgba(31,45,69,.45);}
+.game-row:last-child{border-bottom:none;}
+.rank-badge{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.78rem;font-weight:900;}
+.rank-1{background:rgba(255,208,70,.2);color:var(--gold);}
+.rank-2{background:rgba(138,184,255,.15);color:var(--silver,#8AB8FF);}
+.rank-3{background:rgba(255,100,50,.12);color:#FF8A65;}
+.rank-n{background:rgba(255,255,255,.06);color:var(--dim);}
 
-/* ── FOOTER ── */
-footer{border-top:1px solid rgba(255,255,255,.07);padding:2.8rem 0 1.4rem;}
-.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:2rem;margin-bottom:2.2rem;}
-.footer-brand img{width:38px;height:38px;border-radius:9px;margin-bottom:.7rem;
-  filter:drop-shadow(0 0 8px rgba(0,229,255,.38));}
-.footer-brand-name{font-family:"Cairo",sans-serif;font-size:.98rem;font-weight:900;margin-bottom:.45rem;}
-.footer-brand-name span{color:var(--cyan);}
-.footer-brand-desc{font-size:.76rem;color:var(--dim);line-height:1.65;max-width:210px;}
-.footer-col h4{font-family:"Cairo",sans-serif;font-size:.85rem;font-weight:900;
-  color:var(--text);margin-bottom:.8rem;}
-.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:.45rem;}
-.footer-col li a,.footer-col li span{font-size:.78rem;color:var(--dim);
-  cursor:pointer;text-decoration:none;transition:color .18s;}
-.footer-col li a:hover,.footer-col li span:hover{color:var(--cyan);}
-.footer-btm{border-top:1px solid rgba(255,255,255,.06);padding-top:1.1rem;
-  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem;}
-.footer-copy{font-size:.73rem;color:var(--dim);}
-.footer-made{font-size:.73rem;color:var(--dim);}
-.footer-made span{color:var(--red);}
-
-/* ── MODALS ── */
-.mo{display:none;position:fixed;inset:0;z-index:500;background:rgba(2,5,20,.92);
-  backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:1rem;}
-.mo.on{display:flex;}
-.mb{background:linear-gradient(155deg,#0C1440,#07102A);border:1px solid var(--border);
-  border-radius:22px;padding:1.75rem;width:100%;max-width:440px;max-height:88vh;overflow-y:auto;
-  box-shadow:0 0 60px rgba(0,229,255,.1),0 30px 60px rgba(0,0,0,.5);animation:msl .28s ease-out;}
-@keyframes msl{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
-.mt_{font-family:"Cairo",sans-serif;font-size:1.18rem;font-weight:900;text-align:center;
-  margin-bottom:1.05rem;background:linear-gradient(135deg,var(--cyan),var(--gold));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.fg{margin-bottom:.85rem;}
-.fg label{display:block;font-size:.75rem;color:var(--dim);margin-bottom:.28rem;font-weight:700;}
-.inp{width:100%;padding:.67rem .9rem;background:rgba(0,229,255,.04);
-  border:1px solid rgba(0,229,255,.17);border-radius:10px;color:var(--text);
-  font-family:"Tajawal",sans-serif;font-size:.92rem;transition:border .18s;}
-.inp:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,229,255,.1);}
-select.inp option{background:#0C1440;}
-.cpk{display:flex;gap:.55rem;flex-wrap:wrap;}
-.co{width:40px;height:40px;border-radius:50%;cursor:pointer;border:3px solid transparent;
-  transition:all .2s;position:relative;flex-shrink:0;}
-.co:hover{transform:scale(1.15);}
-.co.sel{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.2),0 0 12px currentColor;transform:scale(1.15);}
-.co::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;
-  justify-content:center;color:#fff;font-weight:900;font-size:.76rem;opacity:0;}
-.co.sel::after{opacity:1;}
-.err{background:rgba(255,61,90,.1);border:1px solid rgba(255,61,90,.24);
-  color:var(--red);padding:.5rem .85rem;border-radius:8px;font-size:.76rem;margin-bottom:.7rem;}
-.mo-btns{display:flex;gap:.55rem;margin-top:.9rem;}
-.mo-btns .btn-p,.mo-btns .btn-s{flex:1;justify-content:center;padding:.72rem;}
-
-/* ── TOAST ── */
-.ntf{position:fixed;top:calc(1rem + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-110px);
-  background:linear-gradient(135deg,#060D28,#091240);border:1px solid rgba(0,229,255,.3);
-  border-radius:12px;padding:.52rem 1.1rem;font-weight:700;font-size:.83rem;z-index:999;
-  transition:transform .38s cubic-bezier(.34,1.56,.64,1);
-  box-shadow:0 8px 20px rgba(0,0,0,.5);white-space:nowrap;max-width:88vw;text-align:center;}
-.ntf.on{transform:translateX(-50%) translateY(0);}
-
-/* ── RESPONSIVE ── */
-@media(max-width:900px){
-  .hero-grid{grid-template-columns:1fr;text-align:center;}
-  .hero-sub,.sec-sub{max-width:100%;}
-  .hero-btns{justify-content:center;}
-  .hero-stats{justify-content:center;}
-  .hero-preview{display:none;}
-  .feat-grid,.how-grid,.cells-grid,.price-grid{grid-template-columns:1fr 1fr;}
-  .footer-grid{grid-template-columns:1fr 1fr;}
-  .nav-links{display:none;}
-  .hamburger{display:flex;}
-  .ll-grid{grid-template-columns:1fr;}
-  .ll-full{grid-column:1;}
-}
-@media(max-width:580px){
-  .feat-grid,.how-grid,.cells-grid,.price-grid{grid-template-columns:1fr;}
-  .footer-grid{grid-template-columns:1fr;}
-  .hero-h1{font-size:1.65rem;}
-  .container{padding:0 1rem;}
-}
-
-/* ── USER BAR ── */
-.user-bar{display:flex;align-items:center;justify-content:space-between;
-  width:100%;background:var(--card);border:1px solid var(--border);
-  border-radius:12px;padding:.6rem .95rem;margin-bottom:.5rem;}
-.user-bar-left{display:flex;align-items:center;gap:.6rem;}
-.user-avatar{width:34px;height:34px;border-radius:50%;
+/* PROFILE FORM */
+.prof-avatar{width:72px;height:72px;border-radius:50%;
   background:linear-gradient(135deg,var(--cyan),var(--gold));
   display:flex;align-items:center;justify-content:center;
-  font-weight:900;font-size:.88rem;color:#000;flex-shrink:0;}
-.user-name{font-size:.84rem;font-weight:800;color:#EAF9FF;}
-.user-plan{font-size:.65rem;color:var(--dim);margin-top:.06rem;}
-.plan-badge{display:inline-flex;align-items:center;gap:.28rem;
-  padding:.16rem .52rem;border-radius:6px;font-size:.68rem;font-weight:900;}
-.plan-badge.pro{background:rgba(0,229,255,.12);color:var(--cyan);border:1px solid rgba(0,229,255,.28);}
-.plan-badge.elite{background:rgba(168,85,247,.12);color:#C084FC;border:1px solid rgba(168,85,247,.28);}
-.plan-badge.free{background:rgba(160,210,255,.07);color:var(--dim);border:1px solid rgba(160,210,255,.12);}
+  font-size:2rem;font-weight:900;color:#000;margin:0 auto 1rem;
+  box-shadow:0 0 20px rgba(0,229,255,.3);}
 
-/* ── OTP AUTH MODAL ── */
-.otp-grid{display:flex;gap:.5rem;justify-content:center;margin:.7rem 0;direction:ltr;}
-.otp-cell{width:46px;height:54px;border-radius:10px;border:1.5px solid rgba(0,229,255,.22);
-  background:rgba(0,229,255,.04);color:var(--text);
-  font-family:"Cairo",sans-serif;font-size:1.5rem;font-weight:900;
-  text-align:center;}
-.otp-cell:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,229,255,.12);}
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:200;
+  align-items:center;justify-content:center;backdrop-filter:blur(8px);padding:1rem;}
+.modal-bg.open{display:flex;}
+.modal{background:linear-gradient(155deg,#0C1440,#07102A);border:1px solid var(--border);
+  border-radius:20px;padding:1.6rem;width:100%;max-width:400px;
+  animation:msl .26s ease-out;}
+@keyframes msl{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
+.modal-title{font-family:'Cairo',sans-serif;font-size:1.15rem;font-weight:900;margin-bottom:1.1rem;
+  background:linear-gradient(135deg,var(--cyan),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
+/* NOTIFY */
+.notif{position:fixed;top:calc(.9rem + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-100px);
+  background:linear-gradient(135deg,#070E2C,#0A1345);border:1px solid rgba(0,229,255,.3);
+  border-radius:11px;padding:.55rem 1.1rem;font-weight:700;font-size:.85rem;z-index:999;
+  transition:transform .36s cubic-bezier(.34,1.56,.64,1);box-shadow:0 7px 18px rgba(0,0,0,.5);
+  white-space:nowrap;max-width:88vw;text-align:center;}
+.notif.show{transform:translateX(-50%) translateY(0);}
 
-.logged-in .guest-only{display:none!important;}
-.tag-elite{color:#C084FC;border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.08)}
-.logged-in .guest-link{display:none!important;}
-.logged-in li:has(.guest-link){display:none!important;}
-/* ── صفحة الدفع اليدوي ── */
-.mp-overlay{position:fixed;inset:0;background:rgba(3,6,18,.88);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;animation:mpFade .2s ease}
-@keyframes mpFade{from{opacity:0}to{opacity:1}}
-.mp-box{background:linear-gradient(160deg,#0C1230,#070B1F);border:1px solid rgba(0,229,255,.25);border-radius:20px;max-width:440px;width:100%;padding:1.6rem 1.4rem;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.6);max-height:92vh;overflow-y:auto}
-.mp-close{position:absolute;top:.7rem;left:.9rem;background:none;border:none;color:#7C8BB0;font-size:1.8rem;cursor:pointer;line-height:1}
-.mp-close:hover{color:#fff}
-.mp-head{text-align:center;margin-bottom:1.2rem}
-.mp-title{font-size:1.3rem;font-weight:800;color:#00E5FF;margin-bottom:.3rem}
-.mp-amount{font-size:1.6rem;font-weight:800;color:#FFD046}
-.mp-steps{margin:1rem 0 .6rem}
-.mp-step{font-size:.9rem;color:#D8EEFF;display:flex;align-items:center;gap:.5rem}
-.mp-step b{background:#00E5FF;color:#070B1F;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0}
-.mp-rows{background:rgba(255,255,255,.03);border-radius:12px;padding:.5rem .8rem;border:1px solid rgba(255,255,255,.06)}
-.mp-row{display:flex;align-items:center;gap:.5rem;padding:.55rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
-.mp-row:last-child{border-bottom:none}
-.mp-label{font-size:.8rem;color:#7C8BB0;min-width:80px}
-.mp-val{flex:1;font-size:.88rem;color:#fff;font-weight:600;word-break:break-all;direction:ltr;text-align:right}
-.mp-copy{background:rgba(0,229,255,.15);border:1px solid rgba(0,229,255,.3);color:#00E5FF;border-radius:8px;padding:.25rem .6rem;font-size:.72rem;cursor:pointer;flex-shrink:0}
-.mp-copy:hover{background:rgba(0,229,255,.28)}
-.mp-send{display:flex;flex-direction:column;gap:.6rem;margin:1rem 0 .5rem}
-.mp-wa,.mp-mail{display:block;text-align:center;padding:.8rem;border-radius:12px;font-weight:700;font-size:.95rem;text-decoration:none;transition:transform .15s}
-.mp-wa{background:#25D366;color:#fff}
-.mp-mail{background:rgba(0,229,255,.15);color:#00E5FF;border:1px solid rgba(0,229,255,.3)}
-.mp-wa:hover,.mp-mail:hover{transform:translateY(-2px)}
-.mp-note{font-size:.76rem;color:#7C8BB0;text-align:center;margin-top:.8rem;line-height:1.6}
+@media(max-width:400px){.plans-grid{flex-direction:column;}.stats-row{grid-template-columns:1fr 1fr;}}
 </style>
-<script src="js/affiliate.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-<script src="js/capacitor-bridge.js"></script>
-<script src="js/iap.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/db.js"></script>
 </head>
 <body>
 
-<!-- NAVBAR -->
-<nav>
-  <div class="nav-inner">
-    <a class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-      <img src="logo.png" alt="تحدي الأرقام">
-      <div class="nav-logo-text">تحدي <span>الأرقام</span></div>
-    </a>
-    <div class="nav-links">
-      <a class="nav-link guest-link" onclick="goSec('features')">المميزات</a>
-      <a class="nav-link guest-link" onclick="goSec('how')">كيف تعمل</a>
-      <a class="nav-link" onclick="goSec('pricing')">الأسعار</a>
-      <a class="nav-link guest-link" onclick="goSec('faq')">الأسئلة</a>
+<!-- AUTH -->
+<div id="dashLoader" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;position:relative;z-index:1">
+  <div style="font-size:2rem">🏆</div>
+  <div style="color:var(--dim);font-size:.9rem">جارٍ التحميل...</div>
+</div>
+<div id="authWrap" class="auth-wrap" style="display:none">
+  <!-- LOGIN -->
+  <div id="loginBox" class="auth-box">
+    <div class="auth-logo">
+      <img id="authLogo" src="" alt="" onerror="this.style.display='none';document.getElementById('authLogoFb').style.display='block'">
+      <div id="authLogoFb" class="auth-logo-fb" style="display:none">🏆</div>
     </div>
-    <div id="navAuthBtn">
-    <button class="nav-cta" onclick="showAuthModal()">👤 تسجيل الدخول</button>
+    <div class="auth-title">تحدي الأرقام</div>
+    <div class="auth-sub">سجّل دخولك للمتابعة</div>
+    <div id="loginErr" class="err-box" style="display:none"></div>
+    <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="loginEmail" placeholder="name@example.com"></div>
+    <div class="form-group"><label>كلمة المرور</label><input type="password" id="loginPwd" placeholder="••••••••"></div>
+    <button class="btn btn-cyan" id="loginBtn" onclick="doLogin()">تسجيل الدخول</button>
+    <div class="auth-switch">ليس لديك حساب؟ <a onclick="showRegister()">إنشاء حساب</a></div>
   </div>
-  <button class="nav-cta" onclick="openCreate()" style="margin-right:.5rem">🎮 العب</button>
-    <button class="hamburger" onclick="toggleNav()"><span></span><span></span><span></span></button>
-  </div>
-</nav>
 
-<!-- HERO -->
-<section id="hero">
-  <div class="container">
-    <!-- بانر إعلان الأدمن -->
-    <div id="announceBanner" style="display:none"></div>
-    <div class="hero-grid">
-      <div>
-        <div class="hero-tag">🏆 منصة الأرقام التنافسية</div>
-        <h1 class="hero-h1">هل أنت مستعدّ<br><span class="name">للتحدّي اليوم؟</span></h1>
-        <p class="hero-sub">اختبر ذكاءك في 10 مجالات مختلفة. العب مع فريقك أونلاين، اجمع النقاط، واكتشف الخلايا المخفية!</p>
-        <!-- User bar -->
-        <div id="userBarContainer"></div>
-
-        <div class="hero-btns">
-          <button class="btn-p" onclick="openCreate()">🌐 ابدأ لعبة أونلاين</button>
-          <button class="btn-p" onclick="openQuickMatch()" style="background:linear-gradient(135deg,#A855F7,#7C3AED)">🔎 ابحث عن لاعبين</button>
-          <button class="btn-s" onclick="openJoin()">🔑 انضمام برمز</button>
-          <button class="btn-s" onclick="openOffline()">📱 على نفس الجهاز</button>
-        </div>
-        <div class="hero-stats">
-          <div class="hero-stat"><div class="val">2300+</div><div class="lbl">سؤال</div></div>
-          <div class="hero-stat"><div class="val">10</div><div class="lbl">مجالات</div></div>
-          <div class="hero-stat"><div class="val">20</div><div class="lbl">خلية</div></div>
-          <div class="hero-stat"><div class="val">4</div><div class="lbl">فرق</div></div>
-        </div>
-        <!-- Affiliate teaser -->
-        <div onclick="scrollToAffiliate()" style="display:none;cursor:pointer;margin-top:.75rem;
-          background:linear-gradient(135deg,rgba(255,208,70,.1),rgba(0,229,255,.07));
-          border:1px solid rgba(255,208,70,.25);border-radius:11px;
-          padding:.62rem .95rem;align-items:center;gap:.55rem;
-          font-size:.78rem;font-weight:700;color:var(--gold);transition:all .2s"
-          onmouseover="this.style.background='linear-gradient(135deg,rgba(255,208,70,.18),rgba(0,229,255,.12))'"
-          onmouseout="this.style.background='linear-gradient(135deg,rgba(255,208,70,.1),rgba(0,229,255,.07))'">
-          💸 سوّق وكسب 10% عمولة على كل اشتراك ←
-        </div>
-      </div>
-      <div class="hero-preview">
-        <div class="preview-glow"></div>
-        <div class="preview-card">
-          <div class="p-hdr">
-            <div class="p-qn">السؤال 5/20</div>
-            <div class="p-live"><div class="p-dot"></div>مباشر</div>
-          </div>
-          <div class="p-q">
-            <div class="p-cat">🌍 جغرافيا</div>
-            <div class="p-txt">ما عاصمة المملكة العربية السعودية؟</div>
-          </div>
-          <div class="p-opts">
-            <div class="p-opt"><span>أ</span><span>جدة</span></div>
-            <div class="p-opt"><span>ب</span><span>مكة المكرمة</span></div>
-            <div class="p-opt ok"><span>✓ ج</span><span>الرياض</span></div>
-            <div class="p-opt ng"><span>✗ د</span><span>الدمام</span></div>
-          </div>
-          <div class="p-foot">
-            <div class="p-xp">⚡ XP +10</div>
-            <div class="p-time">⏱ 47 ثانية</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FEATURES -->
-<section id="features" class="guest-only sec-divider" style="padding:5rem 0">
-  <div class="container">
-    <div class="sec-badge">✨ المميزات</div>
-    <h2 class="sec-title">كل ما تحتاجه في <span class="hl">مكان واحد</span></h2>
-    <p class="sec-sub">منصة كاملة للتحدي والمنافسة مع أصدقائك</p>
-    <div class="feat-grid">
-      <div class="feat-card"><div class="feat-ico" style="background:rgba(0,229,255,.1)">🌐</div><div class="feat-title">لعب أونلاين حقيقي</div><div class="feat-desc">العب مع أصدقائك من أي مكان عبر رمز الغرفة. مزامنة فورية بين الأجهزة.</div></div>
-      <div class="feat-card"><div class="feat-ico" style="background:rgba(255,208,70,.1)">🏆</div><div class="feat-title">خلايا مميزة ومكافآت</div><div class="feat-desc">20 خلية مخفية بمكافآت مختلفة: ★ذهبي +20 نقطة، ◆فضي +15، 🎉مبروك +10، ⚡يحق لك!</div></div>
-      <div class="feat-card"><div class="feat-ico" style="background:rgba(0,230,118,.1)">📚</div><div class="feat-title">بنك أسئلة 2300+</div><div class="feat-desc">أسئلة في 10 مجالات متنوعة: ديني، جغرافيا، تاريخ، ألغاز، رياضيات، تقنية، لغة عربية، علوم، ثقافة، رياضة.</div></div>
-      <div class="feat-card"><div class="feat-ico" style="background:rgba(255,61,90,.1)">⚡</div><div class="feat-title">نقاط السرعة</div><div class="feat-desc">10 نقاط في أول 3 ثواني وتنقص تدريجياً. الإجابة السريعة تكافئك أكثر!</div></div>
-      <div class="feat-card"><div class="feat-ico" style="background:rgba(168,85,247,.1)">🆘</div><div class="feat-title">6 وسائل مساعدة</div><div class="feat-desc">بنك الحظ، الجمهور، إعادة الوقت، تجميد الفريق، الدرع، وقلب النقاط.</div></div>
-      <div class="feat-card"><div class="feat-ico" style="background:rgba(0,229,255,.08)">🔁</div><div class="feat-title">أسئلة لا تتكرر</div><div class="feat-desc">نظام ذكي يمنع تكرار الأسئلة في الجلسة، مع ترتيب مختلف لكل جهاز ومتصفح.</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- HOW IT WORKS -->
-<section id="how" class="guest-only sec-divider" style="padding:5rem 0;text-align:center">
-  <div class="container">
-    <div class="sec-badge">⚡ كيف تعمل اللعبة</div>
-    <h2 class="sec-title">٣ خطوات نحو <span class="hl2">القمة</span></h2>
-    <div class="how-grid">
-      <div class="how-card"><div class="how-num">١</div><div class="how-ico">🌐</div><div class="how-title">أنشئ غرفة أو انضم</div><div class="how-desc">أنشئ غرفة واحصل على رمز 6 أحرف، أو أدخل الرمز للانضمام. يدعم 2-4 فرق.</div></div>
-      <div class="how-card"><div class="how-num">٢</div><div class="how-ico">🔲</div><div class="how-title">اختر خلية وأجب</div><div class="how-desc">اختر خلية من اللوحة، اكشف نوعها، وأجب خلال 30 ثانية. قد تخفي مكافأة ضخمة!</div></div>
-      <div class="how-card"><div class="how-num">٣</div><div class="how-ico">🏆</div><div class="how-title">تصدّر وافز</div><div class="how-desc">بعد 20 جولة، الفريق الأعلى نقاطاً يفوز. استخدم وسائل المساعدة بذكاء!</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- CELLS -->
-<section id="cells" class="guest-only sec-divider" style="padding:4.5rem 0">
-  <div class="container">
-    <div class="sec-badge">🔒 الخلايا المميزة</div>
-    <h2 class="sec-title">المكافآت المخفية في <span class="hl">اللوحة</span></h2>
-    <p class="sec-sub">كل لعبة: خلية واحدة من كل نوع — باقي الـ 16 خلية أسئلة عادية</p>
-    <div class="cells-grid">
-      <div class="cell-card" style="background:rgba(255,208,70,.07);border-color:rgba(255,208,70,.32);color:var(--gold)"><div class="cell-ico">★</div><div class="cell-name">ذهبي</div><div class="cell-desc">نقاط السرعة + مكافأة إضافية</div><div class="cell-bonus" style="background:rgba(255,208,70,.18);color:var(--gold)">+20 نقطة</div></div>
-      <div class="cell-card" style="background:rgba(138,184,255,.06);border-color:rgba(138,184,255,.28);color:#8AB8FF"><div class="cell-ico">◆</div><div class="cell-name">فضي</div><div class="cell-desc">نقاط السرعة + مكافأة إضافية</div><div class="cell-bonus" style="background:rgba(138,184,255,.15);color:#8AB8FF">+15 نقطة</div></div>
-      <div class="cell-card" style="background:rgba(0,230,118,.06);border-color:rgba(0,230,118,.28);color:var(--green)"><div class="cell-ico">🎉</div><div class="cell-name">مبروك</div><div class="cell-desc">نقاط السرعة + مكافأة إضافية</div><div class="cell-bonus" style="background:rgba(0,230,118,.15);color:var(--green)">+10 نقاط</div></div>
-      <div class="cell-card" style="background:rgba(255,61,90,.06);border-color:rgba(255,61,90,.28);color:var(--red)"><div class="cell-ico">⚡</div><div class="cell-name">يحق لك</div><div class="cell-desc">أجب صح واخصم من منافسك</div><div class="cell-bonus" style="background:rgba(255,61,90,.15);color:var(--red)">-10 من المنافس</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- LIFELINES -->
-<section id="lifelines" class="guest-only sec-divider" style="padding:4.5rem 0">
-  <div class="container">
-    <div class="sec-badge">🆘 وسائل المساعدة</div>
-    <h2 class="sec-title">٦ وسائل — استخدمها في <span class="hl">اللحظة المناسبة</span></h2>
-    <div class="ll-grid">
-      <div class="ll-item"><div class="ll-ico">🎲</div><div class="ll-info"><div class="ll-name">بنك الحظ</div><div class="ll-desc">نتيجة عشوائية: +5 أو +10 أو -5 نقاط أو سؤال مجاني أو تجميد وقت!</div></div><div class="ll-tags"><div class="tag tag-free">مجاني</div></div></div>
-      <div class="ll-item"><div class="ll-ico">👥</div><div class="ll-info"><div class="ll-name">تصويت الجمهور</div><div class="ll-desc">يعرض نسب تصويت تقريبية للإجابات الأربعة</div></div><div class="ll-tags"><div class="tag tag-cost">-5 ن</div><div class="tag tag-pro">بطل</div></div></div>
-      <div class="ll-item"><div class="ll-ico">⏰</div><div class="ll-info"><div class="ll-name">إعادة الوقت</div><div class="ll-desc">يُعيد العداد إلى 10 ثواني إذا أوشك على الانتهاء</div></div><div class="ll-tags"><div class="tag tag-pro">بطل</div></div></div>
-      <div class="ll-item"><div class="ll-ico">❄️</div><div class="ll-info"><div class="ll-name">تجميد فريق</div><div class="ll-desc">تختار فريقاً يُجمَّد جولة كاملة ولا يستطيع الإجابة</div></div><div class="ll-tags"><div class="tag tag-elite">أسطوري</div></div></div>
-      <div class="ll-item"><div class="ll-ico">🛡️</div><div class="ll-info"><div class="ll-name">الدرع</div><div class="ll-desc">يحميك من خصم النقاط ومن قلب النقاط</div></div><div class="ll-tags"><div class="tag tag-elite">أسطوري</div></div></div>
-      <div class="ll-item"><div class="ll-ico">🔀</div><div class="ll-info"><div class="ll-name">قلب النقاط</div><div class="ll-desc">يبدّل نقاطك مع منافس — يتطلب بقاء 3 أسئلة على الأقل</div></div><div class="ll-tags"><div class="tag tag-cost">-15 ن</div><div class="tag tag-elite">أسطوري</div></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- PRICING -->
-<section id="pricing" class="sec-divider" style="padding:5rem 0;text-align:center">
-  <div class="container">
-    <div class="sec-badge">💳 الأسعار</div>
-    <h2 class="sec-title">ابدأ مجاناً، <span class="hl2">ارقَ متى ما أردت</span></h2>
-        <div class="price-grid">
-      <div class="price-card"><div class="price-ico">🚀</div><div class="price-plan">منطلق</div><div class="price-amt">مجاناً</div><div class="price-per">للأبد</div><button class="price-btn gh" onclick="openOffline()">ابدأ مجاناً</button><ul class="price-feats"><li>200 سؤال شهرياً</li><li>لعب أوفلاين على نفس الجهاز</li><li>وسيلة مساعدة واحدة (بنك الحظ)</li><li>2-4 فرق</li></ul></div>
-      <div class="price-card"><div class="price-ico">👑</div><div class="price-plan">بطل</div><div class="price-amt" id="pAmt">9 <span style="font-size:.9rem">ر.س</span></div><div class="price-per" id="pPer">/ سنة</div><button class="price-btn c" onclick="openSubscribe('pro')">اشترك الآن</button><ul class="price-feats"><li>2300+ سؤال</li><li>أونلاين مع أجهزة مختلفة</li><li>3 وسائل مساعدة</li><li>الجمهور + إعادة الوقت</li></ul></div>
-      <div class="price-card feat"><div class="feat-badge">⭐ الأكثر شعبية</div><div class="price-ico">🔥</div><div class="price-plan feat-txt">أسطوري</div><div class="price-amt" id="eAmt" style="color:var(--gold)">19 <span style="font-size:.9rem">ر.س</span></div><div class="price-per" id="ePer">/ سنة</div><button class="price-btn g" onclick="openSubscribe('elite')">اشترك الآن</button><ul class="price-feats"><li>كل ما في خطة بطل</li><li>6 وسائل مساعدة كاملة</li><li>التجميد + الدرع + قلب النقاط</li><li>أسئلة حصرية</li></ul></div>
-    </div>
-  </div>
-</section>
-
-<!-- FAQ -->
-<section id="faq" class="guest-only sec-divider" style="padding:5rem 0;text-align:center">
-  <div class="container">
-    <div class="sec-badge">❓ الأسئلة الشائعة</div>
-    <h2 class="sec-title">كل ما تريد <span class="hl">معرفته</span></h2>
-    <div class="faq-wrap">
-      <div class="faq-item"><div class="faq-q" onclick="faq(0)">هل اللعبة مجانية؟<span class="faq-ico">+</span></div><div class="faq-a">نعم! خطة منطلق المجانية تشمل 200 سؤال شهرياً، لعباً على نفس الجهاز، ووسيلة مساعدة واحدة. للاستفادة الكاملة اشترك في خطة بطل أو أسطوري.</div></div>
-      <div class="faq-item"><div class="faq-q" onclick="faq(1)">كيف يعمل اللعب الأونلاين؟<span class="faq-ico">+</span></div><div class="faq-a">أنشئ غرفة واحصل على رمز 6 أحرف، شاركه مع أصدقائك. يدخلون الرمز من أي جهاز ومكان. المزامنة تتم عبر Firebase فورياً في الوقت الفعلي.</div></div>
-      <div class="faq-item"><div class="faq-q" onclick="faq(2)">هل تتكرر الأسئلة؟<span class="faq-ico">+</span></div><div class="faq-a">لا! نظام ذكي يتتبع الأسئلة المستخدمة في كل جلسة ويمنع تكرارها. كل جهاز يحصل على ترتيب مختلف بناءً على بصمة المتصفح.</div></div>
-      <div class="faq-item"><div class="faq-q" onclick="faq(3)">كم عدد الأسئلة في البنك؟<span class="faq-ico">+</span></div><div class="faq-a">أكثر من 2300 سؤال موزعة على 10 مجالات بالتساوي: ديني، جغرافيا، تاريخ، ألغاز، رياضيات، تقنية، لغة عربية، علوم، ثقافة عامة، رياضة.</div></div>
-      <div class="faq-item"><div class="faq-q" onclick="faq(4)">ما الفرق بين أوفلاين وأونلاين؟<span class="faq-ico">+</span></div><div class="faq-a">الأوفلاين: جميع الفرق على نفس الجهاز بالتناوب. الأونلاين: كل فريق على جهازه المستقل، المزامنة عبر الإنترنت بين الأجهزة.</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- CTA -->
-<section id="cta" class="guest-only sec-divider" style="padding:4.5rem 0">
-  <div class="container">
-    <div class="cta-box">
-      <h2 class="cta-title">جاهز للتحدي؟ 🏆</h2>
-      <p class="cta-sub">انضم الآن وابدأ مباراتك الأولى مجاناً</p>
-      <button class="btn-p" style="margin:0 auto" onclick="openCreate()">🎮 ابدأ اللعب الآن</button>
-    </div>
-  </div>
-</section>
-
-<!-- ══ AFFILIATE SECTION ══ -->
-<section id="affiliate-section" style="display:none;padding:4rem 0;border-top:1px solid rgba(255,255,255,.06)">
-  <div class="container">
-    <div class="sec-badge">💸 برنامج التسويق بالعمولة</div>
-    <h2 class="sec-title">سوّق وكسب <span class="hl2">10%</span> من كل اشتراك</h2>
-    <p class="sec-sub" style="margin-bottom:1.5rem">
-      احصل على رابط إحالة خاص بك — كل مستخدم يشترك عبر رابطك
-      تحصل على <strong style="color:var(--gold)">10%</strong> من قيمة اشتراكه.
-      الحد الأدنى للسحب <strong>100 ريال</strong> عبر STC Pay أو تحويل بنكي.
-    </p>
-    <!-- Affiliate features -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem;margin-bottom:2rem" id="affFeats">
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:13px;padding:1.1rem;text-align:center">
-        <div style="font-size:1.6rem;margin-bottom:.4rem">💰</div>
-        <div style="font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:900;color:var(--gold)">10% عمولة</div>
-        <div style="font-size:.72rem;color:var(--dim);margin-top:.25rem">من كل اشتراك مدفوع</div>
-      </div>
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:13px;padding:1.1rem;text-align:center">
-        <div style="font-size:1.6rem;margin-bottom:.4rem">🔗</div>
-        <div style="font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:900;color:var(--cyan)">رابط خاص بك</div>
-        <div style="font-size:.72rem;color:var(--dim);margin-top:.25rem">شارك في أي مكان</div>
-      </div>
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:13px;padding:1.1rem;text-align:center">
-        <div style="font-size:1.6rem;margin-bottom:.4rem">💳</div>
-        <div style="font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:900;color:var(--green)">سحب من 100 ر.س</div>
-        <div style="font-size:.72rem;color:var(--dim);margin-top:.25rem">STC Pay أو بنكي</div>
-      </div>
-    </div>
-    <!-- Logged-in: show dashboard | Logged-out: show login prompt -->
-    <div id="affiliate-box"></div>
-    <div id="affiliate-login-prompt" style="background:var(--card);border:1.5px dashed rgba(0,229,255,.25);
-      border-radius:14px;padding:2rem;text-align:center">
-      <div style="font-size:1.4rem;margin-bottom:.6rem">🔐</div>
-      <div style="font-size:.92rem;font-weight:700;margin-bottom:.4rem">سجّل دخولك للحصول على رابط إحالتك</div>
-      <div style="font-size:.78rem;color:var(--dim);margin-bottom:1.1rem">مجاني تماماً — فقط بريدك الإلكتروني</div>
-      <button class="btn-p" onclick="showAuthModal()" style="max-width:220px;margin:0 auto;padding:.65rem 1.4rem">
-        👤 تسجيل الدخول للبدء
-      </button>
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer>
-  <div class="container">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <img src="logo.png" alt="تحدي الأرقام">
-        <div class="footer-brand-name">تحدي <span>الأرقام</span></div>
-        <div class="footer-brand-desc">منصة الألعاب الجماعية التنافسية. اختبر معلوماتك مع أصدقائك من أي مكان.</div>
-      </div>
-      <div class="footer-col"><h4>المنصة</h4><ul><li><a onclick="goSec('features')" class="guest-link">المميزات</a></li><li><a onclick="goSec('how')" class="guest-link">كيف تعمل</a></li><li><a onclick="goSec('pricing')">الأسعار</a></li></ul></div>
-      <div class="footer-col"><h4>اللعب</h4><ul><li><a onclick="openCreate()">لعبة أونلاين</a></li><li><a onclick="openJoin()">انضمام بالرمز</a></li><li><a onclick="openOffline()">على نفس الجهاز</a></li></ul></div>
-      <div class="footer-col"><h4>الدعم</h4><ul><li><a onclick="goSec('faq')" class="guest-link">الأسئلة الشائعة</a></li><li><a href="dashboard.html">لوحتي</a></li><li><a onclick="openContact()">تواصل معنا</a></li><li><a href="privacy-policy.html" target="_blank">سياسة الخصوصية</a></li><li><a href="terms.html" target="_blank">شروط الاستخدام</a></li><li><a href="data-deletion.html" target="_blank">حذف الحساب والبيانات</a></li></ul></div>
-    </div>
-    <div class="footer-btm">
-      <div class="footer-copy">© 2026 تحدي الأرقام. جميع الحقوق محفوظة.</div>
-      <div class="footer-made">صُنع بـ <span>❤</span> في السعودية</div>
-    </div>
-  </div>
-</footer>
-
-<!-- MODALS -->
-<div class="mo" id="createMo">
-  <div class="mb">
-    <div class="mt_">🌐 إنشاء غرفة أونلاين</div>
-    <div style="background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.18);border-radius:9px;padding:.55rem .9rem;margin-bottom:1rem;font-size:.76rem;color:var(--cyan)">
-      🔥 يعمل مع أجهزة مختلفة عبر الإنترنت
-    </div>
-    <div class="fg"><label>اسم فريقك</label><input type="text" id="cName" class="inp" placeholder="اسم فريقك..." maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false"></div>
-    <div class="fg"><label>لونك</label><div class="cpk" id="cCpk"></div></div>
-    <div class="fg"><label>عدد الفرق</label><select id="cCount" class="inp"><option value="2">2 فرق</option><option value="3">3 فرق</option><option value="4">4 فرق</option></select></div>
-    <div class="fg" style="display:flex;align-items:center;gap:.55rem;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.22);border-radius:9px;padding:.6rem .9rem">
-      <input type="checkbox" id="cPublic" checked style="width:18px;height:18px;accent-color:#A855F7;flex-shrink:0">
-      <label for="cPublic" style="margin:0;font-size:.78rem;cursor:pointer">🌍 غرفة عامة — يجدها الباحثون عن لاعبين تلقائياً<br><span style="color:var(--dim);font-size:.68rem">ألغِ التحديد لغرفة خاصة بالرمز/الرابط فقط</span></label>
-    </div>
-    <div class="mo-btns"><button class="btn-p" onclick="doCreate()">إنشاء الغرفة</button><button class="btn-s" onclick="closeM('createMo')">إلغاء</button></div>
+  <!-- REGISTER -->
+  <div id="registerBox" class="auth-box" style="display:none">
+    <div class="auth-logo"><div class="auth-logo-fb">🏆</div></div>
+    <div class="auth-title">إنشاء حساب</div>
+    <div class="auth-sub">انضم إلى تحدي الأرقام</div>
+    <div id="regErr" class="err-box" style="display:none"></div>
+    <div class="form-group"><label>الاسم</label><input type="text" id="regName" placeholder="اسمك الكامل"></div>
+    <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="regEmail" placeholder="name@example.com"></div>
+    <div class="form-group"><label>كلمة المرور</label><input type="password" id="regPwd" placeholder="6 أحرف على الأقل"></div>
+    <button class="btn btn-gold" id="regBtn" onclick="doRegister()">إنشاء الحساب</button>
+    <div class="auth-switch">لديك حساب؟ <a onclick="showLogin()">تسجيل الدخول</a></div>
   </div>
 </div>
 
-<div class="mo" id="joinMo">
-  <div class="mb">
-    <div class="mt_">🚪 الانضمام لغرفة</div>
-    <div class="fg"><label>رمز الغرفة (6 أحرف)</label><input type="text" id="jCode" class="inp" placeholder="XXXXXX" maxlength="6" style="letter-spacing:.28em;font-weight:900;font-size:1.2rem;text-align:center;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
-    <div class="fg"><label>اسم فريقك</label><input type="text" id="jName" class="inp" placeholder="اسم فريقك..." maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false"></div>
-    <div class="fg"><label>لونك</label><div class="cpk" id="jCpk"></div></div>
-    <div id="joinErr" class="err" style="display:none"></div>
-    <div class="mo-btns"><button class="btn-p" onclick="doJoin()">انضمام</button><button class="btn-s" onclick="closeM('joinMo')">إلغاء</button></div>
-  </div>
-</div>
-
-<div class="mo" id="qmMo">
-  <div class="mb">
-    <div class="mt_">🔎 البحث عن لاعبين</div>
-    <div style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.22);border-radius:9px;padding:.55rem .9rem;margin-bottom:1rem;font-size:.76rem;color:#C084FC">
-      نبحث لك عن غرفة عامة متاحة وننضمّك إليها فوراً — بلا رمز ولا رابط
+<!-- DASHBOARD -->
+<div id="dashWrap">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-logo">⚡ تحدي الأرقام</div>
+    <div class="topbar-user">
+      <div class="user-avatar" id="userAvatar">؟</div>
+      <div class="user-name" id="userName">...</div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="padding:.32rem .7rem;font-size:.72rem">خروج</button>
     </div>
-    <div class="fg"><label>اسم فريقك</label><input type="text" id="qmName" class="inp" placeholder="اسم فريقك..." maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')doQuickMatch()"></div>
-    <div class="fg"><label>عدد الفرق المطلوب</label><select id="qmCount" class="inp"><option value="2">2 فرق</option><option value="3">3 فرق</option><option value="4">4 فرق</option></select></div>
-    <div id="qmErr" class="err" style="display:none"></div>
-    <button id="qmCreateBtn" class="btn-p" onclick="qmToCreate()" style="display:none;width:100%;margin-bottom:.6rem;background:linear-gradient(135deg,#A855F7,#7C3AED)">🌍 أنشئ غرفة عامة الآن</button>
-    <div class="mo-btns"><button class="btn-p" id="qmBtn" onclick="doQuickMatch()">🔎 ابحث عن غرفة</button><button class="btn-s" onclick="closeQuickMatch()">إلغاء</button></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('overview')">🏠 الرئيسية</div>
+    <div class="tab" onclick="showTab('subscription')">💳 اشتراكي</div>
+    <div class="tab" onclick="showTab('games')">🎮 تقدّمي</div>
+    <div class="tab" onclick="showTab('profile')">👤 حسابي</div>
+  </div>
+
+  <!-- ── OVERVIEW ── -->
+  <div id="tab-overview" class="page-content">
+    <!-- Subscription status -->
+    <div id="subStatusCard"></div>
+
+    <!-- Stats -->
+    <div class="stats-row" id="statsRow">
+      <div class="stat-box"><div class="stat-num" id="st-games">—</div><div class="stat-lbl">إجمالي الألعاب</div></div>
+      <div class="stat-box"><div class="stat-num" id="st-wins">—</div><div class="stat-lbl">انتصارات 🏆</div></div>
+      <div class="stat-box"><div class="stat-num" id="st-pts">—</div><div class="stat-lbl">مجموع النقاط</div></div>
+      <div class="stat-box"><div class="stat-num" id="st-corr">—</div><div class="stat-lbl">إجابات صحيحة</div></div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="card">
+      <div class="card-title">⚡ ابدأ اللعب</div>
+      <div style="display:flex;flex-direction:column;gap:.6rem;">
+        <a href="index.html" class="btn btn-cyan" style="text-decoration:none;text-align:center">🎮 العب الآن</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SUBSCRIPTION ── -->
+  <div id="tab-subscription" class="page-content" style="display:none">
+    <div id="subDetailCard"></div>
+
+    <div class="card">
+      <div class="card-title">🔓 ترقية الاشتراك</div>
+      <div class="plans-grid" id="plansGrid">
+        <div class="plan-card" id="plan-monthly" onclick="selectPlan('monthly')">
+          <div class="plan-name">بطل (Pro)</div>
+          <div class="plan-price" style="color:var(--text)">9 <span style="font-size:.75rem;color:var(--dim)">ر.س</span></div>
+          <div class="plan-period">/ سنة</div>
+        </div>
+        <div class="plan-card" id="plan-yearly" onclick="selectPlan('yearly')">
+          <div class="plan-badge-hot">⭐ الأقوى</div>
+          <div class="plan-name">أسطوري (Elite)</div>
+          <div class="plan-price" style="color:var(--gold)">19 <span style="font-size:.75rem;color:var(--dim)">ر.س</span></div>
+          <div class="plan-period">/ سنة</div>
+          <div class="plan-save">كل المزايا + 6 وسائل</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem">
+        <ul style="list-style:none;margin-bottom:1rem;">
+          <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ جميع الأسئلة (2282 سؤالاً)</li>
+          <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ أونلاين غير محدود</li>
+          <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ وسائل مساعدة إضافية</li>
+          <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ 4 فرق في نفس اللعبة</li>
+        </ul>
+        <button class="btn btn-gold" id="checkoutBtn" onclick="doCheckout()">اشترك الآن</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PAYMENTS ── -->
+  <div id="tab-payments" class="page-content" style="display:none">
+    <div class="card">
+      <div class="card-title">💰 سجل المدفوعات</div>
+      <div id="paysList"><div style="text-align:center;color:var(--dim);padding:1.5rem">جارٍ التحميل...</div></div>
+    </div>
+  </div>
+
+  <!-- ── GAMES ── -->
+  <div id="tab-games" class="page-content" style="display:none">
+    <div class="card">
+      <div class="card-title">🎯 تقدّمك في بنك الأسئلة</div>
+      <div id="progressBox"><div style="text-align:center;color:var(--dim);padding:1.5rem">جارٍ التحميل...</div></div>
+    </div>
+  </div>
+
+  <!-- ── PROFILE ── -->
+  <div id="tab-profile" class="page-content" style="display:none">
+    <div class="card">
+      <div class="prof-avatar" id="profAvatar">؟</div>
+      <div class="card-title" style="text-align:center">تعديل الحساب</div>
+      <div id="profErr" class="err-box" style="display:none"></div>
+      <div class="form-group"><label>الاسم</label><input type="text" id="profName" placeholder="اسمك الكامل"></div>
+      <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="profEmail" disabled style="opacity:.5"></div>
+      <button class="btn btn-cyan" onclick="saveName()">حفظ الاسم</button>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <div class="card-title">🔒 تغيير كلمة المرور</div>
+      <div class="form-group"><label>كلمة المرور الحالية</label><input type="password" id="curPwd" placeholder="••••••••"></div>
+      <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="newPwd" placeholder="6 أحرف على الأقل"></div>
+      <button class="btn btn-ghost" onclick="savePwd()">تغيير كلمة المرور</button>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <div class="card-title" style="color:var(--red)">⚠️ منطقة الخطر</div>
+      <button class="btn btn-red btn-sm" onclick="cancelAutoRenew()" style="display:inline-block;margin-bottom:.7rem">إلغاء التجديد التلقائي</button>
+      <div style="border-top:1px solid rgba(255,61,90,.2);margin:.8rem 0;padding-top:.8rem">
+        <div style="font-size:.82rem;color:var(--dim);margin-bottom:.6rem">حذف حسابك يزيل بياناتك نهائياً ولا يمكن التراجع عنه.</div>
+        <button class="btn btn-red btn-sm" onclick="deleteAccount()" style="display:inline-block">🗑️ حذف حسابي نهائياً</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="mo" id="offMo">
-  <div class="mb">
-    <div class="mt_">📱 لعب على نفس الجهاز</div>
-    <div class="fg"><label>عدد الفرق</label><select id="offCount" class="inp" onchange="buildOff()"><option value="2">2 فرق</option><option value="3">3 فرق</option><option value="4">4 فرق</option></select></div>
-    <div id="offForms"></div>
-    <div class="mo-btns"><button class="btn-p" onclick="doOff()">ابدأ اللعب</button><button class="btn-s" onclick="closeM('offMo')">إلغاء</button></div>
+<!-- Payment Result Modal -->
+<div class="modal-bg" id="payModal">
+  <div class="modal">
+    <div class="modal-title" id="payModalTitle">نتيجة الدفع</div>
+    <div id="payModalBody" style="font-size:.85rem;color:var(--dim);margin-bottom:1rem"></div>
+    <button class="btn btn-cyan" onclick="closePayModal()">حسناً</button>
   </div>
 </div>
 
-<div class="ntf" id="ntf"></div>
+<div class="notif" id="notif"></div>
 
 <script>
-const FB_CFG={apiKey:"AIzaSyBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",authDomain:"tahadi-arqam.firebaseapp.com",databaseURL:"https://tahadi-arqam-default-rtdb.firebaseio.com",projectId:"tahadi-arqam",storageBucket:"tahadi-arqam.appspot.com",messagingSenderId:"123456789012",appId:"1:123456789012:web:xxxxxxxxxxxxxxxxxxxx"};
-const CL={cyan:{l:"سماوي",h:"#00E5FF"},red:{l:"أحمر",h:"#FF3D5A"},green:{l:"أخضر",h:"#00E676"},yellow:{l:"ذهبي",h:"#FFD046"}};
-const OFC=["cyan","red","green","yellow"];
-let cC="cyan",jC="red",fbDB=null,ntout=null,navOpen=false;
-/* الرابط العام الثابت — يُستخدم لروابط المشاركة بدل localhost داخل التطبيق */
-const PUBLIC_BASE="https://drfajry.github.io/Number_Arena";
-/* إصلاح جذري: تهيئة fbDB من تطبيق Firebase المُهيّأ في firebase-config.js
-   (كان null دائماً → الغرف تُنشأ محلياً فقط ولا تظهر لبقية الأجهزة) */
-try{if(typeof firebase!=="undefined"&&firebase.apps.length)fbDB=firebase.database();}catch(e){fbDB=null;}
+const API   = '/api';
+const LOGO  = '/logo.png'; // change to your logo path
+let token   = localStorage.getItem('tahadi_token');
+let me      = null;
+let selPlan = 'monthly';
 
+document.getElementById('authLogo').src = LOGO;
 
+/* ═══ AUTH ════════════════════════════ */
+function showLogin()    { document.getElementById('registerBox').style.display='none'; document.getElementById('loginBox').style.display='block'; }
+function showRegister() { document.getElementById('loginBox').style.display='none'; document.getElementById('registerBox').style.display='block'; }
 
-(function(){
-  const p=new URLSearchParams(location.search);
-  if(p.get("room")){
-    var _rc=p.get("room").toUpperCase();
-    if(onlineGate()){
-      openJoinDirect();document.getElementById("jCode").value=_rc;
-    } else {
-      // احفظ الرمز — يُستكمل الانضمام تلقائياً بعد تسجيل الدخول
-      sessionStorage.setItem("tahadi_pending_room",_rc);
-    }
-  }
-  buildCpk("cCpk","c");buildCpk("jCpk","j");buildOff();
-})();
-
-/* ── تخزين الجلسة: يحترم اختيار "تذكرني" ──
-   محفوظ دائماً (localStorage) أو لجلسة المتصفح الحالية فقط (sessionStorage) */
-function authGet(key){
-  return localStorage.getItem(key) || sessionStorage.getItem(key);
-}
-function authSetAll(pairs,remember){
-  var store = remember ? localStorage : sessionStorage;
-  var other = remember ? sessionStorage : localStorage;
-  Object.keys(pairs).forEach(function(k){
-    store.setItem(k, pairs[k]);
-    other.removeItem(k); // امنع بقاء نسخة قديمة في التخزين الآخر
-  });
-}
-function authSetOne(key,val){
-  // اكتب في نفس التخزين الذي يحمل التوكن حالياً (يحترم اختيار تذكرني عند الدخول)
-  var remember = !!localStorage.getItem("tahadi_token");
-  (remember?localStorage:sessionStorage).setItem(key,val);
-}
-function authClearAll(keys){
-  keys.forEach(function(k){ localStorage.removeItem(k); sessionStorage.removeItem(k); });
+async function doLogin() {
+  // dashboard لم يعد فيه دخول مستقل — التوجيه للرئيسية
+  window.location.href = 'index.html';
 }
 
-function goSec(id){document.getElementById(id)?.scrollIntoView({behavior:"smooth"});}
-function closeM(id){document.getElementById(id).classList.remove("on");}
-/* ── بوابة الأونلاين: تسجيل دخول + اشتراك (Pro أو Elite) ── */
-function onlineGate(){
-  var token=authGet("tahadi_token");
-  if(!token){
-    ntf("🔐 سجّل دخولك أولاً للعب أونلاين","#FFD046");
-    if(typeof showAuthModal==="function")setTimeout(showAuthModal,400);
-    return false;
-  }
-  var isPro=authGet("tahadi_pro")==="1";
-  var isElite=authGet("tahadi_elite")==="1";
-  if(!isPro&&!isElite){
-    if(window.IS_APP){
-      // داخل التطبيق: رسالة محايدة بلا أي توجيه للشراء (سياسة Google Play)
-      ntf("اللعب الأونلاين غير متاح في حسابك الحالي","#FFD046");
-    } else {
-      ntf("⭐ اللعب الأونلاين ميزة لأصحاب الباقات — اختر باقتك","#FFD046");
-      setTimeout(function(){goSec("pricing");},600);
-    }
-    return false;
-  }
-  return true;
+async function doRegister() {
+  window.location.href = 'index.html';
 }
 
-function openCreate(){if(!onlineGate())return;document.getElementById("cName").value="";document.getElementById("createMo").classList.add("on");setTimeout(()=>document.getElementById("cName").focus(),300);}
-function openJoin(){if(!onlineGate())return;document.getElementById("jName").value="";document.getElementById("joinMo").classList.add("on");}
-function openJoinDirect(){document.getElementById("joinMo").classList.add("on");}
-function openOffline(){buildOff();document.getElementById("offMo").classList.add("on");}
-function _bindModalBackdrops(){document.querySelectorAll(".mo").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("on");}));}
-
-function toggleNav(){
-  navOpen=!navOpen;
-  const nl=document.querySelector(".nav-links");
-  if(!nl)return;
-  if(navOpen){
-    // داخل التطبيق: روابط التسويق مخفية، فاعرض إجراءات مفيدة فقط
-    if(window.IS_APP){
-      var logged=!!authGet("tahadi_token");
-      nl.innerHTML = logged
-        ? '<a class="nav-link" onclick="doLogout();toggleNav()">🚪 تسجيل الخروج</a>'
-          +'<a class="nav-link" onclick="goSec(\'faq\');toggleNav()">❓ الأسئلة الشائعة</a>'
-        : '<a class="nav-link" onclick="showAuthModal();toggleNav()">👤 تسجيل الدخول</a>';
-    }
-    nl.style.cssText="display:flex;flex-direction:column;position:fixed;top:calc(56px + env(safe-area-inset-top));right:0;left:0;background:rgba(7,11,31,.97);padding:1rem 1.5rem;border-bottom:1px solid var(--border);z-index:99;gap:.6rem;";
-  }
-  else{nl.style.cssText="";}
+function doLogout() {
+  if(window.TahadiAuth && TahadiAuth.ready()){ TahadiAuth.signOut().catch(function(){}); }
+  localStorage.removeItem('tahadi_token');
+  localStorage.removeItem('tahadi_user');
+  window.location.href = 'index.html';
 }
 
-function buildCpk(id,mode){
-  const el=document.getElementById(id);el.innerHTML="";
-  Object.entries(CL).forEach(([k,v])=>{
-    const d=document.createElement("div");d.className="co"+(k===(mode==="c"?cC:jC)?" sel":"");d.style.background=v.h;
-    d.onclick=()=>{el.querySelectorAll(".co").forEach(e=>{e.classList.remove("sel");e.style.boxShadow="";});d.classList.add("sel");d.style.boxShadow=`0 0 11px ${v.h}`;if(mode==="c")cC=k;else jC=k;};
-    el.appendChild(d);
-  });
-}
-
-// yearly only — no toggle needed
-
-function faq(idx){
-  document.querySelectorAll(".faq-item").forEach((item,i)=>{
-    const q=item.querySelector(".faq-q"),a=item.querySelector(".faq-a");
-    if(i===idx){q.classList.toggle("open");a.classList.toggle("open");}
-    else{q.classList.remove("open");a.classList.remove("open");}
-  });
-}
-
-async function doCreate(){
-  const name=document.getElementById("cName").value.trim();
-  const tc=parseInt(document.getElementById("cCount").value);
-  if(!name){ntf("❗ أدخل اسم فريقك","#FF3D5A");return;}
-  const isPublic=document.getElementById("cPublic")?document.getElementById("cPublic").checked:false;
-  const code=Math.random().toString(36).slice(2,8).toUpperCase();
-  const room={code,tc,status:"waiting",createdAt:Date.now(),
-    teams:[{id:"t"+Date.now(),name,color:cC,points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{remove:false,change:false,luck:false,audience:false,resetTime:false,freeze:false,shield:false,flip:false}}],
-    ci:0,qi:0,phase:"sel",board:null,qs:null,cc:null,cq:null};
-  if(fbDB){
-    try{
-      await fbDB.ref("rooms/"+code).set(room);
-    }catch(e){
-      ntf("❌ تعذّر إنشاء الغرفة أونلاين: "+(e&&e.message||"خطأ اتصال"),"#FF3D5A");
-      return;
-    }
-    // غرفة عامة: سجّلها في اللوبي حتى يجدها الباحثون عن لاعبين
-    if(isPublic){
-      await fbDB.ref("publicRooms/"+code).set({
-        code:code, host:name, tc:tc, players:1, createdAt:Date.now()
-      }).catch(function(){});
-      try{fbDB.ref("publicRooms/"+code).onDisconnect().remove();}catch(e){}
-    }
-  }
-  else{
-    // بلا Firebase الغرفة محلية فقط — نبّه بوضوح بدل الفشل الصامت
-    ntf("⚠️ لا اتصال بالخادم — الغرفة ستعمل على هذا الجهاز فقط","#FFD046");
-    localStorage.setItem("tahadi_v7_"+code,JSON.stringify(room));
-  }
-  localStorage.setItem("tahadi_my_id",room.teams[0].id);
-  localStorage.setItem("tahadi_is_host","1");
-  // ألغِ الحذف التلقائي قبل الانتقال — الانتقال بين الصفحات يقطع الاتصال ويُشغّل onDisconnect خطأً
-  if(fbDB&&isPublic){try{fbDB.ref("publicRooms/"+code).onDisconnect().cancel();}catch(e){}}
-  closeM("createMo");
-  window.location.href="game.html?room="+code;
-}
-
-/* منطق الانضمام المشترك — يُستخدم من الانضمام بالرمز ومن البحث عن لاعبين */
-async function joinRoomCore(code,name,color){
-  if(!fbDB){
-    let room=JSON.parse(localStorage.getItem("tahadi_v7_"+code)||"null");
-    if(!room)return{ok:false,msg:"❌ الغرفة غير موجودة أو انتهت"};
-    if(room.teams.length>=room.tc)return{ok:false,msg:"❌ الغرفة ممتلئة"};
-    if(room.status!=="waiting")return{ok:false,msg:"❌ اللعبة بدأت"};
-    if(room.teams.some(t=>t.color===color))return{ok:false,msg:"❗ اللون محجوز، اختر آخر",colorTaken:true,room:room};
-    const t={id:"t"+Date.now(),name,color:color,points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{remove:false,change:false,luck:false,audience:false,resetTime:false,freeze:false,shield:false,flip:false}};
-    room.teams.push(t);
-    localStorage.setItem("tahadi_v7_"+code,JSON.stringify(room));
-    localStorage.setItem("tahadi_my_id",t.id);
-    localStorage.setItem("tahadi_is_host","0");
-    return{ok:true,code:code};
-  }
-  // انضمام ذرّي عبر Transaction — يمنع فقدان الفرق عند انضمام متزامن
-  const myTeamId="t"+Date.now()+"_"+Math.random().toString(36).slice(2,6);
-  var result;
+async function apiCall(path, opts={}) {
+  // الخادم القديم لم يعد مستخدماً — نرجع null بصمت (الميزات المعتمدة عليه معطّلة مؤقتاً)
   try{
-    result=await fbDB.ref("rooms/"+code).transaction(function(room){
-      if(!room)return room; // غير موجودة → أجهض
-      if(!room.teams)room.teams=[];
-      if(room.status!=="waiting")return; // اللعبة بدأت → أجهض
-      if(room.teams.length>=room.tc)return; // ممتلئة → أجهض
-      // اختر لوناً غير محجوز تلقائياً إن كان المطلوب محجوزاً
-      var taken=room.teams.map(function(x){return x.color;});
-      var useColor=color;
-      if(taken.indexOf(useColor)>-1){
-        useColor=["red","green","yellow","cyan"].find(function(c){return taken.indexOf(c)<0;});
-        if(!useColor)return; // لا ألوان → أجهض
-      }
-      room.teams.push({id:myTeamId,name:name,color:useColor,points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{remove:false,change:false,luck:false,audience:false,resetTime:false,freeze:false,shield:false,flip:false}});
-      return room;
+    const r = await fetch(API+path, {
+      ...opts,
+      headers: { 'Authorization':`Bearer ${token||''}`, 'Content-Type':'application/json', ...opts.headers }
     });
-  }catch(e){return{ok:false,msg:"تعذّر الانضمام — حاول ثانية"};}
-
-  if(!result.committed||!result.snapshot.val()){return{ok:false,msg:"❌ الغرفة غير موجودة أو انتهت"};}
-  var finalRoom=result.snapshot.val();
-  // تأكد أن فريقي أُضيف فعلاً
-  if(!finalRoom.teams||!finalRoom.teams.some(function(t){return t.id===myTeamId;})){
-    return{ok:false,msg:"❌ الغرفة ممتلئة أو بدأت اللعبة"};
+    if (r.status===401) { return null; }
+    return await r.json();
+  }catch(e){
+    return null; // لا خادم — تجاهل بصمت
   }
-  // حدّث اللوبي
-  if(finalRoom.teams.length>=finalRoom.tc) fbDB.ref("publicRooms/"+code).remove().catch(function(){});
-  else fbDB.ref("publicRooms/"+code+"/players").set(finalRoom.teams.length).catch(function(){});
-  localStorage.setItem("tahadi_my_id",myTeamId);
-  localStorage.setItem("tahadi_is_host","0");
-  return{ok:true,code:code};
 }
 
-async function doJoin(){
-  const code=document.getElementById("jCode").value.trim().toUpperCase();
-  const name=document.getElementById("jName").value.trim();
-  const err=document.getElementById("joinErr");err.style.display="none";
-  if(code.length!==6){err.textContent="❗ الرمز 6 أحرف";err.style.display="block";return;}
-  if(!name){err.textContent="❗ أدخل اسم فريقك";err.style.display="block";return;}
-  const r=await joinRoomCore(code,name,jC);
-  if(!r.ok){err.textContent=r.msg;err.style.display="block";return;}
-  closeM("joinMo");window.location.href="game.html?room="+code;
-}
+/* ═══ INIT DASHBOARD ══════════════════ */
+async function initDash() {
+  document.getElementById('authWrap').style.display = 'none';
+  document.getElementById('dashWrap').style.display = 'block';
 
-/* ── البحث عن لاعبين (Quick Match) ── */
-var _qmActive=false; // علم إيقاف البحث عند الإغلاق/الإلغاء
-
-function openQuickMatch(){
-  if(!onlineGate())return;
-  if(!fbDB){ntf("البحث الأونلاين يتطلب اتصالاً بالإنترنت","#FF3D5A");return;}
-  _qmActive=false;
-  document.getElementById("qmName").value="";
-  document.getElementById("qmCount").value="2";
-  document.getElementById("qmErr").style.display="none";
-  document.getElementById("qmCreateBtn").style.display="none";
-  var btn=document.getElementById("qmBtn");
-  btn.disabled=false;btn.textContent="🔎 ابحث عن غرفة";
-  document.getElementById("qmMo").classList.add("on");
-  setTimeout(()=>document.getElementById("qmName").focus(),300);
-}
-
-function closeQuickMatch(){
-  _qmActive=false; // يوقف حلقة البحث فوراً
-  closeM("qmMo");
-}
-
-/* محاولة واحدة: افحص اللوبي وحاول الانضمام — ترجع code عند النجاح أو null */
-async function _qmTryOnce(name,wantTc){
-  const snap=await fbDB.ref("publicRooms").get();
-  const all=snap.val()||{};
-  const now=Date.now(), MAXAGE=10*60*1000; // 10 دقائق (كانت 30 — تقصير يقلل الغرف الميتة)
-  let list=Object.values(all)
-    .filter(r=>r&&r.code&&(now-(r.createdAt||0))<MAXAGE&&(r.players||1)<(r.tc||4)&&(r.tc||2)===wantTc)
-    .sort((a,b)=>(b.players-a.players)||(b.createdAt-a.createdAt));
-  const COLORS=["red","green","yellow","cyan"];
-  for(const cand of list){
-    if(!_qmActive)return null;
-    const rs=await fbDB.ref("rooms/"+cand.code).get();
-    const room=rs.val();
-    // تحقق صارم: الغرفة موجودة فعلاً + في الانتظار + فيها مقعد + لها فرق حقيقية + نفس عدد الفرق المطلوب
-    if(!room||room.status!=="waiting"||!room.teams||room.teams.length>=room.tc||room.teams.length<1||room.tc!==wantTc){
-      // غرفة ميتة → احذفها من اللوبي فوراً
-      fbDB.ref("publicRooms/"+cand.code).remove().catch(function(){});
-      continue;
-    }
-    const takenC=room.teams.map(t=>t.color);
-    const free=COLORS.find(c=>!takenC.includes(c))||"red";
-    const r=await joinRoomCore(cand.code,name,free);
-    if(r.ok)return cand.code;
+  // انتظر جلسة Firebase Auth، ثم حمّل الملف من قاعدة البيانات
+  if(!window.TahadiAuth || !TahadiAuth.ready()){
+    ntf('❌ نظام الدخول غير متاح','#FF3D5A'); return;
   }
-  return null;
-}
+  var fbUser = TahadiAuth.currentUser();
+  if(!fbUser){
+    // لم تُستعد الجلسة بعد — انتظر onChange
+    return;
+  }
 
-async function doQuickMatch(){
-  const name=document.getElementById("qmName").value.trim();
-  const wantTc=parseInt(document.getElementById("qmCount").value)||2;
-  const err=document.getElementById("qmErr");err.style.display="none";
-  document.getElementById("qmCreateBtn").style.display="none";
-  if(!name){err.textContent="❗ أدخل اسم فريقك";err.style.display="block";return;}
-  if(_qmActive)return; // بحث جارٍ بالفعل
-
-  const btn=document.getElementById("qmBtn");
-  const TOTAL=30;
-  const deadline=Date.now()+TOTAL*1000;
-  _qmActive=true;
-  btn.disabled=true;
-
+  var uid = fbUser.uid;
+  var prof = null;
   try{
-    // محاولة أولى فورية: هل توجد غرفة عامة جاهزة بنفس عدد الفرق؟
-    btn.textContent="🔎 جارٍ البحث...";
-    var code=await _qmTryOnce(name,wantTc);
-    if(code){return _qmJoin(code,btn);}
-    if(!_qmActive)return;
+    if(window.TahadiDB && TahadiDB.getUser){ prof = await TahadiDB.getUser(uid); }
+  }catch(e){}
 
-    // لا توجد غرفة → أنشئ غرفتك العامة وانتظر فيها (حتى يجدك باحث آخر)
-    // هذا يحل تزاوج باحثَين: الأسرع ينشئ، والآخر يجده
-    const myCode=Math.random().toString(36).slice(2,8).toUpperCase();
-    const room={code:myCode,tc:wantTc,status:"waiting",createdAt:Date.now(),
-      teams:[{id:"t"+Date.now(),name:name,color:"red",points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{remove:false,change:false,luck:false,audience:false,resetTime:false,freeze:false,shield:false,flip:false}}],
-      ci:0,qi:0,phase:"sel",board:null,qs:null,cc:null,cq:null};
-    if(!fbDB){throw new Error("no fb");}
-    await fbDB.ref("rooms/"+myCode).set(room);
-    await fbDB.ref("publicRooms/"+myCode).set({code:myCode,host:name,tc:wantTc,players:1,createdAt:Date.now()});
-    // تنظيف تلقائي: يقتصر على قائمة البحث فقط — لا نحذف الغرفة الحية
-    // (تبديل التطبيقات أو تصفّح شيء آخر يُخرج الصفحة للخلفية وقد يُعتبر انقطاعاً مؤقتاً)
-    try{
-      fbDB.ref("publicRooms/"+myCode).onDisconnect().remove();
-    }catch(e){}
-    localStorage.setItem("tahadi_my_id",room.teams[0].id);
-    localStorage.setItem("tahadi_is_host","1");
+  me = {
+    uid: uid,
+    email: fbUser.email,
+    name: (prof && prof.name) || (fbUser.displayName) || fbUser.email.split('@')[0],
+    phone: (prof && prof.phone) || ""
+  };
 
-    // راقب غرفتي: هل انضم لاعب ثانٍ؟ إن نعم ادخل اللعبة مباشرة
-    var joined=false;
-    var roomRef=fbDB.ref("rooms/"+myCode);
-    roomRef.on("value",function(sn){
-      var d=sn.val();
-      if(d&&d.teams&&d.teams.length>=room.tc&&!joined){
-        joined=true;_qmActive=false;
-        roomRef.off();
-        // ألغِ الحذف التلقائي قبل الانتقال — وإلا يحذف الغرفة لحظة الدخول للعبة
-        try{fbDB.ref("rooms/"+myCode).onDisconnect().cancel();fbDB.ref("publicRooms/"+myCode).onDisconnect().cancel();}catch(e){}
-        closeM("qmMo");
-        ntf("✅ انضم لاعب! جارٍ البدء...","#00E676");
-        setTimeout(function(){window.location.href="game.html?room="+myCode;},500);
+  // اقرأ الخطة (الاشتراك) — بمعرّف Auth أولاً ثم بالبريد (مطابقة لمنطق الرئيسية)
+  me.subscription = null; me.isPro = false;
+  try{
+    if(window.TahadiDB){
+      var plan = null;
+      if(uid && TahadiDB.getPlanByUid){ plan = await TahadiDB.getPlanByUid(uid); }
+      if((!plan || !plan.plan) && TahadiDB.getPlanByEmail){ plan = await TahadiDB.getPlanByEmail(fbUser.email); }
+      if(plan && plan.plan && plan.plan !== 'free'){
+        me.isPro = true;
+        me.subscription = { plan: 'yearly', expires_at: plan.expiresAt, tier: plan.plan };
       }
-    });
+    }
+  }catch(e){}
 
-    // بينما أنتظر انضمام أحد لغرفتي، أواصل البحث عن غرف أخرى (أول من يتحقق يفوز)
-    var scanTick=0;
-    while(_qmActive&&!joined&&Date.now()<deadline){
-      var left=Math.ceil((deadline-Date.now())/1000);
-      btn.textContent="🔎 بانتظار لاعب... ("+left+" ث)";
-      await new Promise(res=>setTimeout(res,1500));
-      // كل ~4.5 ث: افحص غرفاً أخرى أقدم من غرفتي (كسر تعادل الإنشاء المتزامن)
-      if(_qmActive&&!joined&&(++scanTick%3===0)){
+  // Topbar
+  document.getElementById('userName').textContent = me.name;
+  document.getElementById('userAvatar').textContent = me.name.charAt(0) || '؟';
+  document.getElementById('profAvatar').textContent = me.name.charAt(0) || '؟';
+  document.getElementById('profName').value  = me.name;
+  document.getElementById('profEmail').value = me.email;
+
+  // Stats — تُقرأ من المسار الصحيح users/uid/stats (وليس prof.stats)
+  var s = {};
+  try{
+    if(window.firebase && firebase.database){
+      var ss = await firebase.database().ref('users/'+uid+'/stats').once('value');
+      s = ss.val() || {};
+    }
+  }catch(e){}
+  document.getElementById('st-games').textContent = s.games || s.gamesPlayed || 0;
+  document.getElementById('st-wins').textContent  = s.wins  || 0;
+  document.getElementById('st-pts').textContent   = s.total_points || s.points || 0;
+  document.getElementById('st-corr').textContent  = s.total_correct || s.correct || 0;
+
+  renderSubStatus();
+}
+
+/* ═══ SUBSCRIPTION ════════════════════ */
+function renderSubStatus() {
+  const sub = me.subscription;
+  const statusCard = document.getElementById('subStatusCard');
+  const detailCard = document.getElementById('subDetailCard');
+
+  if (sub) {
+    const expires = new Date(sub.expires_at);
+    const daysLeft = Math.ceil((expires - Date.now()) / 86400000);
+    const isElite = sub.tier && String(sub.tier).indexOf('elite') > -1;
+    const tierLabel = isElite ? 'أسطوري 🔥' : 'بطل 👑';
+    const html = `
+      <div class="sub-card">
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">
+          <span class="sub-badge">${tierLabel}</span>
+          <span class="sub-plan">سنوي</span>
+        </div>
+        <div class="sub-expire">ينتهي: ${expires.toLocaleDateString('ar-SA')} (${daysLeft} يوم متبقي)</div>
+        <div class="sub-features">
+          <span class="sub-feat">جميع الأسئلة</span>
+          <span class="sub-feat">أونلاين غير محدود</span>
+          <span class="sub-feat">${isElite ? '6 وسائل مساعدة' : '3 وسائل مساعدة'}</span>
+          <span class="sub-feat">4 فرق</span>
+        </div>
+      </div>`;
+    statusCard.innerHTML = html;
+    detailCard.innerHTML = html;
+  } else {
+    const html = `
+      <div class="card" style="border-color:rgba(255,208,70,.2);background:rgba(255,208,70,.03)">
+        <div style="display:flex;align-items:center;gap:.7rem">
+          <div style="font-size:1.5rem">🔒</div>
+          <div>
+            <div style="font-weight:900;font-size:.9rem">الخطة المجانية</div>
+            <div style="font-size:.72rem;color:var(--dim)">200 سؤال · أوفلاين فقط · 3 وسائل</div>
+          </div>
+          <button class="btn btn-gold btn-sm" onclick="showTab('subscription')" style="margin-right:auto">ترقية ⚡</button>
+        </div>
+      </div>`;
+    statusCard.innerHTML = html;
+    detailCard.innerHTML = html;
+  }
+}
+
+/* ═══ TABS ════════════════════════════ */
+function showTab(tab) {
+  document.querySelectorAll('[id^="tab-"]').forEach(el => el.style.display='none');
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).style.display = 'block';
+  const tabs = ['overview','subscription','payments','games','profile'];
+  document.querySelectorAll('.tab')[tabs.indexOf(tab)]?.classList.add('active');
+  const loaders = { games: loadProgress };
+  loaders[tab]?.();
+}
+
+/* ═══ SELECT PLAN ═════════════════════ */
+function selectPlan(plan) {
+  selPlan = plan;
+  document.getElementById('plan-monthly').classList.toggle('selected', plan==='monthly');
+  document.getElementById('plan-yearly').classList.toggle('selected', plan==='yearly');
+}
+selectPlan('yearly'); // default
+
+/* ═══ CHECKOUT ════════════════════════ */
+async function doCheckout() {
+  // داخل التطبيق: الشراء يتم عبر الصفحة الرئيسية (حيث نظام IAP مُحمّل)
+  if (window.IS_APP || (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
+    window.location.href = 'index.html?goto=pricing';
+    return;
+  }
+  // في المتصفح: وجّه لقسم الأسعار بالرئيسية (فيه الدفع)
+  window.location.href = 'index.html?goto=pricing';
+}
+
+/* ═══ PAYMENT CALLBACK ════════════════ */
+async function checkPaymentCallback() {
+  const params = new URLSearchParams(location.search);
+  const pid = params.get('pid');
+  if (!pid) return;
+
+  // Remove from URL
+  history.replaceState({}, '', location.pathname);
+
+  const r = await apiCall(`/subscriptions/verify/${pid}`);
+  if (!r) return;
+
+  const modal = document.getElementById('payModal');
+  const title = document.getElementById('payModalTitle');
+  const body  = document.getElementById('payModalBody');
+
+  if (r.status === 'paid') {
+    title.textContent = '✅ تم الدفع بنجاح!';
+    body.innerHTML = `<div style="color:var(--green);font-size:1rem;font-weight:700;margin-bottom:.5rem">اشتراكك مفعّل الآن 🎉</div>
+      <div style="color:var(--dim)">الخطة: <strong style="color:var(--text)">${r.plan==='monthly'?'شهرية':'سنوية'}</strong></div>
+      <div style="color:var(--dim)">ينتهي: <strong style="color:var(--text)">${r.expires_at?.slice(0,10)||'—'}</strong></div>`;
+    modal.classList.add('open');
+    // Refresh data
+    const d = await apiCall('/auth/me');
+    if (d) { me.isPro=d.isPro; me.subscription=d.subscription; renderSubStatus(); }
+  } else if (r.status === 'failed') {
+    title.textContent = '❌ فشل الدفع';
+    body.textContent = 'لم يتم إتمام عملية الدفع. حاول مرة أخرى.';
+    modal.classList.add('open');
+  }
+}
+function closePayModal() { document.getElementById('payModal').classList.remove('open'); }
+
+/* ═══ PAYMENTS HISTORY ════════════════ */
+async function loadPayments() {
+  const r = await apiCall('/auth/me/payments');
+  if (!r) return;
+  const el = document.getElementById('paysList');
+  if (!r.payments?.length) { el.innerHTML='<div style="text-align:center;color:var(--dim);padding:1.5rem">لا توجد مدفوعات بعد</div>'; return; }
+  el.innerHTML = r.payments.map(p => `
+    <div class="history-item">
+      <div class="hist-left">
+        <div class="hist-ico" style="background:${p.status==='paid'?'rgba(0,230,118,.1)':'rgba(255,208,70,.1)'}">
+          ${p.status==='paid'?'✅':'⏳'}
+        </div>
+        <div>
+          <div class="hist-title">اشتراك ${p.sub_plan==='monthly'?'شهري':'سنوي'}</div>
+          <div class="hist-date">${p.created_at?.slice(0,10)||'—'}</div>
+        </div>
+      </div>
+      <div class="hist-right">
+        <div class="hist-amount" style="color:${p.status==='paid'?'var(--green)':'var(--gold)'}">${p.amount} ر.س</div>
+        <span class="badge ${p.status==='paid'?'b-paid':p.status==='pending'?'b-pending':'b-failed'}">${p.status==='paid'?'مدفوع':p.status==='pending'?'معلق':'فاشل'}</span>
+      </div>
+    </div>`).join('');
+}
+
+/* ═══ GAME HISTORY ════════════════════ */
+async function loadProgress() {
+  const el = document.getElementById('progressBox');
+  const uid = me && me.uid;
+  // إجمالي البنك حسب الخطة: المشترك = كامل البنك، المجاني = 200
+  const TOTAL_BANK = me && me.isPro ? 2282 : 200;
+  let usedCount = 0, phase = 0;
+  try{
+    if(window.firebase && firebase.database && uid){
+      const s = await firebase.database().ref('users/'+uid+'/usedQuestions').once('value');
+      const v = s.val();
+      if(v && Array.isArray(v.ids)){ usedCount = v.ids.length; phase = v.phase||0; }
+    }
+  }catch(e){}
+  const pct = Math.min(100, Math.round((usedCount / TOTAL_BANK) * 100));
+  const remaining = Math.max(0, TOTAL_BANK - usedCount);
+  el.innerHTML =
+    '<div style="text-align:center;padding:.5rem 0 1rem">'+
+      '<div style="font-size:2.2rem;font-weight:900;color:var(--gold);font-family:\'Cairo\',sans-serif">'+usedCount+' / '+TOTAL_BANK+'</div>'+
+      '<div style="color:var(--dim);font-size:.8rem">سؤال أكملته'+(phase>0?' — المرحلة '+(phase+1):'')+'</div>'+
+    '</div>'+
+    '<div style="background:rgba(255,255,255,.06);border-radius:99px;height:14px;overflow:hidden;margin:.5rem 0">'+
+      '<div style="width:'+pct+'%;height:100%;background:linear-gradient(90deg,#00E5FF,#FFD046);border-radius:99px;transition:width .5s"></div>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--dim);margin-top:.4rem">'+
+      '<span>'+pct+'% مكتمل</span>'+
+      '<span>'+remaining+' سؤال متبقٍ</span>'+
+    '</div>'+
+    (remaining===0
+      ? '<div style="text-align:center;color:var(--green);font-weight:800;margin-top:1rem">🎉 أكملت كل الأسئلة! المرحلة القادمة بترتيب جديد</div>'
+      : '<div style="text-align:center;color:var(--dim);font-size:.76rem;margin-top:1rem">الأسئلة لا تتكرر حتى تكمل البنك كاملاً، ثم تبدأ مرحلة جديدة بترتيب عشوائي</div>')+
+    (!me.isPro ? '<div style="text-align:center;margin-top:1rem"><button class="btn btn-gold btn-sm" onclick="showTab(\'subscription\')">اشترك لفتح كل الأسئلة ⚡</button></div>' : '');
+}
+
+/* ═══ PROFILE ═════════════════════════ */
+// أداة: تمنع أي استدعاء Firebase من التعلّق (hang) بلا نهاية
+function _delTimeout(promise, ms, label){
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('timeout:'+(label||''))); }, ms); })
+  ]);
+}
+
+// ═══ خروج تام من الجهاز: مسح كل الجلسات + الكاش + توجيه صلب ═══
+async function hardLogout(){
+  try{ window._forceLoggedOut = true; }catch(e){}
+
+  var _gone = false;
+  function _go(){
+    if(_gone) return; _gone = true;
+    try{ window.location.replace('index.html?loggedout=1'); }
+    catch(e){ window.location.href = 'index.html?loggedout=1'; }
+  }
+  // شبكة أمان: مهما تعلّق أي مسح، ننتقل خلال 3 ثوانٍ كحد أقصى
+  setTimeout(_go, 3000);
+
+  // 1) امسح جلسة التطبيق المحلية (نفس آلية DB) + كل التخزين
+  try{ if(window.DB && DB.clearUser) DB.clearUser(); }catch(e){}
+  try{ localStorage.clear(); }catch(e){}
+  try{ sessionStorage.clear(); }catch(e){}
+
+  // 2) تسجيل خروج فعلي من Firebase (بمهلة حتى لا يتعلّق)
+  try{ if(window.firebase && firebase.auth){ await _delTimeout(firebase.auth().signOut(), 2500, 'signOut'); } }catch(e){}
+
+  // 3) احذف جلسة Firebase من IndexedDB (هي التي قد تُبقي الحساب)
+  try{
+    if(window.indexedDB){
+      try{ indexedDB.deleteDatabase('firebaseLocalStorageDb'); }catch(e){}
+      if(indexedDB.databases){
         try{
-          var snap=await fbDB.ref("publicRooms").get();
-          var all=snap.val()||{}, now=Date.now();
-          var older=Object.values(all).filter(function(r){
-            return r&&r.code&&r.code!==myCode&&(r.players||1)<(r.tc||2)
-                   &&(r.tc||2)===wantTc
-                   &&(r.createdAt||0)<room.createdAt; // أقدم مني فقط → يمنع الازدواج
-          }).sort(function(a,b){return a.createdAt-b.createdAt;});
-          if(older.length){
-            var other=older[0];
-            var rs=await fbDB.ref("rooms/"+other.code).get();
-            var od=rs.val();
-            if(od&&od.status==="waiting"&&od.teams.length<od.tc){
-              // انضم لغرفته واحذف غرفتي (وألغِ حذفها التلقائي أولاً لتفادي أي تعارض)
-              joined=true;_qmActive=false;roomRef.off();
-              try{fbDB.ref("rooms/"+myCode).onDisconnect().cancel();fbDB.ref("publicRooms/"+myCode).onDisconnect().cancel();}catch(e){}
-              fbDB.ref("rooms/"+myCode).remove().catch(function(){});
-              fbDB.ref("publicRooms/"+myCode).remove().catch(function(){});
-              var takenC=od.teams.map(function(t){return t.color;});
-              var free=["red","green","yellow","cyan"].find(function(c){return takenC.indexOf(c)<0;})||"green";
-              var jr=await joinRoomCore(other.code,name,free);
-              if(jr.ok){closeM("qmMo");ntf("✅ وجدنا لك غرفة!","#00E676");
-                setTimeout(function(){window.location.href="game.html?room="+other.code;},500);return;}
-            }
-          }
+          var dbs = await _delTimeout(indexedDB.databases(), 1500, 'idb');
+          (dbs||[]).forEach(function(d){ if(d && d.name){ try{ indexedDB.deleteDatabase(d.name); }catch(e){} } });
         }catch(e){}
       }
     }
+  }catch(e){}
 
-    // انتهى الوقت أو أُلغي بلا انضمام → نظّف غرفتي
-    if(!joined){
-      roomRef.off();
-      fbDB.ref("rooms/"+myCode).remove().catch(function(){});
-      fbDB.ref("publicRooms/"+myCode).remove().catch(function(){});
-      _qmActive=false;
-      btn.disabled=false;btn.textContent="🔎 ابحث عن غرفة";
-      err.innerHTML="لم ينضم أحد خلال 30 ثانية.<br>جرّب مرة أخرى، أو أنشئ <b>غرفة عامة</b> وشارك رمزها.";
-      err.style.display="block";
-      document.getElementById("qmCreateBtn").style.display="block";
+  // 4) امسح Cache Storage
+  try{
+    if(window.caches && caches.keys){
+      var keys = await _delTimeout(caches.keys(), 1500, 'caches');
+      await Promise.all((keys||[]).map(function(k){ return caches.delete(k); }));
     }
+  }catch(e){}
+
+  _go();
+}
+
+// ── نافذة كلمة مرور مخفية (بديل prompt الذي يُظهر النص) ──
+function askDeletePassword(){
+  return new Promise(function(resolve){
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:99999;padding:1rem';
+    ov.innerHTML =
+      '<div style="background:#101a30;border:1px solid #2a3a5c;border-radius:16px;padding:1.4rem;width:100%;max-width:340px;text-align:center;font-family:inherit;direction:rtl">'
+      + '<div style="font-size:2rem;margin-bottom:.4rem">🗑️</div>'
+      + '<div style="font-weight:900;color:#fff;font-size:1.05rem;margin-bottom:.4rem">حذف الحساب نهائياً</div>'
+      + '<div style="color:#9fb3d1;font-size:.8rem;margin-bottom:1rem;line-height:1.5">أدخل كلمة مرورك لتأكيد الحذف. سيتم حذف حسابك وكل بياناتك نهائياً ولا يمكن التراجع.</div>'
+      + '<input id="_delPw" type="password" autocomplete="current-password" placeholder="كلمة المرور" '
+      + 'style="width:100%;padding:.75rem;border-radius:10px;border:1px solid #2a3a5c;background:#0a1122;color:#fff;text-align:center;margin-bottom:1rem;font-size:1rem;box-sizing:border-box">'
+      + '<div style="display:flex;gap:.6rem">'
+      + '<button id="_delCancel" style="flex:1;padding:.65rem;border-radius:10px;border:1px solid #2a3a5c;background:transparent;color:#9fb3d1;font-weight:700;cursor:pointer">إلغاء</button>'
+      + '<button id="_delOk" style="flex:1;padding:.65rem;border-radius:10px;border:0;background:#FF3D5A;color:#fff;font-weight:800;cursor:pointer">حذف نهائي</button>'
+      + '</div></div>';
+    document.body.appendChild(ov);
+    var inp = ov.querySelector('#_delPw'); setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 50);
+    function done(v){ try{ document.body.removeChild(ov); }catch(e){} resolve(v); }
+    ov.querySelector('#_delCancel').onclick = function(){ done(null); };
+    ov.querySelector('#_delOk').onclick    = function(){ done(inp.value || ''); };
+    inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') done(inp.value || ''); });
+  });
+}
+
+// حذف الحساب نهائياً (مطلب Apple 5.1.1) — نسخة v6
+// إصلاح جذري: نأخذ currentUser طازجاً قبل كل خطوة (يمنع المرجع القديم الذي لا يحذف)
+async function deleteAccount() {
+  console.log('[DELETE] deleteAccount v6 يعمل ✅');
+
+  var auth = (window.firebase && firebase.auth) ? firebase.auth() : null;
+  if(!auth){ ntf('❌ نظام المصادقة غير متاح','#FF3D5A'); return; }
+  if(!auth.currentUser){ ntf('يتم تسجيل خروجك...','#00E5FF'); await hardLogout(); return; }
+
+  var email = auth.currentUser.email || '';
+  var uid   = auth.currentUser.uid;
+
+  // خطوة واحدة: كلمة المرور المخفية = التأكيد نفسه
+  var pw = await askDeletePassword();
+  if(pw === null) return;
+  if(!pw){ ntf('أدخل كلمة المرور لتأكيد الحذف','#FFD046'); return; }
+
+  ntf('جارٍ التحقق...','#00E5FF');
+
+  // 1) إعادة مصادقة على المستخدم الطازج (وليس مرجعاً قديماً التُقط قبل النافذة)
+  try{
+    var u1 = auth.currentUser;
+    if(!u1){ ntf('❌ انتهت الجلسة — أعد الدخول','#FF3D5A'); return; }
+    var cred = firebase.auth.EmailAuthProvider.credential(email, pw);
+    await u1.reauthenticateWithCredential(cred);
+    console.log('[DELETE] ✅ إعادة المصادقة نجحت');
   }catch(e){
-    _qmActive=false;
-    btn.disabled=false;btn.textContent="🔎 ابحث عن غرفة";
-    err.textContent="تعذّر البحث — تحقق من الاتصال";err.style.display="block";
+    var c = (e && e.code) || '';
+    if(c === 'auth/wrong-password' || c === 'auth/invalid-credential' || c === 'auth/invalid-login-credentials'){
+      alert('❌ كلمة المرور غير صحيحة — لم يُحذف الحساب'); return;
+    }
+    if(c === 'auth/too-many-requests'){ alert('❌ محاولات كثيرة — انتظر ثم أعد المحاولة'); return; }
+    alert('❌ تعذّر التحقق: '+(e && (e.code||e.message) || '')); return;
   }
-}
 
-function _qmJoin(code,btn){
-  _qmActive=false;
-  btn.disabled=false;btn.textContent="🔎 ابحث عن غرفة";
-  closeM("qmMo");
-  ntf("✅ وجدنا لك غرفة! جارٍ الانضمام...","#00E676");
-  setTimeout(function(){window.location.href="game.html?room="+code;},600);
-}
+  ntf('جارٍ حذف حسابك...','#00E5FF');
 
-function qmToCreate(){
-  _qmActive=false;
-  const name=document.getElementById("qmName").value.trim();
-  const tc=document.getElementById("qmCount").value;
-  closeM("qmMo");
-  openCreate();
-  if(name)document.getElementById("cName").value=name;
-  const cCount=document.getElementById("cCount");if(cCount)cCount.value=tc;
-  const pub=document.getElementById("cPublic");if(pub)pub.checked=true;
-}
+  // 2) احذف بيانات القاعدة والجلسة نشطة (لا نتعلّق)
+  try{ await _delTimeout(firebase.database().ref('users/'+uid).remove(), 6000, 'db'); }catch(e){ console.warn('[DELETE] db remove:', e && e.message); }
+  try{
+    var key = btoa(email.toLowerCase()).replace(/[^a-zA-Z0-9]/g,'');
+    await _delTimeout(firebase.database().ref('emailIndex/'+key).remove(), 6000, 'idx');
+  }catch(e){ console.warn('[DELETE] idx remove:', e && e.message); }
 
-function buildOff(){
-  const n=parseInt(document.getElementById("offCount")?.value||"2");
-  const el=document.getElementById("offForms");if(!el)return;el.innerHTML="";
-  for(let i=0;i<n;i++)el.innerHTML+=`<div class="fg"><label>اسم الفريق ${i+1}</label><input type="text" id="ofn${i}" class="inp" value="فريق ${i+1}" maxlength="20"></div>`;
-}
-function doOff(){
-  const n=parseInt(document.getElementById("offCount").value),teams=[];
-  for(let i=0;i<n;i++){const nm=(document.getElementById(`ofn${i}`)?.value||`فريق ${i+1}`).trim();teams.push({id:`t${i}`,name:nm,color:OFC[i],points:0,ca:0,gc:0,svc:0,mbc:0,yqc:0,ll:{remove:false,change:false,luck:false,audience:false,resetTime:false,freeze:false,shield:false,flip:false}});}
-  localStorage.setItem("tahadi_offline_state",JSON.stringify({code:"OFFLINE",tc:n,status:"playing",teams,ci:0,qi:0,phase:"sel",board:null,qs:null,cc:null,cq:null}));
-  closeM("offMo");window.location.href="game.html?mode=offline";
-}
-
-function ntf(msg,color="#00E5FF"){
-  const el=document.getElementById("ntf");el.textContent=msg;el.style.color=color;el.style.borderColor=color+"42";el.style.boxShadow=`0 0 16px ${color}1E,0 8px 20px rgba(0,0,0,.5)`;
-  el.classList.add("on");clearTimeout(ntout);ntout=setTimeout(()=>el.classList.remove("on"),3000);
-}
-function openSubscribe(plan){
-  var token=authGet("tahadi_token");
-  if(!token){
-    // غير مسجّل — احفظ الخطة وافتح تسجيل الدخول
-    localStorage.setItem("tahadi_subscribe_plan", plan);
-    showAuthModal();
+  // 3) احذف حساب المصادقة نفسه — على المستخدم الطازج، بلا مهلة مصطنعة قد تُفشل عملية ناجحة
+  try{
+    var u2 = auth.currentUser;
+    if(!u2){ throw new Error('لا يوجد مستخدم حالي لحذفه'); }
+    await u2.delete();
+    console.log('[DELETE] ✅ نُفّذ user.delete()');
+  }catch(e){
+    console.error('[DELETE] ❌ فشل user.delete():', e && (e.code||e.message));
+    alert('❌ فشل حذف الحساب: '+(e && (e.code||e.message) || 'خطأ')+'\n\nصوّر هذه الرسالة وأرسلها.');
     return;
   }
-  // داخل التطبيق: استخدم الشراء داخل التطبيق (IAP) — يُفعّل في تحديث 1.1
-  if(window.IS_APP){
-    if(window.IAP && IAP.available()){
-      doIAPPurchase(plan);
-    } else {
-      // النسخة النظيفة: لا شراء داخل التطبيق بعد
-      ntf("الاشتراك متاح قريباً","#8AB8FF");
-    }
-    return;
+
+  // 4) تحقّق فعلي أن الحساب اختفى (currentUser صار null بعد الحذف الناجح)
+  if(auth.currentUser){
+    console.error('[DELETE] ⚠️ currentUser لا يزال موجوداً بعد delete()');
+    try{ await auth.currentUser.delete(); }catch(e){}
   }
-  // في المتصفح: الطريقة المعتادة (دفع مباشر)
-  doSubscribe(plan);
+  // نتيجة قاطعة على الشاشة (بلا حاجة لـ Console)
+  alert(auth.currentUser
+    ? '❌ الحساب لم يُحذف — currentUser ما زال موجوداً. صوّر هذه الرسالة.'
+    : '✅ تم حذف الحساب بنجاح — سيتم تسجيل خروجك.');
+
+  // 5) تنظيف الجلسة المحلية بالكامل فوراً قبل التوجيه
+  window._forceLoggedOut = true;
+  try{ me = null; }catch(e){}
+  try{ window.me = null; }catch(e){}
+  try{ if(window.DB && DB.clearUser) DB.clearUser(); }catch(e){}
+  try{ localStorage.clear(); }catch(e){}
+  try{ sessionStorage.clear(); }catch(e){}
+  try{ auth.signOut(); }catch(e){}
+  try{ indexedDB.deleteDatabase('firebaseLocalStorageDb'); }catch(e){}
+
+  // 6) توجيه فوري
+  window.location.replace('index.html?loggedout=1');
 }
 
-// ── الشراء داخل التطبيق عبر Apple/Google ──
-function doIAPPurchase(plan){
-  var isPro=authGet("tahadi_pro")==="1";
-  var isElite=authGet("tahadi_elite")==="1";
-  if(isElite){ntf("✅ أنت مشترك أسطوري بالفعل!","#00E676");return;}
-  if(isPro&&plan==="pro"){ntf("✅ أنت مشترك بطل بالفعل!","#00E676");return;}
-
-  if(!window.IAP || !IAP.available()){
-    ntf("نظام الشراء غير متاح على جهازك","#FF3D5A");
-    return;
-  }
-  ntf("جارٍ فتح نافذة الشراء...","#00E5FF");
-  IAP.purchase(plan).then(function(res){
-    if(res.success){
-      var planAr = res.tier==="elite" ? "أسطوري" : "بطل";
-      ntf("🎉 تم تفعيل اشتراك "+planAr+"!","#00E676");
-      if(typeof renderUserBar==="function") renderUserBar();
-      // أغلق أي نافذة اشتراك مفتوحة
-      try{ closeM("subModal"); }catch(e){}
-    } else if(res.cancelled){
-      ntf("أُلغيت عملية الشراء","#8AB8FF");
-    } else {
-      ntf("❌ "+(res.error||"تعذّر إتمام الشراء"),"#FF3D5A");
-    }
-  });
-}
-
-// ── استعادة المشتريات (للمستخدم الذي أعاد تثبيت التطبيق) ──
-function restorePurchases(){
-  if(!window.IAP || !IAP.available()){
-    ntf("الاستعادة متاحة داخل التطبيق فقط","#8AB8FF");
-    return;
-  }
-  ntf("جارٍ استعادة مشترياتك...","#00E5FF");
-  IAP.restore().then(function(res){
-    if(res.success && res.tier){
-      var planAr = res.tier==="elite" ? "أسطوري" : "بطل";
-      ntf("✅ استُعيد اشتراك "+planAr+"!","#00E676");
-      if(typeof renderUserBar==="function") renderUserBar();
-    } else if(res.success){
-      ntf("لا توجد مشتريات سابقة لاستعادتها","#8AB8FF");
-    } else {
-      ntf("❌ "+(res.error||"تعذّرت الاستعادة"),"#FF3D5A");
-    }
-  });
-}
-
-function doSubscribe(plan){
-  if(window.IS_APP){ntf("هذه الميزة غير متاحة داخل التطبيق","#8AB8FF");return;}
-  var isPro=authGet("tahadi_pro")==="1";
-  var isElite=authGet("tahadi_elite")==="1";
-
-  // إذا مشترك Elite بالفعل
-  if(isElite){ntf("✅ أنت مشترك أسطوري بالفعل!","#00E676");return;}
-  // إذا مشترك Pro ويريد Pro
-  if(isPro&&plan==="pro"){ntf("✅ أنت مشترك بطل بالفعل!","#00E676");return;}
-
-  var prices={
-    pro:  {amount:900,  label:"Pro سنوي — تحدي الأرقام"},
-    elite:{amount:1900, label:"Elite سنوي — تحدي الأرقام"}
-  };
-  var info=prices[plan];
-  if(!info){ntf("خطة غير صحيحة","#FF3D5A");return;}
-
-  // ترقية من Pro إلى Elite: ادفع الفرق فقط (19 - 9 = 10 ر.س)
-  if(isPro&&plan==="elite"){
-    info={amount:1000, label:"ترقية إلى Elite — تحدي الأرقام"};
-    ntf("ترقية إلى أسطوري — تدفع الفرق فقط (10 ر.س)","#FFD046");
-  }
-
-  var pk=localStorage.getItem("tahadi_moyasar_pk")||"";
-  if(!pk||pk.length<20){
-    // لا يوجد دفع إلكتروني مفعّل → اعرض صفحة الدفع اليدوي
-    openManualPay(plan, info);
-    return;
-  }
-  ntf("جارٍ التحويل لصفحة الدفع...","#00E5FF");
-  var email="";try{email=JSON.parse(authGet("tahadi_user")||"{}").email||"";}catch(e){}
-  var cbUrl=window.location.origin+window.location.pathname+"?paid=1&plan="+plan+"_yearly";
-  var params=[
-    "publishable_api_key="+encodeURIComponent(pk),
-    "amount="+info.amount,
-    "currency=SAR",
-    "description="+encodeURIComponent(info.label),
-    "callback_url="+encodeURIComponent(cbUrl)
-  ];
-  if(email) params.push("metadata[email]="+encodeURIComponent(email));
-  setTimeout(function(){window.location.href="https://checkout.moyasar.com/?"+params.join("&");},800);
-}
-
-// ── صفحة الدفع اليدوي ──
-function _paySettings(){
-  try{return JSON.parse(localStorage.getItem("tahadi_admin_settings")||"{}");}catch(e){return {};}
-}
-function openManualPay(plan, info){
-  var s=_paySettings();
-  // حدّث من Firebase ثم اعرض
-  if(window.TahadiDB&&window.TahadiDB.getSettings){
-    TahadiDB.getSettings().then(function(fs){
-      if(fs) localStorage.setItem("tahadi_admin_settings",JSON.stringify(fs));
-      _renderManualPay(plan, info, fs||s);
-    }).catch(function(){_renderManualPay(plan, info, s);});
-  } else { _renderManualPay(plan, info, s); }
-}
-function _renderManualPay(plan, info, s){
-  s=s||{};
-  var amount=(info.amount/100).toFixed(0);
-  var email="";try{email=JSON.parse(authGet("tahadi_user")||"{}").email||"";}catch(e){}
-  var planAr = plan==="elite" ? "أسطوري" : "بطل";
-  var rows="";
-  function row(label,val,copy){
-    if(!val) return "";
-    return '<div class="mp-row"><span class="mp-label">'+label+'</span>'+
-      '<span class="mp-val" id="mpv_'+copy+'">'+val+'</span>'+
-      '<button class="mp-copy" onclick="_mpCopy(\''+copy+'\')">نسخ</button></div>';
-  }
-  rows+=row("اسم المستفيد", s.payName, "name");
-  rows+=row("البنك", s.payBank, "bank");
-  rows+=row("الآيبان", s.payIban, "iban");
-  rows+=row("رقم الحساب", s.payAccount, "acc");
-  rows+=row("STC Pay", s.payStc, "stc");
-  rows+=row("UrPay", s.payUrpay, "urpay");
-  if(!rows){
-    rows='<p style="color:#FF3D5A;text-align:center;padding:1rem">لم تُضَف بيانات الدفع بعد. تواصل مع الدعم.</p>';
-  }
-  var wa=(s.payWhatsapp||"").replace(/[^0-9]/g,"");
-  var mailto=s.payEmail||"dr.fajry@gmail.com";
-  var waMsg=encodeURIComponent("السلام عليكم، أرغب في تفعيل اشتراك "+planAr+" ("+amount+" ر.س).\nالإيميل المسجّل: "+email+"\nمرفق إيصال التحويل.");
-  var subj=encodeURIComponent("طلب تفعيل اشتراك "+planAr+" — تحدي الأرقام");
-  var body=encodeURIComponent("الإيميل المسجّل: "+email+"\nالخطة: "+planAr+" ("+amount+" ر.س)\n\nمرفق إيصال التحويل.");
-  var html=''+
-  '<div class="mp-overlay" id="mpOverlay" onclick="if(event.target===this)closeManualPay()">'+
-    '<div class="mp-box">'+
-      '<button class="mp-close" onclick="closeManualPay()">×</button>'+
-      '<div class="mp-head">'+
-        '<div class="mp-title">تفعيل اشتراك '+planAr+'</div>'+
-        '<div class="mp-amount">'+amount+' ر.س / سنة</div>'+
-      '</div>'+
-      '<div class="mp-steps">'+
-        '<div class="mp-step"><b>1</b> حوّل المبلغ على أحد الحسابات التالية</div>'+
-      '</div>'+
-      '<div class="mp-rows">'+rows+'</div>'+
-      (s.payQr?
-        '<div style="text-align:center;margin:.8rem 0">'+
-          '<div style="font-size:.78rem;color:var(--dim);margin-bottom:.4rem">أو امسح باركود الحساب من تطبيق بنكك</div>'+
-          '<img src="'+s.payQr+'" alt="باركود الحساب" style="max-width:150px;border-radius:12px;background:#fff;padding:6px">'+
-        '</div>':'')+
-      '<div class="mp-steps">'+
-        '<div class="mp-step"><b>2</b> أرسل صورة الإيصال + إيميلك المسجّل</div>'+
-      '</div>'+
-      '<div class="mp-send">'+
-        (wa?'<a class="mp-wa" href="https://wa.me/'+wa+'?text='+waMsg+'" target="_blank">📱 إرسال عبر واتساب</a>':'')+
-        '<a class="mp-mail" href="mailto:'+mailto+'?subject='+subj+'&body='+body+'">✉️ إرسال عبر الإيميل</a>'+
-      '</div>'+
-      '<p class="mp-note">سيتم تفعيل اشتراكك خلال ساعات من استلام الإيصال والتأكد منه.</p>'+
-    '</div>'+
-  '</div>';
-  var ex=document.getElementById("mpOverlay");if(ex)ex.remove();
-  document.body.insertAdjacentHTML("beforeend",html);
-}
-function _mpCopy(id){
-  var el=document.getElementById("mpv_"+id);if(!el)return;
-  var t=el.textContent;
-  if(navigator.clipboard){navigator.clipboard.writeText(t);}
-  else{var ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();}
-  ntf("✅ تم النسخ","#00E676");
-}
-function closeManualPay(){var o=document.getElementById("mpOverlay");if(o)o.remove();}
-
-// Handle payment return
-(function(){
-  var p=new URLSearchParams(location.search);
-  var paid=p.get("paid"), plan=p.get("plan")||"";
-  if(paid==="1"&&plan){
-    history.replaceState({},"",location.pathname);
-    authSetOne("tahadi_pro","1");
-    if(plan.startsWith("elite")) authSetOne("tahadi_elite","1");
-    // Save subscription record in admin DB
-    var phone="";try{phone=JSON.parse(authGet("tahadi_user")||"{}").phone||"";}catch(e){}
-    var adminKey="tahadi_admin_v1";
-    var data=JSON.parse(localStorage.getItem(adminKey)||'{"users":[],"subscriptions":[],"grants":[],"settings":{}}');
-    var days=365;
-    var sub={
-      phone:phone,uid:(_u.uid||""),plan:plan,
-      amount:plan.includes("yearly")?(plan.includes("elite")?149:69):(plan.includes("elite")?19:9),
-      note:"دفع إلكتروني",createdAt:new Date().toISOString(),
-      expiresAt:new Date(Date.now()+days*86400000).toISOString()
-    };
-    data.subscriptions.push(sub);
-    localStorage.setItem(adminKey,JSON.stringify(data));
-    // Save to Firebase
-    if(window.TahadiDB&&_u.email){
-      var planName=plan.indexOf("elite")>-1?"elite_yearly":"pro_yearly";
-      var exp=new Date(Date.now()+365*86400000).toISOString();
-      TahadiDB.setUserPlan(_u.email,planName,exp).catch(function(){});
-    }
-    // Affiliate: record commission
-    if(window.Affiliate){
-      try{
-        var _u=JSON.parse(authGet("tahadi_user")||"{}");
-        var _uid=_u.uid||("u_"+(_u.phone||"").replace(/[^0-9]/g,""));
-        var _planMap={
-          "pro_yearly":"pro_year",
-          "elite_yearly":"elite_year"
-        };
-        Affiliate.recordSubscriptionCommission(_uid, _planMap[plan]||plan).catch(function(){});
-      }catch(e){}
-    }
-    ntf("🎉 تم تفعيل الاشتراك بنجاح!","#00E676");
-    setTimeout(function(){location.reload();},1500);
-  }
-})();
-
-/* ══════════════════════════════════
-   AUTH SYSTEM — إيميل + كلمة مرور
-   الرمز يُرسل مرة واحدة فقط عند التسجيل الجديد
-══════════════════════════════════ */
-var _otpTimer=null, _otpCode="123456", _pendingEmail="", _pendingName="", _pendingPass="";
-var _authBusy=false;          // قفل يمنع الطلبات المتوازية (Enter + نقرة زر)
-var _lastOtpSend={};          // آخر وقت إرسال لكل إيميل — يمنع تكرار الرسائل
-
-// EmailJS — مفاتيح ثابتة للجميع (تُحفظ هنا ليرسل لكل المستخدمين)
-var EMAILJS_SVC = "service_vbq9ib7";
-var EMAILJS_TPL = "template_5lj662b";
-var EMAILJS_PUB = "UZ2o-858Ww_wX6kUE";
-
-function showAuthModal(){
-  authShowStep(1);
-  var e=document.getElementById("authEmail"); if(e)e.value="";
-  var p=document.getElementById("authPass"); if(p)p.value="";
-  var n=document.getElementById("authName"); if(n)n.value="";
-  document.getElementById("authNameWrap").style.display="none";
-  document.getElementById("authS1Err").style.display="none";
-  document.getElementById("authModal").classList.add("on");
-  setTimeout(function(){document.getElementById("authEmail").focus();},300);
-}
-
-function authShowStep(n){
-  [1,2,3,4,5].forEach(function(i){
-    var el=document.getElementById("authS"+i);
-    if(el) el.style.display=i===n?"block":"none";
-  });
-}
-
-/* ── نسيت كلمة المرور (رابط إعادة تعيين آمن من Firebase) ── */
-var _fpEmail="", _fpCode="", _fpUid="";
-function startForgot(){
-  var email=(document.getElementById("authEmail").value||"").trim().toLowerCase();
-  var err=document.getElementById("authS1Err");err.style.display="none";
-  if(!email||email.indexOf("@")<0){err.textContent="❗ أدخل بريدك الإلكتروني أولاً ثم اضغط نسيت كلمة المرور";err.style.display="block";return;}
-  if(!window.TahadiAuth||!TahadiAuth.ready()){err.textContent="❗ نظام الدخول غير متاح، حدّث الصفحة";err.style.display="block";return;}
-
-  var btn=document.getElementById("authSubmitBtn");
-  btn.disabled=true;
-  TahadiAuth.resetPassword(email).then(function(){
-    btn.disabled=false;
-    ntf("✅ أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك","#00E676");
-    err.style.display="none";
-  }).catch(function(e){
-    btn.disabled=false;
-    var code=(e&&e.code)||"";
-    if(code==="auth/user-not-found"){
-      // لأمانك، Firebase لا يكشف إن كان البريد مسجّلاً — نعرض نفس الرسالة
-      ntf("✅ إن كان البريد مسجّلاً، فستصلك رسالة إعادة التعيين","#00E676");
-    } else if(code==="auth/invalid-email"){
-      err.textContent="❗ البريد الإلكتروني غير صحيح";err.style.display="block";
-    } else {
-      err.textContent="❌ تعذّر الإرسال: "+(e&&e.message||code);err.style.display="block";
-    }
-  });
-}
-// دوال الرمز القديمة (لم تعد مستخدمة، أُبقيت فارغة لتفادي أخطاء الاستدعاء)
-function fpIn(i){}
-function fpKey(i,e){}
-function fpVerify(){}
-function fpSetNew(){}
-
-/* قاعدة المستخدمين المحلية + Firebase */
-function getUsers(){
-  try{return JSON.parse(localStorage.getItem("tahadi_users")||"{}");}catch(e){return {};}
-}
-function saveUsers(u){localStorage.setItem("tahadi_users",JSON.stringify(u));}
-function hashPass(p){
-  // تشفير بسيط (ليس آمناً 100% لكن كافٍ لهذا الغرض)
-  var h=0;for(var i=0;i<p.length;i++){h=((h<<5)-h+p.charCodeAt(i))|0;}
-  return String(h);
-}
-
-function authSubmit(){
-  var email=document.getElementById("authEmail").value.trim().toLowerCase();
-  var pass =document.getElementById("authPass").value;
-  var nameEl=document.getElementById("authName");
-  var name =(nameEl?nameEl.value:"").trim();
-  var err  =document.getElementById("authS1Err");
-  err.style.display="none";
-  if(!email||!email.includes("@")||!email.includes(".")){
-    err.textContent="❗ أدخل بريداً إلكترونياً صحيحاً";err.style.display="block";return;
-  }
-  if(!pass||pass.length<6){
-    err.textContent="❗ كلمة المرور 6 أحرف على الأقل";err.style.display="block";return;
-  }
-  if(_authBusy) return;
-  if(!window.TahadiAuth||!TahadiAuth.ready()){
-    err.textContent="❗ نظام الدخول غير متاح، حدّث الصفحة";err.style.display="block";return;
-  }
-
-  var btn=document.getElementById("authSubmitBtn");
-  _authBusy=true;
-  btn.disabled=true;btn.textContent="جارٍ الدخول...";
-
-  // الشاشة الذكية: جرّب الدخول أولاً
-  TahadiAuth.signIn(email,pass).then(function(fbUser){
-    _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
-    // أعِد تحميل حالة المستخدم من Firebase (قد يكون فعّل بريده لكن الحالة قديمة)
-    fbUser.reload().then(function(){
-      var fresh=TahadiAuth.currentUser()||fbUser;
-      // ── منع الدخول حتى تفعيل البريد ──
-      if(fresh && !fresh.emailVerified){
-        showVerifyGate(email);
-        return;
-      }
-      finishAuthLogin(fresh);
-    }).catch(function(){
-      if(fbUser && !fbUser.emailVerified){ showVerifyGate(email); return; }
-      finishAuthLogin(fbUser);
-    });
-  }).catch(function(e){
-    var code=(e&&e.code)||"";
-    if(code==="auth/user-not-found"||code==="auth/invalid-credential"){
-      // قد يكون مستخدماً جديداً — حاول التسجيل
-      // (invalid-credential يشمل أحياناً "غير موجود" في النسخ الحديثة)
-      trySignup(email,pass,name,btn,err);
-    } else if(code==="auth/wrong-password"){
-      _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
-      err.textContent="❌ كلمة المرور غير صحيحة";err.style.display="block";
-    } else if(code==="auth/too-many-requests"){
-      _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
-      err.textContent="❗ محاولات كثيرة، انتظر قليلاً ثم أعد المحاولة";err.style.display="block";
-    } else {
-      _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
-      err.textContent="❌ تعذّر الدخول: "+(e&&e.message||code);err.style.display="block";
-    }
-  });
-}
-
-// محاولة التسجيل (عندما لا يوجد حساب بالبريد)
-function trySignup(email,pass,name,btn,err){
-  btn.textContent="جارٍ إنشاء الحساب...";
-  TahadiAuth.signUp(email,pass,name).then(function(fbUser){
-    _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
-    // سجّل جسر البريد↔المعرّف (للوحة التحكم)
-    if(window.TahadiDB&&TahadiDB.indexEmail){TahadiDB.indexEmail(email,fbUser.uid).catch(function(){});}
-    // لا ندخل مباشرة — نطلب تفعيل البريد أولاً
-    showVerifyGate(email);
-  }).catch(function(e){
-    _authBusy=false;btn.disabled=false;btn.textContent="دخول / تسجيل →";
-    var code=(e&&e.code)||"";
-    if(code==="auth/email-already-in-use"){
-      // الحساب موجود لكن كلمة المرور خاطئة (وصلنا هنا من فشل دخول)
-      err.textContent="❌ كلمة المرور غير صحيحة";err.style.display="block";
-    } else if(code==="auth/weak-password"){
-      err.textContent="❗ كلمة المرور ضعيفة (6 أحرف على الأقل)";err.style.display="block";
-    } else if(code==="auth/invalid-email"){
-      err.textContent="❗ البريد الإلكتروني غير صحيح";err.style.display="block";
-    } else {
-      err.textContent="❌ تعذّر إنشاء الحساب: "+(e&&e.message||code);err.style.display="block";
-    }
-  });
-}
-
-// شاشة "فعّل بريدك" — تمنع الدخول حتى التفعيل
-function showVerifyGate(email){
-  var msg="📧 فعّل بريدك أولاً\n\n"+
-    "أرسلنا رابط تفعيل إلى:\n"+email+"\n\n"+
-    "افتح الرابط في بريدك (تحقق من مجلد الرسائل غير المرغوبة Spam)، ثم عُد واضغط \"لقد فعّلت\".";
-  // نافذة بسيطة داخل شاشة الدخول
-  var box=document.getElementById("verifyGate");
-  if(!box){
-    box=document.createElement("div");
-    box.id="verifyGate";
-    box.style.cssText="margin-top:1rem;padding:1rem;border-radius:12px;background:rgba(255,208,70,.08);border:1px solid rgba(255,208,70,.3);text-align:center;";
-    var s1=document.getElementById("authEmail");
-    if(s1&&s1.parentElement)s1.parentElement.parentElement.appendChild(box);
-  }
-  box.style.display="block";
-  box.innerHTML=
-    '<div style="font-weight:900;color:var(--gold);margin-bottom:.5rem">📧 فعّل بريدك أولاً</div>'+
-    '<div style="font-size:.82rem;color:var(--text2);margin-bottom:.4rem">أرسلنا رابط تفعيل إلى:</div>'+
-    '<div dir="ltr" style="font-weight:700;color:var(--cyan);margin-bottom:.6rem">'+email+'</div>'+
-    '<div style="font-size:.76rem;color:var(--dim);margin-bottom:.8rem">افتح الرابط في بريدك (تحقّق من مجلد <b>Spam</b>)، ثم اضغط "لقد فعّلت".</div>'+
-    '<button class="btn-p full" style="margin-bottom:.5rem" onclick="recheckVerify()">✅ لقد فعّلت — دخول</button>'+
-    '<button class="btn-ghost full" onclick="resendVerify()">🔄 إعادة إرسال الرابط</button>';
-  // أخفِ زر الدخول العادي مؤقتاً
-  var sb=document.getElementById("authSubmitBtn");
-  if(sb)sb.style.display="none";
-}
-
-// إعادة إرسال رابط التفعيل
-function resendVerify(){
-  if(!window.TahadiAuth||!TahadiAuth.currentUser()){ntf("سجّل الدخول أولاً","#FFD046");return;}
-  TahadiAuth.resendVerification().then(function(){
-    ntf("✅ أُعيد إرسال الرابط — تحقّق من بريدك و Spam","#00E676");
-  }).catch(function(e){
-    var code=(e&&e.code)||"";
-    if(code==="auth/too-many-requests")ntf("⏱️ انتظر قليلاً قبل إعادة الإرسال","#FFD046");
-    else ntf("تعذّر الإرسال، حاول لاحقاً","#FF3D5A");
-  });
-}
-
-// إعادة فحص التفعيل بعد أن يضغط المستخدم "لقد فعّلت"
-function recheckVerify(){
-  var u=window.TahadiAuth&&TahadiAuth.currentUser();
-  if(!u){ntf("سجّل الدخول أولاً","#FFD046");return;}
-  u.reload().then(function(){
-    if(u.emailVerified){
-      // نجح التفعيل — أخفِ الشاشة وادخل
-      var box=document.getElementById("verifyGate");if(box)box.style.display="none";
-      var sb=document.getElementById("authSubmitBtn");if(sb)sb.style.display="";
-      ntf("✅ تم تفعيل بريدك بنجاح!","#00E676");
-      finishAuthLogin(u);
-    } else {
-      ntf("❗ لم يُفعّل بعد — افتح الرابط في بريدك أولاً","#FFD046");
-    }
-  }).catch(function(){ntf("تعذّر التحقّق، حاول ثانية","#FF3D5A");});
-}
-
-// بعد نجاح الدخول/التسجيل عبر Firebase Auth
-function finishAuthLogin(fbUser){
-  // اجلب ملف المستخدم لبناء كائن التطبيق
-  var uid=fbUser.uid;
-  var email=fbUser.email;
-  if(window.TahadiDB&&TahadiDB.indexEmail){TahadiDB.indexEmail(email,uid).catch(function(){});}
-  // اربط IAP بحساب المستخدم (فتُنسب مشترياته لحسابه عبر أجهزته)
-  if(window.IS_APP && window.IAP){
-    IAP.init(uid).then(function(ok){
-      if(ok){ IAP.login(uid); IAP.getStatus().then(function(st){ if(st&&st.tier) IAP.syncToFirebase(st.tier); }); }
-    });
-  }
-  if(window.TahadiDB&&TahadiDB.getUser){
-    TahadiDB.getUser(uid).then(function(prof){
-      var user={
-        name:(prof&&prof.name)||email.split("@")[0],
-        email:email, phone:(prof&&prof.phone)||"",
-        uid:uid
-      };
-      loginUser(user);
-    }).catch(function(){
-      loginUser({name:email.split("@")[0],email:email,phone:"",uid:uid});
-    });
-  } else {
-    loginUser({name:email.split("@")[0],email:email,phone:"",uid:uid});
-  }
-}
-
-function startOtpTimer(){
-  clearInterval(_otpTimer);
-  var s=120;
-  document.getElementById("otpSec").textContent=s;
-  document.getElementById("otpTimerTxt").style.display="block";
-  document.getElementById("resendBtn").disabled=true;
-  _otpTimer=setInterval(function(){
-    s--;document.getElementById("otpSec").textContent=s;
-    if(s<=0){clearInterval(_otpTimer);document.getElementById("otpTimerTxt").style.display="none";document.getElementById("resendBtn").disabled=false;}
-  },1000);
-}
-
-function authResend(){
-  if(_authBusy) return;
-  var last=_lastOtpSend[_pendingEmail]||0;
-  if(Date.now()-last<45000){ntf("انتظر قليلاً قبل إعادة الإرسال","#FFD046");return;}
-  _lastOtpSend[_pendingEmail]=Date.now();
-  _authBusy=true;
-  _otpCode=String(Math.floor(100000+Math.random()*900000));
-  for(var i=0;i<6;i++)document.getElementById("otp"+i).value="";
-  document.getElementById("authS2Err").style.display="none";
-  sendOTPEmail(_pendingEmail,_pendingName,_otpCode,function(ok){
-    _authBusy=false;
-    document.getElementById("demoHint").style.display=ok?"none":"block";
-    startOtpTimer();
-    document.getElementById("otp0").focus();
-    ntf("✅ تم إعادة الإرسال","#00E676");
-  });
-}
-
-function otpIn(idx){
-  var v=document.getElementById("otp"+idx).value.replace(/[^0-9]/g,"");
-  document.getElementById("otp"+idx).value=v;
-  if(v&&idx<5)document.getElementById("otp"+(idx+1)).focus();
-  var all="";for(var i=0;i<6;i++)all+=document.getElementById("otp"+i).value;
-  if(all.length===6)authVerify();
-}
-function otpKey(idx,e){
-  if(e.key==="Backspace"&&!document.getElementById("otp"+idx).value&&idx>0)
-    document.getElementById("otp"+(idx-1)).focus();
-}
-
-function authVerify(){
-  var otp="";for(var i=0;i<6;i++)otp+=document.getElementById("otp"+i).value;
-  var err=document.getElementById("authS2Err");err.style.display="none";
-  if(otp.length!==6){err.textContent="❗ أدخل الرمز كاملاً";err.style.display="block";return;}
-  if(otp!==_otpCode){err.textContent="❌ رمز غير صحيح";err.style.display="block";return;}
-  clearInterval(_otpTimer);
-  // أنشئ الحساب
-  var uid="u_"+btoa(_pendingEmail).replace(/[^a-zA-Z0-9]/g,"").slice(0,16);
-  var displayName=_pendingName||_pendingEmail.split("@")[0];
-  var user={name:displayName,email:_pendingEmail,phone:"",uid:uid,pass:hashPass(_pendingPass)};
-  var users=getUsers();
-  users[_pendingEmail]=user;
-  saveUsers(users);
-  // حفظ بصمة كلمة المرور سحابياً — الدخول القادم مباشر بدون رمز على أي جهاز
-  if(window.TahadiDB&&TahadiDB.savePassHash){
-    TahadiDB.savePassHash(_pendingEmail,user.pass).catch(function(){});
-  }
-  document.getElementById("authWelcome").textContent="أهلاً "+displayName+" 🎉";
-  authShowStep(3);
-  loginUser(user,true);
-}
-
-function loginUser(user,skipStep){
-  window._forceLoggedOut=false; // دخول جديد — أعد تفعيل درع الجلسة
-  var uid=user.uid;
-  var sessionId="s_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
-  var rememberEl=document.getElementById("authRemember");
-  var remember=rememberEl?rememberEl.checked:true; // افتراضياً مفعّل
-  authSetAll({
-    tahadi_token:"tok_"+Date.now(),
-    tahadi_session:sessionId,
-    tahadi_user:JSON.stringify({name:user.name,email:user.email,phone:"",uid:uid})
-  },remember);
-
-  // جلسة واحدة نشطة لكل حساب: اكتب معرّف الجلسة، وراقبه — إن دخل جهاز آخر، اخرج من هنا
-  if(window.TahadiDB&&TahadiDB.emailToUid){
+async function saveName() {
+  const name = document.getElementById('profName').value.trim();
+  if (!name) return;
+  // احفظ الاسم في Firebase (الملف + Auth)
+  var uid = me && me.uid;
+  if(!uid && window.TahadiAuth && TahadiAuth.uid) uid = TahadiAuth.uid();
+  if(window.TahadiDB && uid && TahadiDB.adminUpdateUser){
     try{
-      var sref=firebase.database().ref("users/"+uid+"/activeSession");
-      sref.set(sessionId).catch(function(){});
-      sref.on("value",function(s){
-        var cur=s.val();
-        if(cur&&cur!==authGet("tahadi_session")){
-          // جهاز آخر سجّل الدخول بنفس الحساب — خروج فعلي كامل
-          sref.off();
-          authClearAll(["tahadi_token","tahadi_session","tahadi_user","tahadi_pro","tahadi_elite"]);
-          // امسح النسخة الأصلية (درع الجلسة) حتى لا يستعيدها بعد إعادة التحميل
-          try{
-            var Prefs=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Preferences;
-            if(Prefs){["tahadi_token","tahadi_user","tahadi_pro","tahadi_elite"].forEach(function(k){Prefs.remove({key:k});});}
-          }catch(e){}
-          // منع درع الجلسة من الاستعادة في هذه الجلسة
-          window._forceLoggedOut=true;
-          alert("⚠️ تم تسجيل الدخول بهذا الحساب من جهاز آخر.\nتم إنهاء الجلسة على هذا الجهاز.");
-          setTimeout(function(){location.reload();},300);
-        }
-      });
-    }catch(e){}
-  }
-
-  // استكمال الانضمام لغرفة معلّقة (وصل برابط قبل تسجيل الدخول)
-  function resumePendingRoom(){
-    var pr=sessionStorage.getItem("tahadi_pending_room");
-    if(!pr)return;
-    sessionStorage.removeItem("tahadi_pending_room");
-    setTimeout(function(){
-      if(onlineGate()){
-        openJoinDirect();
-        document.getElementById("jCode").value=pr;
+      await TahadiDB.adminUpdateUser(uid, { name: name });
+      // حدّث اسم العرض في Auth أيضاً
+      if(window.TahadiAuth && TahadiAuth.currentUser()){
+        try{ await TahadiAuth.currentUser().updateProfile({ displayName: name }); }catch(e){}
       }
-    },800);
-  }
-
-  // Firebase
-  if(window.TahadiDB){
-    TahadiDB.saveUser({name:user.name,email:user.email,uid:uid}).then(function(){
-      // اقرأ الخطة بمعرّف Auth الحقيقي (كما يكتبها الأدمن) — مع تراجع للبريد
-      var planPromise = (uid&&TahadiDB.getPlanByUid)
-        ? TahadiDB.getPlanByUid(uid)
-        : TahadiDB.getPlanByEmail(user.email);
-      planPromise.then(function(plan){
-        if(plan&&plan.plan){
-          authSetOne("tahadi_pro","1");
-          if(plan.plan.indexOf("elite")>-1)authSetOne("tahadi_elite","1");
-          else authClearAll(["tahadi_elite"]);
-          renderUserBar();
-        } else {
-          // لا خطة نشطة — تأكد أنه مجاني (يمنع بقاء حالة قديمة)
-          authClearAll(["tahadi_pro","tahadi_elite"]);
-          renderUserBar();
-        }
-        resumePendingRoom();
-      }).catch(function(){resumePendingRoom();});
-    }).catch(function(){resumePendingRoom();});
-  } else {
-    resumePendingRoom();
-  }
-  if(window.Affiliate){try{Affiliate.attachReferralOnSignup(uid).catch(function(){});}catch(e){}}
-  renderUserBar();
-  var pendingPlan=localStorage.getItem("tahadi_subscribe_plan");
-  if(pendingPlan){
-    localStorage.removeItem("tahadi_subscribe_plan");
-    setTimeout(function(){closeM("authModal");doSubscribe(pendingPlan);},skipStep?1000:300);
-  } else if(!skipStep){
-    closeM("authModal");
-    ntf("✅ أهلاً "+user.name,"#00E676");
-  } else {
-    setTimeout(function(){closeM("authModal");},1500);
-  }
-}
-
-function sendOTPEmail(email,name,code,cb){
-  var SVC=EMAILJS_SVC, TPL=EMAILJS_TPL, PUB=EMAILJS_PUB;
-  // fallback لإعدادات الأدمن المحلية إن وُجدت
-  SVC=localStorage.getItem("tahadi_emailjs_svc")||SVC;
-  TPL=localStorage.getItem("tahadi_emailjs_tpl")||TPL;
-  PUB=localStorage.getItem("tahadi_emailjs_pub")||PUB;
-  if(!SVC||SVC.indexOf("__")>-1||!window.emailjs){cb(false);return;}
-  emailjs.init(PUB);
-  emailjs.send(SVC,TPL,{
-    to_email:email, to_name:name||"مستخدم", otp_code:code, app_name:"تحدي الأرقام"
-  }).then(function(){cb(true);}).catch(function(e){console.log("EmailJS error:",e);cb(false);});
-}
-
-/* ── Render user bar ── */
-function syncPlanFromDB(cb){
-  var user=JSON.parse(authGet("tahadi_user")||"null");
-  if(!user||!user.email){if(cb)cb();return;}
-  if(window.TahadiDB&&window.firebase&&firebase.apps&&firebase.apps.length){
-    // اقرأ الخطة بمعرّف Auth الحقيقي (النظام الجديد)، مع تراجع للبريد
-    var planPromise = (user.uid&&TahadiDB.getPlanByUid)
-      ? TahadiDB.getPlanByUid(user.uid)
-      : TahadiDB.getPlanByEmail(user.email);
-    planPromise.then(function(plan){
-      // Firebase هو المصدر النهائي — لا fallback بعد نجاح القراءة
-      if(plan&&plan.plan){
-        authSetOne("tahadi_pro","1");
-        if(plan.plan.indexOf("elite")>-1)authSetOne("tahadi_elite","1");
-        else authClearAll(["tahadi_elite"]);
-        console.log("[Plan] from Firebase:",plan.plan);
-      } else {
-        authClearAll(["tahadi_pro","tahadi_elite"]);
-        console.log("[Plan] no active plan (free)");
-      }
-      if(cb)cb();
-    }).catch(function(e){
-      console.log("[Plan] Firebase error, using local:",e);
-      syncFromAdminLocal(user);if(cb)cb();
-    });
-  } else {
-    console.log("[Plan] Firebase not ready, using local admin DB");
-    syncFromAdminLocal(user);
-    if(cb)cb();
-  }
-}
-function syncFromAdminLocal(user){
-  // 2) fallback: قاعدة الأدمن المحلية
-  try{
-    var adminData=JSON.parse(localStorage.getItem("tahadi_admin_v1")||"{}");
-    var now=new Date();
-    var sub=(adminData.subscriptions||[]).filter(function(s){
-      return (s.email===user.email||s.uid===user.uid)&&new Date(s.expiresAt)>now;
-    }).sort(function(a,b){return new Date(b.expiresAt)-new Date(a.expiresAt);})[0];
-    if(sub){
-      authSetOne("tahadi_pro","1");
-      if(sub.plan.indexOf("elite")>-1)authSetOne("tahadi_elite","1");
-      else authClearAll(["tahadi_elite"]);
-    } else {
-      authClearAll(["tahadi_pro","tahadi_elite"]);
-    }
-  }catch(e){}
-}
-
-function renderUserBar(){
-  var token=authGet("tahadi_token");
-  if(window._forceLoggedOut){ token=null; } // بعد الحذف/الخروج: لا تعرض أي اسم قديم
-  // إظهار/إخفاء الأقسام التسويقية حسب حالة الدخول
-  if(token) document.body.classList.add("logged-in");
-  else document.body.classList.remove("logged-in");
-  var user =JSON.parse(authGet("tahadi_user")||"null");
-  var isPro   =authGet("tahadi_pro")==="1";
-  var isElite =authGet("tahadi_elite")==="1";
-
-  // Update navbar button
-  var navBtn=document.getElementById("navAuthBtn");
-  if(navBtn){
-    if(token&&user){
-      var initial=(user.name||"م").charAt(0);
-      navBtn.innerHTML="<button class=\"nav-cta\" onclick=\"showUserMenu()\" style=\"background:rgba(0,229,255,.18);border:1.5px solid var(--cyan);color:#EAF9FF;font-weight:800\">👤 "+( user.name||"حسابي")+"</button>";
-    } else {
-      navBtn.innerHTML="<button class=\"nav-cta\" onclick=\"showAuthModal()\">👤 تسجيل الدخول</button>";
-    }
-  }
-
-  // Hero user bar
-  var container=document.getElementById("userBarContainer");
-  if(!container) return;
-
-  if(!token||!user){
-    // Show affiliate login prompt
-  var prompt=document.getElementById("affiliate-login-prompt");
-  var box=document.getElementById("affiliate-box");
-  if(prompt){prompt.style.display="block";}
-  if(box){box.style.display="none";box.innerHTML="";}
-  container.innerHTML="<div style=\"width:100%;margin-bottom:.8rem\">"
-      +"<button class=\"btn-s full\" onclick=\"showAuthModal()\" style=\"padding:.6rem;font-size:.84rem\">"
-      +"👤 تسجيل الدخول للحفظ والاشتراك"
-      +"</button></div>";
-    return;
-  }
-
-  // الخطة تُقرأ من tahadi_pro/elite (يضبطها syncPlanFromDB من Firebase)
-  var mySub=null;
-  var plan=isElite?"elite":isPro?"pro":"free";
-  var planLabels={free:"خطة منطلق",pro:"مشترك بطل 👑",elite:"مشترك أسطوري 🔥"};
-  var planClass={free:"free",pro:"pro",elite:"elite"};
-
-  // Expiry note
-  var expiryNote="";
-  if(mySub){
-    var days=Math.ceil((new Date(mySub.expiresAt)-now)/86400000);
-    if(days<=1)      expiryNote="<span style=\"color:var(--red);font-size:.62rem\"> — ينتهي غداً!</span>";
-    else if(days<=7) expiryNote="<span style=\"color:var(--red);font-size:.62rem\"> — ينتهي خلال "+days+" أيام!</span>";
-    else if(days<=30)expiryNote="<span style=\"color:var(--gold);font-size:.62rem\"> — "+days+" يوم متبقي</span>";
-    else             expiryNote="<span style=\"color:var(--dim);font-size:.62rem\"> — "+days+" يوم متبقي</span>";
-  }
-
-  // Show affiliate dashboard, hide login prompt
-  var prompt=document.getElementById("affiliate-login-prompt");
-  var box=document.getElementById("affiliate-box");
-  if(prompt) prompt.style.display="none";
-  if(box) box.style.display="block";
-  // Load affiliate dashboard
-  if(window.Affiliate&&token&&user){
-    var _uid2=user.uid||("u_"+(user.phone||"").replace(/[^0-9]/g,""));
-    try{Affiliate.initAffiliate(_uid2).then(function(){
-      Affiliate.renderAffiliateDashboard("affiliate-box",_uid2);
-    }).catch(function(){});}catch(e){}
-  }
-  container.innerHTML="<div class=\"user-bar\">"
-    +"<div class=\"user-bar-left\">"
-    +"<div class=\"user-avatar\">"+( user.name||"م").charAt(0)+"</div>"
-    +"<div>"
-    +"<div class=\"user-name\">"+( user.name||"مستخدم")+"</div>"
-    +"<div class=\"user-plan\">"
-    +"<span class=\"plan-badge "+planClass[plan]+"\">"+planLabels[plan]+"</span>"
-    +expiryNote
-    +"</div>"
-    +"</div></div>"
-    +"<div style=\"display:flex;align-items:center;gap:.5rem\">"
-    +((plan==="free"&&!window.IS_APP)?"<button class=\"btn-p\" onclick=\"goSec('pricing')\" style=\"padding:.38rem .85rem;font-size:.76rem\">🔓 ترقية</button>":"")
-    +"<button class=\"btn-s\" onclick=\"doLogout()\" style=\"padding:.38rem .75rem;font-size:.72rem\">خروج</button>"
-    +"</div>"
-    +"</div>";
-}
-
-function scrollToAffiliate(){document.getElementById("affiliate-section").scrollIntoView({behavior:"smooth"});}
-
-function doLogout(){
-  window._forceLoggedOut=true; // امنع درع الجلسة من الاستعادة
-  // خروج من Firebase Auth
-  if(window.TahadiAuth&&TahadiAuth.ready()){ TahadiAuth.signOut().catch(function(){}); }
-  authClearAll(["tahadi_token","tahadi_session","tahadi_user","tahadi_pro","tahadi_elite"]);
-  try{
-    var Prefs=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Preferences;
-    if(Prefs){["tahadi_token","tahadi_user","tahadi_pro","tahadi_elite"].forEach(function(k){Prefs.remove({key:k});});}
-  }catch(e){}
-  var affSec=document.getElementById("affiliate-section");
-  if(affSec)affSec.style.display="none";
-  var affBox=document.getElementById("affiliate-box");
-  if(affBox)affBox.innerHTML="";
-  renderUserBar();
-  ntf("تم تسجيل الخروج","#8AB8FF");
-}
-
-function showUserMenu(){
-  // Toggle small user menu or just go to dashboard
-  var user=JSON.parse(authGet("tahadi_user")||"null");
-  if(!user){showAuthModal();return;}
-  var isPro=authGet("tahadi_pro")==="1";
-  var isElite=authGet("tahadi_elite")==="1";
-  var plan=isElite?"أسطوري":isPro?"بطل":"منطلق";
-  ntf("👤 "+( user.name||"مستخدم")+" — "+plan,isPro?"#00E5FF":"#8AB8FF");
-}
-
-// Init on load
-function _initApp(){
-  _bindModalBackdrops();
-  // Capture referral code from URL (?ref=CODE)
-  if(window.Affiliate) Affiliate.captureReferralFromURL();
-  loadAnnouncement();
-
-  // إن جاء من حذف حساب أو خروج صريح — امنع استعادة الجلسة، ونظّف الرابط
-  try{
-    if(location.search.indexOf("loggedout=1")>-1){
-      window._forceLoggedOut=true;
-      try{ if(window.TahadiAuth && TahadiAuth.ready()) TahadiAuth.signOut(); }catch(e){}
+      me.name = name;
+      // حدّث الجلسة المحلية
       try{
-        authClearAll(["tahadi_user","tahadi_token","tahadi_session","tahadi_pro","tahadi_elite"]);
+        var u = JSON.parse(localStorage.getItem('tahadi_user')||sessionStorage.getItem('tahadi_user')||'null');
+        if(u){ u.name=name; (localStorage.getItem('tahadi_user')?localStorage:sessionStorage).setItem('tahadi_user',JSON.stringify(u)); }
       }catch(e){}
-      history.replaceState(null,"",location.pathname);
+      document.getElementById('userName').textContent = name;
+      document.getElementById('userAvatar').textContent = name.charAt(0);
+      document.getElementById('profAvatar').textContent = name.charAt(0);
+      ntf('✅ تم حفظ الاسم','#00E676');
+    }catch(e){
+      ntf('❌ تعذّر حفظ الاسم','#FF3D5A');
     }
-  }catch(e){}
-
-  // ── استعادة جلسة Firebase Auth تلقائياً عند فتح التطبيق ──
-  if(window.TahadiAuth&&TahadiAuth.ready()){
-    TahadiAuth.onChange(function(fbUser){
-      if(window._forceLoggedOut) return; // خرج يدوياً في هذه الجلسة
-      if(!fbUser){ return; }
-      // ── تحقّق فعلي أن الحساب لا يزال موجوداً (يكشف الحساب المحذوف قطعياً) ──
-      fbUser.reload().then(function(){
-        var u = (window.TahadiAuth && TahadiAuth.currentUser()) || fbUser;
-        if(window._forceLoggedOut) return;
-        if(u && u.emailVerified){
-          // مستخدم مسجّل ومفعّل وموجود — استعد بياناته إن لم تكن الجلسة محليّة بعد
-          if(!authGet("tahadi_token")){
-            if(window.TahadiDB&&TahadiDB.indexEmail){TahadiDB.indexEmail(u.email,u.uid).catch(function(){});}
-            if(window.TahadiDB&&TahadiDB.getUser){
-              TahadiDB.getUser(u.uid).then(function(prof){
-                loginUser({
-                  name:(prof&&prof.name)||u.email.split("@")[0],
-                  email:u.email, phone:(prof&&prof.phone)||"", uid:u.uid
-                },true);
-              }).catch(function(){
-                loginUser({name:u.email.split("@")[0],email:u.email,phone:"",uid:u.uid},true);
-              });
-            }
-          }
-        }
-      }).catch(function(err){
-        // reload فشل ⇒ الحساب محذوف/غير صالح (user-not-found / user-token-expired)
-        // خروج تام فوري ولا تعرض أي اسم قديم
-        window._forceLoggedOut = true;
-        try{ if(window.TahadiAuth && TahadiAuth.ready()) TahadiAuth.signOut(); }catch(e){}
-        try{ authClearAll(["tahadi_user","tahadi_token","tahadi_session","tahadi_pro","tahadi_elite"]); }catch(e){}
-        try{ indexedDB.deleteDatabase("firebaseLocalStorageDb"); }catch(e){}
-        try{ renderUserBar(); }catch(e){}
-      });
-    });
-  }
-
-  // مزامنة الخطة من قاعدة البيانات ثم عرض الشريط
-  syncPlanFromDB(function(){ renderUserBar(); });
-  renderUserBar();
-  // Close modals on backdrop (بحماية — إن لم يوجد العنصر لا ننهار)
-  var _am=document.getElementById("authModal");
-  if(_am){
-    _am.addEventListener("click",function(e){
-      if(e.target.id==="authModal") closeM("authModal");
-    });
+  } else {
+    ntf('❌ سجّل دخولك أولاً','#FF3D5A');
   }
 }
-// ── إعلان الأدمن الترويجي ──
-function loadAnnouncement(){
-  var el=document.getElementById("announceBanner");
-  if(!el||!window.firebase||!firebase.apps||!firebase.apps.length)return;
-  firebase.database().ref("admin/announcement").once("value").then(function(s){
-    var a=s.val();
-    if(!a||!a.active||!a.text){el.style.display="none";return;}
-    var dismissed=localStorage.getItem("tahadi_ann_dismissed");
-    if(dismissed && dismissed===String(a.updatedAt)){el.style.display="none";return;}
-    var color=a.color||"#FFD046";
-    el.innerHTML=
-      '<div style="position:relative;margin-bottom:1.2rem;padding:.9rem 2.4rem .9rem 1.1rem;'+
-      'border-radius:14px;background:linear-gradient(135deg,'+color+'22,'+color+'0a);'+
-      'border:1.5px solid '+color+'55;text-align:center;">'+
-      '<div style="font-weight:900;color:'+color+';font-size:.98rem;margin-bottom:.15rem">'+
-      (a.title||"📣 إعلان")+'</div>'+
-      '<div style="color:#EAF9FF;font-size:.85rem;line-height:1.5">'+a.text+'</div>'+
-      (a.link?'<a href="'+a.link+'" style="display:inline-block;margin-top:.5rem;color:'+color+';font-weight:800;font-size:.82rem;text-decoration:underline">'+(a.linkText||"اعرف المزيد")+' ←</a>':'')+
-      '<button onclick="dismissAnnounce('+a.updatedAt+')" style="position:absolute;top:.5rem;left:.6rem;'+
-      'background:none;border:none;color:'+color+';font-size:1.1rem;cursor:pointer;line-height:1">✕</button>'+
-      '</div>';
-    el.style.display="block";
-  }).catch(function(){});
-}
-function dismissAnnounce(id){
-  localStorage.setItem("tahadi_ann_dismissed",String(id));
-  var el=document.getElementById("announceBanner");
-  if(el)el.style.display="none";
-}
-if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",_initApp);}
-else{_initApp();}
-
-
-function openContact(){document.getElementById("contactModal").classList.add("on");}
-</script>
-
-<!-- ══ AUTH MODAL (إيميل + كلمة مرور) ══ -->
-<div class="mo" id="authModal">
-  <div class="mb" style="max-width:380px">
-
-    <!-- Step 1: إيميل + كلمة مرور -->
-    <div id="authS1">
-      <div class="mt_">👤 الدخول / إنشاء حساب</div>
-      <p style="text-align:center;font-size:.78rem;color:var(--dim);margin-bottom:.85rem">
-        أدخل بريدك وكلمة المرور
-      </p>
-      <div class="fg">
-        <label>البريد الإلكتروني *</label>
-        <input type="email" id="authEmail" class="inp" placeholder="name@example.com"
-          oninput="this.value=this.value.trim()">
-      </div>
-      <div class="fg">
-        <label>كلمة المرور *</label>
-        <input type="password" id="authPass" class="inp" placeholder="6 أحرف على الأقل"
-          onkeydown="if(event.key==='Enter')authSubmit()">
-      </div>
-      <div style="display:flex;align-items:center;gap:.5rem;margin:-.3rem 0 .7rem">
-        <input type="checkbox" id="authRemember" checked style="width:17px;height:17px;accent-color:var(--cyan);flex-shrink:0">
-        <label for="authRemember" style="margin:0;font-size:.78rem;cursor:pointer;color:var(--dim)">تذكرني على هذا الجهاز</label>
-      </div>
-      <div class="fg" id="authNameWrap" style="display:none">
-        <label>الاسم <span style="color:var(--dim);font-size:.64rem">(للحساب الجديد)</span></label>
-        <input type="text" id="authName" class="inp" placeholder="اسمك...">
-      </div>
-      <div id="authS1Err" style="color:var(--red);font-size:.78rem;margin-bottom:.5rem;display:none"></div>
-      <button class="btn-p full" id="authSubmitBtn" onclick="authSubmit()">دخول / تسجيل →</button>
-      <div style="text-align:center;margin-top:.55rem">
-        <button onclick="startForgot()" style="background:none;border:none;color:var(--cyan);font-size:.76rem;cursor:pointer;font-family:'Tajawal',sans-serif;text-decoration:underline">نسيت كلمة المرور؟</button>
-      </div>
-      <button class="btn-s full" onclick="closeM('authModal')" style="margin-top:.5rem">إلغاء</button>
-    </div>
-
-    <!-- Step 2: رمز التحقق (مرة واحدة عند التسجيل الجديد) -->
-    <div id="authS2" style="display:none">
-      <div class="mt_">📧 تأكيد البريد</div>
-      <p style="text-align:center;font-size:.8rem;color:var(--dim);margin-bottom:.9rem">
-        أرسلنا رمز تأكيد لمرة واحدة إلى<br>
-        <strong id="authEmailDisp" style="color:var(--text)"></strong>
-      </p>
-      <div class="otp-grid">
-        <input class="otp-cell" type="tel" maxlength="1" id="otp0" oninput="otpIn(0)" onkeydown="otpKey(0,event)">
-        <input class="otp-cell" type="tel" maxlength="1" id="otp1" oninput="otpIn(1)" onkeydown="otpKey(1,event)">
-        <input class="otp-cell" type="tel" maxlength="1" id="otp2" oninput="otpIn(2)" onkeydown="otpKey(2,event)">
-        <input class="otp-cell" type="tel" maxlength="1" id="otp3" oninput="otpIn(3)" onkeydown="otpKey(3,event)">
-        <input class="otp-cell" type="tel" maxlength="1" id="otp4" oninput="otpIn(4)" onkeydown="otpKey(4,event)">
-        <input class="otp-cell" type="tel" maxlength="1" id="otp5" oninput="otpIn(5)" onkeydown="otpKey(5,event)">
-      </div>
-      <div id="otpTimerTxt" style="text-align:center;font-size:.74rem;color:var(--dim);margin:.4rem 0">
-        صالح لمدة <span id="otpSec" style="color:var(--cyan);font-weight:700">120</span> ثانية
-      </div>
-      <div style="text-align:center;margin-bottom:.6rem">
-        <button id="resendBtn" onclick="authResend()" disabled
-          style="background:none;border:none;color:var(--dim);font-size:.74rem;cursor:pointer;font-family:'Tajawal',sans-serif">إعادة إرسال</button>
-      </div>
-      <div id="demoHint" style="background:rgba(255,208,70,.08);border:1px solid rgba(255,208,70,.2);border-radius:8px;padding:.45rem .75rem;font-size:.74rem;color:var(--gold);margin-bottom:.5rem;display:none">
-        💡 إذا لم يصل الرمز استخدم: <strong>123456</strong>
-      </div>
-      <div id="authS2Err" style="color:var(--red);font-size:.78rem;margin-bottom:.5rem;display:none"></div>
-      <button class="btn-p full" id="authVerifyBtn" onclick="authVerify()">تأكيد وإنشاء الحساب</button>
-      <button class="btn-s full" onclick="authShowStep(1)" style="margin-top:.5rem">← تغيير البريد</button>
-    </div>
-
-    <!-- Step 3: نجاح -->
-    <div id="authS3" style="display:none;text-align:center;padding:1.2rem 0">
-      <div style="font-size:2.8rem;margin-bottom:.6rem">✅</div>
-      <div style="font-family:'Cairo',sans-serif;font-size:1.15rem;font-weight:900;color:var(--green)">تم بنجاح!</div>
-      <div style="font-size:.8rem;color:var(--dim);margin:.4rem 0 1rem" id="authWelcome"></div>
-      <button class="btn-p" onclick="closeM('authModal')" style="max-width:180px;margin:0 auto">ابدأ ⚡</button>
-    </div>
-
-    <!-- Step 4: رمز استعادة كلمة المرور -->
-    <div id="authS4" style="display:none">
-      <div class="mt_">🔑 استعادة كلمة المرور</div>
-      <p style="text-align:center;font-size:.8rem;color:var(--dim);margin-bottom:.9rem">
-        أرسلنا رمزاً إلى<br><strong id="fpEmailDisp" style="color:var(--text)"></strong>
-      </p>
-      <div class="otp-grid">
-        <input class="otp-cell" type="tel" maxlength="1" id="fp0" oninput="fpIn(0)" onkeydown="fpKey(0,event)">
-        <input class="otp-cell" type="tel" maxlength="1" id="fp1" oninput="fpIn(1)" onkeydown="fpKey(1,event)">
-        <input class="otp-cell" type="tel" maxlength="1" id="fp2" oninput="fpIn(2)" onkeydown="fpKey(2,event)">
-        <input class="otp-cell" type="tel" maxlength="1" id="fp3" oninput="fpIn(3)" onkeydown="fpKey(3,event)">
-        <input class="otp-cell" type="tel" maxlength="1" id="fp4" oninput="fpIn(4)" onkeydown="fpKey(4,event)">
-        <input class="otp-cell" type="tel" maxlength="1" id="fp5" oninput="fpIn(5)" onkeydown="fpKey(5,event)">
-      </div>
-      <div id="fpDemoHint" style="background:rgba(255,208,70,.08);border:1px solid rgba(255,208,70,.2);border-radius:8px;padding:.45rem .75rem;font-size:.74rem;color:var(--gold);margin:.5rem 0;display:none">
-        💡 إذا لم يصل الرمز استخدم: <strong>123456</strong>
-      </div>
-      <div id="authS4Err" style="color:var(--red);font-size:.78rem;margin-bottom:.5rem;display:none"></div>
-      <button class="btn-p full" onclick="fpVerify()">تأكيد الرمز →</button>
-      <button class="btn-s full" onclick="authShowStep(1)" style="margin-top:.5rem">← رجوع</button>
-    </div>
-
-    <!-- Step 5: كلمة مرور جديدة -->
-    <div id="authS5" style="display:none">
-      <div class="mt_">🔐 كلمة مرور جديدة</div>
-      <p style="text-align:center;font-size:.78rem;color:var(--dim);margin-bottom:.85rem">اختر كلمة مرور جديدة لحسابك</p>
-      <div class="fg">
-        <label>كلمة المرور الجديدة *</label>
-        <input type="password" id="fpNewPass" class="inp" placeholder="6 أحرف على الأقل"
-          onkeydown="if(event.key==='Enter')fpSetNew()">
-      </div>
-      <div class="fg">
-        <label>تأكيد كلمة المرور *</label>
-        <input type="password" id="fpNewPass2" class="inp" placeholder="أعد كتابتها"
-          onkeydown="if(event.key==='Enter')fpSetNew()">
-      </div>
-      <div id="authS5Err" style="color:var(--red);font-size:.78rem;margin-bottom:.5rem;display:none"></div>
-      <button class="btn-p full" onclick="fpSetNew()">حفظ والدخول →</button>
-    </div>
-
-  </div>
-</div>
-
-
-
-
-
-
-
-
-<!-- Contact Modal -->
-<div class="mo" id="contactModal">
-  <div class="mb" style="max-width:400px">
-    <div class="mt_">📧 تواصل معنا</div>
-    <p style="text-align:center;font-size:.85rem;color:var(--dim);margin-bottom:1.2rem">
-      نسعد بتواصلك معنا لأي استفسار أو اقتراح
-    </p>
-    <div style="display:flex;flex-direction:column;gap:.8rem">
-      <a href="mailto:dr.fajry@gmail.com" style="display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.17);border-radius:11px;text-decoration:none;color:var(--text)">
-        <span style="font-size:1.4rem">✉️</span>
-        <div><div style="font-size:.72rem;color:var(--dim)">البريد الإلكتروني</div><div style="font-size:.88rem" dir="ltr">dr.fajry@gmail.com</div></div>
-      </a>
-      <a href="https://x.com/PickByFaisal" target="_blank" style="display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.17);border-radius:11px;text-decoration:none;color:var(--text)">
-        <span style="font-size:1.4rem">𝕏</span>
-        <div><div style="font-size:.72rem;color:var(--dim)">تابعنا على X</div><div style="font-size:.88rem" dir="ltr">@PickByFaisal</div></div>
-      </a>
-    </div>
-    <button class="btn-s full" onclick="closeM('contactModal')" style="margin-top:1rem">إغلاق</button>
-  </div>
-</div>
-
-<script>
-/* ══════════════════════════════════════
-   APP MODE — توافق سياسة Google Play
-   داخل التطبيق: لا أسعار، لا أزرار شراء، لا صفحة دفع.
-   المزايا تُفتح تلقائياً عند تسجيل الدخول (حسب حالة الحساب في Firebase).
-   الشراء يتم من الموقع فقط.
-══════════════════════════════════════ */
-(function(){
-  // ═══════════════════════════════════════════════
-  // وضع النسخة النظيفة (بلا اشتراكات ظاهرة) — للمراجعة الأولى
-  // كود IAP جاهز في iap.js لكنه معطّل هنا حتى تحديث 1.1
-  // لتفعيل IAP لاحقاً: غيّر IAP_ENABLED إلى true
-  // ═══════════════════════════════════════════════
-  var IAP_ENABLED = true;
-
-  function applyAppMode(){
-    if(!window.IS_APP) return;
-
-    if(!IAP_ENABLED){
-      // النسخة النظيفة: أخفِ كل ما يخص الشراء داخل التطبيق
-      var pr=document.getElementById("pricing"); if(pr)pr.style.display="none";
-      document.querySelectorAll("a").forEach(function(a){
-        var oc=a.getAttribute("onclick")||"";
-        if(oc.indexOf("pricing")>-1) a.style.display="none";
-      });
-      document.querySelectorAll(".faq-a").forEach(function(el){
-        if(el.textContent.indexOf("اشترك")>-1){
-          el.textContent="نعم! خطة منطلق المجانية تشمل 200 سؤال، لعباً على نفس الجهاز، ووسيلة مساعدة واحدة. مزايا حسابك تُفعَّل تلقائياً عند تسجيل الدخول.";
-        }
-      });
-      var mp=document.getElementById("mpOverlay"); if(mp)mp.remove();
-      return;
-    }
-
-    // ── وضع IAP (يُفعّل في تحديث 1.1) ──
-    function initIAP(){
-      if(!window.IAP) return;
-      var uid=null;
-      try{
-        var u=JSON.parse(localStorage.getItem("tahadi_user")||sessionStorage.getItem("tahadi_user")||"null");
-        if(u&&u.uid)uid=u.uid;
-      }catch(e){}
-      IAP.init(uid).then(function(ok){
-        if(ok){
-          IAP.getStatus().then(function(st){ if(st && st.tier){ IAP.syncToFirebase(st.tier); } });
-          IAP.onStatusChange(function(tier){ if(typeof renderUserBar==="function"){ try{renderUserBar();}catch(e){} } });
-        }
-      });
-    }
-    setTimeout(initIAP, 1500);
-    var pricing=document.getElementById("pricing");
-    if(pricing && !document.getElementById("restoreBtn")){
-      var rb=document.createElement("div");
-      rb.style.cssText="text-align:center;margin-top:1rem";
-      rb.innerHTML='<button id="restoreBtn" onclick="restorePurchases()" style="background:none;border:1px solid var(--bd);color:var(--cyan);padding:.55rem 1.4rem;border-radius:10px;font-size:.82rem;cursor:pointer">🔄 استعادة المشتريات</button>';
-      pricing.appendChild(rb);
-    }
+async function savePwd() {
+  const cur = document.getElementById('curPwd').value;
+  const nw  = document.getElementById('newPwd').value;
+  if (!cur || !nw) { ntf('❌ أدخل كلمة المرور الحالية والجديدة','#FF3D5A'); return; }
+  if (nw.length < 6) { ntf('❌ كلمة المرور الجديدة 6 أحرف على الأقل','#FF3D5A'); return; }
+  var user = window.TahadiAuth && TahadiAuth.currentUser();
+  if(!user){ ntf('❌ سجّل دخولك أولاً','#FF3D5A'); return; }
+  try{
+    // أعد المصادقة بكلمة المرور الحالية (شرط Firebase لتغيير كلمة المرور)
+    var cred = firebase.auth.EmailAuthProvider.credential(user.email, cur);
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(nw);
+    ntf('✅ تم تغيير كلمة المرور','#00E676');
+    document.getElementById('curPwd').value='';
+    document.getElementById('newPwd').value='';
+  }catch(e){
+    var code=(e&&e.code)||"";
+    if(code==="auth/wrong-password"||code==="auth/invalid-credential") ntf('❌ كلمة المرور الحالية غير صحيحة','#FF3D5A');
+    else if(code==="auth/weak-password") ntf('❌ كلمة المرور الجديدة ضعيفة','#FF3D5A');
+    else ntf('❌ تعذّر التغيير: '+(e&&e.message||code),'#FF3D5A');
   }
-  if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded",applyAppMode);
-  } else { applyAppMode(); }
-})();
+}
+async function cancelAutoRenew() {
+  if (!confirm('إلغاء التجديد التلقائي؟ اشتراكك سيستمر حتى تاريخ انتهائه.')) return;
+  const r = await apiCall('/subscriptions/cancel', { method:'POST' });
+  if (r?.message) ntf('✅ '+r.message,'#00E676');
+}
+
+/* ═══ NOTIFY ══════════════════════════ */
+let ntout;
+function ntf(msg, color='#00E5FF') {
+  const el = document.getElementById('notif');
+  el.textContent=msg; el.style.color=color; el.style.borderColor=color+'40';
+  el.classList.add('show'); clearTimeout(ntout);
+  ntout = setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+/* ═══ INIT — عبر جلسة Firebase Auth ════ */
+function _bootDashboard(){
+  if(!window.TahadiAuth || !TahadiAuth.ready()){
+    // Firebase لم يجهز بعد — أعد المحاولة
+    setTimeout(_bootDashboard, 300); return;
+  }
+  TahadiAuth.onChange(function(fbUser){
+    var loader = document.getElementById('dashLoader');
+    if(loader) loader.style.display = 'none';
+    if(fbUser && fbUser.emailVerified){
+      // مسجّل ومفعّل — افتح اللوحة
+      initDash();
+    } else {
+      // غير مسجّل — وجّهه للرئيسية للدخول
+      document.getElementById('authWrap').style.display = 'block';
+      document.getElementById('dashWrap').style.display = 'none';
+      var aw = document.getElementById('authWrap');
+      if(aw) aw.innerHTML = '<div style="text-align:center;padding:3rem 1.5rem">'+
+        '<div style="font-size:2.5rem;margin-bottom:1rem">🔒</div>'+
+        '<div style="font-weight:900;font-size:1.1rem;margin-bottom:.6rem">سجّل دخولك أولاً</div>'+
+        '<div style="color:var(--dim);font-size:.85rem;margin-bottom:1.4rem">تحتاج تسجيل الدخول للوصول إلى لوحتك</div>'+
+        '<a href="index.html" class="btn btn-gold" style="text-decoration:none;display:inline-block;padding:.7rem 2rem">العودة للرئيسية →</a>'+
+        '</div>';
+    }
+  });
+}
+_bootDashboard();
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter') {
+    const lp=document.getElementById('loginBox'); const rp=document.getElementById('registerBox');
+    if (lp.style.display!=='none') doLogin();
+    else if (rp.style.display!=='none') doRegister();
+  }
+});
 </script>
 </body>
 </html>
