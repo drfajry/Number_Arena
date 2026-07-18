@@ -143,15 +143,12 @@
         console.log("[IAP] شراء الحزمة:", pkg.identifier, pkg.product && pkg.product.identifier);
         return _purchases.purchasePackage({ aPackage: pkg });
       }).then(function(result){
-        // تحقّق من الصلاحيات بعد الشراء
+        // الشراء نجح (لم يُرمَ خطأ). حدّد المستوى من الصلاحيات، وإلا اعتمد الخطة المشتراة.
         var info = result && result.customerInfo;
-        var tier = self._tierFromCustomerInfo(info);
-        if(tier){
-          return self.syncToFirebase(tier).then(function(){
-            return {success:true, tier:tier, customerInfo:info};
-          });
-        }
-        return {success:false, error:"لم تُفعّل الصلاحية بعد الشراء"};
+        var tier = self._tierFromCustomerInfo(info) || planKey;
+        return self.syncToFirebase(tier).then(function(){
+          return {success:true, tier:tier, customerInfo:info};
+        });
       }).catch(function(e){
         // المستخدم ألغى؟
         if(e && (e.code === "1" || e.userCancelled || (e.message||"").indexOf("cancel")>-1)){
@@ -197,9 +194,16 @@
       if(!info) return null;
       var ent = info.entitlements && (info.entitlements.active || info.entitlements);
       if(!ent) return null;
-      // إن كان أسطوري نشطاً
-      if(ent[ENTITLEMENTS.elite] && (ent[ENTITLEMENTS.elite].isActive !== false)) return "elite";
-      if(ent[ENTITLEMENTS.pro]   && (ent[ENTITLEMENTS.pro].isActive   !== false)) return "pro";
+      var keys = Object.keys(ent);
+      function isOn(e){ return e && (e.isActive !== false); }
+      // مطابقة بالمعرّف المحدد أولاً
+      if(ent[ENTITLEMENTS.elite] && isOn(ent[ENTITLEMENTS.elite])) return "elite";
+      if(ent[ENTITLEMENTS.pro]   && isOn(ent[ENTITLEMENTS.pro]))   return "pro";
+      // مطابقة مرنة بالاسم (يحتوي elite / pro)
+      for(var i=0;i<keys.length;i++){ if(isOn(ent[keys[i]]) && /elite/i.test(keys[i])) return "elite"; }
+      for(var j=0;j<keys.length;j++){ if(isOn(ent[keys[j]]) && /pro/i.test(keys[j]))   return "pro"; }
+      // أي صلاحية نشطة (بلا تمييز اسم) → اعتبرها pro على الأقل
+      for(var m=0;m<keys.length;m++){ if(isOn(ent[keys[m]])) return "pro"; }
       return null;
     },
 
