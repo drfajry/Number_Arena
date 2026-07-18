@@ -98,7 +98,6 @@
     // يرجّع: {success:true, tier:"pro"|"elite"} أو {success:false, cancelled, error}
     purchase: function(planKey){
       var self = this;
-      alert("تشخيص: بدأ الشراء (v-diag). متاح؟ "+this.available()+" | جاهز؟ "+_ready);
       if(!this.available()){
         return Promise.resolve({success:false, error:"الشراء غير متاح على هذا الجهاز"});
       }
@@ -111,7 +110,6 @@
         }catch(e){}
         return self.init(_uid).then(function(ok){
           if(!ok || !_ready){
-            alert("تشخيص: فشلت تهيئة RevenueCat (init).\nمتاح؟ "+self.available()+"\nمنصة: "+((window.Capacitor&&window.Capacitor.getPlatform&&window.Capacitor.getPlatform())||"?"));
             return {success:false, error:"نظام الشراء لم يجهز بعد، حاول ثانية"};
           }
           return self.purchase(planKey); // أعد المحاولة بعد نجاح التهيئة
@@ -125,17 +123,8 @@
       // اجلب العرض (Offering) ثم اشترِ الحزمة المطابقة
       return self.getOfferings().then(function(offering){
         console.log("[IAP] Offering =", offering);
-        // تشخيص على الشاشة (بلا حاجة لـ Console)
-        try{
-          if(!offering){
-            alert("تشخيص: Offering = null\n(لا يوجد عرض حالي في RevenueCat — تأكد أن default هو Current وأن المنتجات مفعّلة)");
-          } else {
-            var _pk = (offering.availablePackages||[]).map(function(p){ return (p.product&&p.product.identifier)||p.identifier; });
-            alert("تشخيص: العرض موجود\nعدد الحزم: "+(offering.availablePackages||[]).length+"\nالحزم: "+_pk.join(" | "));
-          }
-        }catch(e){}
         if(!offering || !offering.availablePackages || !offering.availablePackages.length){
-          return Promise.reject({ _cfg:true, message:"لا توجد عروض (Offerings) في RevenueCat. تأكد من إنشاء Offering افتراضي وإضافة الخطتين، وأن المنتجات مفعّلة في Google Play." });
+          return Promise.reject({ _cfg:true, message:"لا توجد عروض متاحة حالياً. حاول لاحقاً." });
         }
         try{
           console.log("[IAP] Packages =", offering.availablePackages.map(function(p){
@@ -246,11 +235,22 @@
           // اشتراك نشط — احسب تاريخ انتهاء سنوي (RevenueCat يدير التجديد فعلياً)
           var expires = new Date();
           expires.setFullYear(expires.getFullYear() + 1);
-          // حدّث الحالة المحلية فوراً
-          localStorage.setItem("tahadi_pro","1");
-          if(tier === "elite") localStorage.setItem("tahadi_elite","1");
-          else localStorage.removeItem("tahadi_elite");
-          // اكتب في Firebase
+          // حدّث الحالة المحلية فوراً (في نفس مخزن التوكن) + حدّث العرض بلا انتظار Firebase
+          try{
+            var remember = !!localStorage.getItem("tahadi_token");
+            var store = remember ? localStorage : sessionStorage;
+            store.setItem("tahadi_pro","1");
+            if(tier === "elite") store.setItem("tahadi_elite","1");
+            else { localStorage.removeItem("tahadi_elite"); sessionStorage.removeItem("tahadi_elite"); }
+          }catch(e){
+            localStorage.setItem("tahadi_pro","1");
+            if(tier === "elite") localStorage.setItem("tahadi_elite","1");
+          }
+          // علامة أن المصدر IAP — تمنع مسحها عند مزامنة الخطة من Firebase
+          try{ localStorage.setItem("tahadi_iap_tier", tier); }catch(e){}
+          // حدّث العرض فوراً (لا نعتمد على نجاح كتابة Firebase)
+          if(typeof window.renderUserBar === "function"){ try{ renderUserBar(); }catch(e){} }
+          // اكتب في Firebase (أفضل جهد — قد تمنعها قواعد الأمان، والعرض محدّث أصلاً)
           return firebase.database().ref("users/"+uid+"/currentPlan").set({
             plan: tier,
             email: email,
