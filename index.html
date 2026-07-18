@@ -397,6 +397,7 @@ select.inp option{background:#0C1440;}
 <script src="js/affiliate.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="js/capacitor-bridge.js"></script>
+<script src="js/iap.js"></script>
 </head>
 <body>
 
@@ -2171,7 +2172,7 @@ function openContact(){document.getElementById("contactModal").classList.add("on
   // كود IAP جاهز في iap.js لكنه معطّل هنا حتى تحديث 1.1
   // لتفعيل IAP لاحقاً: غيّر IAP_ENABLED إلى true
   // ═══════════════════════════════════════════════
-  var IAP_ENABLED = false;
+  var IAP_ENABLED = true;
 
   function applyAppMode(){
     if(!window.IS_APP) return;
