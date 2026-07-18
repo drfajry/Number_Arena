@@ -54,15 +54,18 @@
       _purchases = window.Capacitor.Plugins.Purchases;
       var apiKey = (window.Capacitor.getPlatform() === "ios") ? RC_APPLE_KEY : RC_GOOGLE_KEY;
 
-      _initPromise = _purchases.configure({
+      var cfg = _purchases.configure({
         apiKey: apiKey,
         appUserID: firebaseUid || null   // ربط الشراء بحساب المستخدم (مهم للتزامن)
-      }).then(function(){
+      });
+      var cfgTimeout = new Promise(function(_, rej){ setTimeout(function(){ rej(new Error("configure timeout")); }, 8000); });
+      _initPromise = Promise.race([cfg, cfgTimeout]).then(function(){
         _ready = true;
         console.log("[IAP] RevenueCat مُهيّأ لـ", firebaseUid || "مجهول");
         return true;
       }).catch(function(e){
         console.error("[IAP] فشل التهيئة:", e && e.message);
+        _initPromise = null; // اسمح بإعادة المحاولة
         return false;
       });
       return _initPromise;
@@ -95,6 +98,7 @@
     // يرجّع: {success:true, tier:"pro"|"elite"} أو {success:false, cancelled, error}
     purchase: function(planKey){
       var self = this;
+      alert("تشخيص: بدأ الشراء (v-diag). متاح؟ "+this.available()+" | جاهز؟ "+_ready);
       if(!this.available()){
         return Promise.resolve({success:false, error:"الشراء غير متاح على هذا الجهاز"});
       }
