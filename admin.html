@@ -872,13 +872,26 @@ function revokeSubByPhone(identifier){
   var data=db();
   var u=data.users.find(function(x){return x.email===identifier||x.phone===identifier||x.uid===identifier;});
   var email=u?u.email:identifier;
-  // إزالة كل الاشتراكات
+  // إزالة كل الاشتراكات محلياً
   data.subscriptions=data.subscriptions.filter(function(s){
     return s.email!==email&&s.email!==identifier;
   });
   if(u)u.plan="free";
   saveDB(data);
-  if(window.TahadiDB&&email.includes("@")){TahadiDB.clearUserPlan(email).catch(function(){});}
+
+  // حذف الخطة من Firebase — من المعرّف الحقيقي (كما تُكتب عند التفعيل) + المسار القديم احتياطاً
+  if(window.TahadiDB && email && email.includes("@")){
+    // 1) المسار القديم (emailToUid)
+    if(TahadiDB.clearUserPlan){ TahadiDB.clearUserPlan(email).catch(function(){}); }
+    // 2) المعرّف الحقيقي (uidByEmail) — هو المكان الذي يكتب فيه التفعيل و IAP
+    if(TahadiDB.uidByEmail && window.firebase && firebase.database){
+      TahadiDB.uidByEmail(email).then(function(realUid){
+        if(realUid){
+          firebase.database().ref("users/"+realUid+"/currentPlan").remove().catch(function(){});
+        }
+      }).catch(function(){});
+    }
+  }
   renderSubs();loadDashboard();
   ntf("تم إلغاء الاشتراك","#FF3D5A");
 }
