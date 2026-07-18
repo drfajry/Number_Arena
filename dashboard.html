@@ -191,7 +191,11 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 <body>
 
 <!-- AUTH -->
-<div id="authWrap" class="auth-wrap">
+<div id="dashLoader" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;position:relative;z-index:1">
+  <div style="font-size:2rem">🏆</div>
+  <div style="color:var(--dim);font-size:.9rem">جارٍ التحميل...</div>
+</div>
+<div id="authWrap" class="auth-wrap" style="display:none">
   <!-- LOGIN -->
   <div id="loginBox" class="auth-box">
     <div class="auth-logo">
@@ -422,11 +426,13 @@ async function initDash() {
     phone: (prof && prof.phone) || ""
   };
 
-  // اقرأ الخطة (الاشتراك) من قاعدة البيانات بمعرّف Auth الحقيقي
+  // اقرأ الخطة (الاشتراك) — بمعرّف Auth أولاً ثم بالبريد (مطابقة لمنطق الرئيسية)
   me.subscription = null; me.isPro = false;
   try{
-    if(window.TahadiDB && TahadiDB.getPlanByUid){
-      var plan = await TahadiDB.getPlanByUid(uid);
+    if(window.TahadiDB){
+      var plan = null;
+      if(uid && TahadiDB.getPlanByUid){ plan = await TahadiDB.getPlanByUid(uid); }
+      if((!plan || !plan.plan) && TahadiDB.getPlanByEmail){ plan = await TahadiDB.getPlanByEmail(fbUser.email); }
       if(plan && plan.plan && plan.plan !== 'free'){
         me.isPro = true;
         me.subscription = { plan: 'yearly', expires_at: plan.expiresAt, tier: plan.plan };
@@ -466,17 +472,19 @@ function renderSubStatus() {
   if (sub) {
     const expires = new Date(sub.expires_at);
     const daysLeft = Math.ceil((expires - Date.now()) / 86400000);
+    const isElite = sub.tier && String(sub.tier).indexOf('elite') > -1;
+    const tierLabel = isElite ? 'أسطوري 🔥' : 'بطل 👑';
     const html = `
       <div class="sub-card">
         <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">
-          <span class="sub-badge">PRO</span>
-          <span class="sub-plan">${sub.plan==='monthly'?'شهري':'سنوي'}</span>
+          <span class="sub-badge">${tierLabel}</span>
+          <span class="sub-plan">سنوي</span>
         </div>
         <div class="sub-expire">ينتهي: ${expires.toLocaleDateString('ar-SA')} (${daysLeft} يوم متبقي)</div>
         <div class="sub-features">
           <span class="sub-feat">جميع الأسئلة</span>
           <span class="sub-feat">أونلاين غير محدود</span>
-          <span class="sub-feat">5 وسائل مساعدة</span>
+          <span class="sub-feat">${isElite ? '6 وسائل مساعدة' : '3 وسائل مساعدة'}</span>
           <span class="sub-feat">4 فرق</span>
         </div>
       </div>`;
@@ -520,21 +528,13 @@ selectPlan('yearly'); // default
 
 /* ═══ CHECKOUT ════════════════════════ */
 async function doCheckout() {
-  const btn = document.getElementById('checkoutBtn');
-  btn.disabled = true; btn.textContent = 'جارٍ المعالجة...';
-  try {
-    const r = await apiCall('/subscriptions/checkout', {
-      method:'POST', body: JSON.stringify({ plan: selPlan })
-    });
-    if (!r) return;
-    if (r.checkout_url) {
-      // توجيه لصفحة Moyasar
-      window.location.href = r.checkout_url;
-    } else {
-      ntf('❌ تعذر فتح صفحة الدفع', '#FF3D5A');
-    }
-  } catch { ntf('❌ خطأ في الاتصال', '#FF3D5A'); }
-  finally { btn.disabled=false; btn.textContent='اشترك الآن'; }
+  // داخل التطبيق: الشراء يتم عبر الصفحة الرئيسية (حيث نظام IAP مُحمّل)
+  if (window.IS_APP || (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
+    window.location.href = 'index.html?goto=pricing';
+    return;
+  }
+  // في المتصفح: وجّه لقسم الأسعار بالرئيسية (فيه الدفع)
+  window.location.href = 'index.html?goto=pricing';
 }
 
 /* ═══ PAYMENT CALLBACK ════════════════ */
@@ -861,6 +861,8 @@ function _bootDashboard(){
     setTimeout(_bootDashboard, 300); return;
   }
   TahadiAuth.onChange(function(fbUser){
+    var loader = document.getElementById('dashLoader');
+    if(loader) loader.style.display = 'none';
     if(fbUser && fbUser.emailVerified){
       // مسجّل ومفعّل — افتح اللوحة
       initDash();
