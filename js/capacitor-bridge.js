@@ -8,6 +8,17 @@
   var isApp = window.Capacitor !== undefined;
   window.IS_APP = isApp;
 
+  // ── كشف المنصة بموثوقية (مبكراً) + احتياط عبر userAgent ──
+  var plat = "web";
+  try{ if(isApp && window.Capacitor.getPlatform) plat = window.Capacitor.getPlatform(); }catch(e){}
+  if(isApp && (plat === "web" || !plat)){
+    if(/iPhone|iPad|iPod/i.test(navigator.userAgent || "")) plat = "ios";
+    else if(/Android/i.test(navigator.userAgent || "")) plat = "android";
+  }
+  window.PLATFORM = plat;
+  window.IS_IOS = (plat === "ios");
+  window.IS_ANDROID = (plat === "android");
+
   if(!isApp){ return; } // موقع ويب عادي — لا شيء إضافي
 
   /* ── Status Bar ── */
