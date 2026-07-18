@@ -143,9 +143,9 @@
         console.log("[IAP] شراء الحزمة:", pkg.identifier, pkg.product && pkg.product.identifier);
         return _purchases.purchasePackage({ aPackage: pkg });
       }).then(function(result){
-        // الشراء نجح (لم يُرمَ خطأ). حدّد المستوى من الصلاحيات، وإلا اعتمد الخطة المشتراة.
+        // الشراء نجح. الخطة المشتراة (planKey) هي المصدر اليقيني، مع كشف احتياطي.
         var info = result && result.customerInfo;
-        var tier = self._tierFromCustomerInfo(info) || planKey;
+        var tier = planKey || self._tierFromCustomerInfo(info);
         return self.syncToFirebase(tier).then(function(){
           return {success:true, tier:tier, customerInfo:info};
         });
@@ -192,17 +192,25 @@
     // استخرج المستوى (elite أفضل من pro) من معلومات العميل
     _tierFromCustomerInfo: function(info){
       if(!info) return null;
+      // 1) الأدق: من المنتجات المشتراة النشطة (elite_yearly مقابل pro_yearly)
+      try{
+        var subs = info.activeSubscriptions || [];
+        var joined = (subs && subs.join) ? subs.join(",") : "";
+        // ابحث أيضاً في productIdentifier داخل الصلاحيات النشطة
+        var entA = info.entitlements && (info.entitlements.active || {});
+        if(entA){ Object.keys(entA).forEach(function(k){ var p=entA[k] && entA[k].productIdentifier; if(p) joined += ","+p; }); }
+        if(/elite/i.test(joined)) return "elite";
+        if(/pro/i.test(joined))   return "pro";
+      }catch(e){}
+      // 2) احتياط: من أسماء الصلاحيات
       var ent = info.entitlements && (info.entitlements.active || info.entitlements);
       if(!ent) return null;
       var keys = Object.keys(ent);
       function isOn(e){ return e && (e.isActive !== false); }
-      // مطابقة بالمعرّف المحدد أولاً
       if(ent[ENTITLEMENTS.elite] && isOn(ent[ENTITLEMENTS.elite])) return "elite";
       if(ent[ENTITLEMENTS.pro]   && isOn(ent[ENTITLEMENTS.pro]))   return "pro";
-      // مطابقة مرنة بالاسم (يحتوي elite / pro)
       for(var i=0;i<keys.length;i++){ if(isOn(ent[keys[i]]) && /elite/i.test(keys[i])) return "elite"; }
       for(var j=0;j<keys.length;j++){ if(isOn(ent[keys[j]]) && /pro/i.test(keys[j]))   return "pro"; }
-      // أي صلاحية نشطة (بلا تمييز اسم) → اعتبرها pro على الأقل
       for(var m=0;m<keys.length;m++){ if(isOn(ent[keys[m]])) return "pro"; }
       return null;
     },
@@ -265,8 +273,18 @@
             if(typeof window.renderUserBar === "function"){ try{ renderUserBar(); }catch(e){} }
           }).catch(function(){});
         } else {
-          // لا اشتراك نشط (انتهى/أُلغي) — لا نمسح تلقائياً كي لا نُلغي اشتراكاً يدوياً من الأدمن
-          // (نترك اشتراكات الأدمن اليدوية كما هي)
+          // لا اشتراك نشط. إن كان المصدر IAP (اشتراك انتهى/أُلغي فعلياً) → امسح مزايا IAP.
+          // (لا نمسح اشتراكات الأدمن اليدوية — تلك ليست عليها علامة tahadi_iap_tier)
+          if(localStorage.getItem("tahadi_iap_tier")){
+            try{
+              localStorage.removeItem("tahadi_iap_tier");
+              localStorage.removeItem("tahadi_pro"); sessionStorage.removeItem("tahadi_pro");
+              localStorage.removeItem("tahadi_elite"); sessionStorage.removeItem("tahadi_elite");
+            }catch(e){}
+            if(typeof window.renderUserBar === "function"){ try{ renderUserBar(); }catch(e){} }
+            // امسح الخطة من Firebase أيضاً (أفضل جهد)
+            try{ return firebase.database().ref("users/"+uid+"/currentPlan").remove().catch(function(){}); }catch(e){}
+          }
           return Promise.resolve();
         }
       }catch(e){ return Promise.resolve(); }
