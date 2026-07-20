@@ -893,6 +893,44 @@ function _bootDashboard(){
   });
 }
 _bootDashboard();
+
+/* ── iOS: أخفِ الاشتراك/الترقية (يُضاف لـ iOS لاحقاً) + معالجة goto=delete ── */
+(function(){
+  var isIOSApp=false;
+  try{ isIOSApp = !!(window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform()==="ios"); }catch(e){}
+  window._IS_IOS_APP = isIOSApp;
+
+  function cleanIOS(){
+    if(!isIOSApp) return;
+    // تبويب «اشتراكي» ومحتواه
+    document.querySelectorAll(".tab").forEach(function(t){
+      if((t.getAttribute("onclick")||"").indexOf("subscription")>-1) t.style.display="none";
+    });
+    var subTab=document.getElementById("tab-subscription"); if(subTab)subTab.style.display="none";
+    // أي زر ترقية/اشتراك أينما كان
+    document.querySelectorAll("[onclick]").forEach(function(el){
+      var oc=el.getAttribute("onclick")||"";
+      if(oc.indexOf("showTab('subscription')")>-1 || oc.indexOf('showTab("subscription")')>-1 || oc.indexOf("doCheckout")>-1){
+        el.style.display="none";
+      }
+    });
+  }
+  window._cleanIOS = cleanIOS;
+  // شغّلها عدة مرات لالتقاط الأزرار المُولّدة ديناميكياً بعد تحميل اللوحة
+  [200,700,1400,2500].forEach(function(d){ setTimeout(cleanIOS, d); });
+
+  // goto=delete: افتح «حسابي» وأبرز زر الحذف
+  try{
+    if(location.search.indexOf("goto=delete")>-1){
+      setTimeout(function(){
+        try{ if(typeof showTab==="function") showTab('profile'); }catch(e){}
+        var btn=document.querySelector('[onclick="deleteAccount()"]');
+        if(btn){ try{ btn.scrollIntoView({behavior:"smooth",block:"center"}); }catch(e){} btn.style.boxShadow="0 0 0 3px #FF6B8A"; }
+      }, 900);
+    }
+  }catch(e){}
+})();
+
 document.addEventListener('keydown', e => {
   if (e.key==='Enter') {
     const lp=document.getElementById('loginBox'); const rp=document.getElementById('registerBox');
