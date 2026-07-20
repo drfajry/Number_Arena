@@ -508,7 +508,7 @@ select.inp option{background:#0C1440;}
     <div class="sec-badge">⚡ كيف تعمل اللعبة</div>
     <h2 class="sec-title">٣ خطوات نحو <span class="hl2">القمة</span></h2>
     <div class="how-grid">
-      <div class="how-card"><div class="how-num">١</div><div class="how-ico">🌐</div><div class="how-title">أنشئ غرفة أو انضم</div><div class="how-desc">أنشئ غرفة واحصل على رمز 6 أحرف، أو أدخل الرمز للانضمام. يدعم 2-4 فرق.</div></div>
+      <div class="how-card" id="howStep1"><div class="how-num">١</div><div class="how-ico">🌐</div><div class="how-title">أنشئ غرفة أو انضم</div><div class="how-desc">أنشئ غرفة واحصل على رمز 6 أحرف، أو أدخل الرمز للانضمام. يدعم 2-4 فرق.</div></div>
       <div class="how-card"><div class="how-num">٢</div><div class="how-ico">🔲</div><div class="how-title">اختر خلية وأجب</div><div class="how-desc">اختر خلية من اللوحة، اكشف نوعها، وأجب خلال 30 ثانية. قد تخفي مكافأة ضخمة!</div></div>
       <div class="how-card"><div class="how-num">٣</div><div class="how-ico">🏆</div><div class="how-title">تصدّر وافز</div><div class="how-desc">بعد 20 جولة، الفريق الأعلى نقاطاً يفوز. استخدم وسائل المساعدة بذكاء!</div></div>
     </div>
@@ -790,8 +790,10 @@ function toggleNav(){
     if(window.IS_APP){
       var logged=!!authGet("tahadi_token");
       nl.innerHTML = logged
-        ? '<a class="nav-link" onclick="doLogout();toggleNav()">🚪 تسجيل الخروج</a>'
+        ? '<a class="nav-link" href="dashboard.html">👤 لوحتي</a>'
           +'<a class="nav-link" onclick="goSec(\'faq\');toggleNav()">❓ الأسئلة الشائعة</a>'
+          +'<a class="nav-link" href="dashboard.html?goto=delete" style="color:#FF6B8A">🗑️ حذف الحساب</a>'
+          +'<a class="nav-link" onclick="doLogout();toggleNav()">🚪 تسجيل الخروج</a>'
         : '<a class="nav-link" onclick="showAuthModal();toggleNav()">👤 تسجيل الدخول</a>';
     }
     nl.style.cssText="display:flex;flex-direction:column;position:fixed;top:calc(56px + env(safe-area-inset-top));right:0;left:0;background:rgba(7,11,31,.97);padding:1rem 1.5rem;border-bottom:1px solid var(--border);z-index:99;gap:.6rem;";
@@ -2198,14 +2200,6 @@ function openContact(){document.getElementById("contactModal").classList.add("on
   function applyAppMode(){
     if(!window.IS_APP) return;
 
-    // ── شارة تشخيص مرئية (مؤقتة): تُظهر النسخة والمنصة المكتشفة ──
-    try{
-      var _b=document.createElement("div");
-      _b.style.cssText="position:fixed;bottom:6px;left:6px;z-index:99999;background:rgba(0,0,0,.7);color:#0ff;font-size:11px;padding:3px 7px;border-radius:6px;font-family:monospace;pointer-events:none";
-      _b.textContent="v12 | plat="+(window.PLATFORM||"?")+" | iOS="+(window.IS_IOS?"1":"0")+" | online="+(window.ONLINE_ENABLED?"1":"0");
-      document.body.appendChild(_b);
-    }catch(e){}
-
     // على iOS: أخفِ أزرار أونلاين والبحث والانضمام برمز (يبقى «على نفس الجهاز»)
     if(!ONLINE_ENABLED){
       ["heroOnline","heroSearch","heroJoin"].forEach(function(id){
@@ -2229,6 +2223,13 @@ function openContact(){document.getElementById("contactModal").classList.add("on
 
       // «على نفس الجهاز» → «العب الآن»
       var _off=document.getElementById("heroOffline"); if(_off)_off.textContent="🎮 العب الآن";
+
+      // أظهر قسم الأسئلة الشائعة حتى للمسجّل (يعمل الرابط ولا يكون ميتاً)
+      var _faq=document.getElementById("faq"); if(_faq){ _faq.style.display="block"; _faq.classList.remove("guest-only"); }
+
+      // بدّل بطاقة الخطوة الأولى (كانت أونلاين) لمحتوى «العب الآن»
+      var _s1=document.getElementById("howStep1");
+      if(_s1){ _s1.innerHTML='<div class="how-num">١</div><div class="how-ico">🎮</div><div class="how-title">اختر الفرق وابدأ</div><div class="how-desc">اختر عدد الفرق (2-4) على نفس الجهاز، وابدأ التحدي فوراً بلا إنترنت.</div>'; }
 
       // أخفِ روابط أونلاين في التذييل (عناصر a)
       document.querySelectorAll("a[onclick]").forEach(function(a){
