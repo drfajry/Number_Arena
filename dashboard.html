@@ -8,9 +8,9 @@
 <style>
 /* دعم المنطقة الآمنة في iPhone (الكاميرا/النتوء وشريط الإيماءات) */
 body{
-  padding-top:env(safe-area-inset-top);
-  padding-bottom:env(safe-area-inset-bottom);
-  padding-left:env(safe-area-inset-left);
+  padding-top:max(env(safe-area-inset-top), 22px);
+  padding-bottom:max(env(safe-area-inset-bottom), 8px);
+  padding-left:max(env(safe-area-inset-left), 0px);
   padding-right:env(safe-area-inset-right);
   box-sizing:border-box;
 }
@@ -915,6 +915,9 @@ _bootDashboard();
     });
     var subTab=document.getElementById("tab-subscription"); if(subTab)subTab.style.display="none";
     var payTab=document.getElementById("tab-payments"); if(payTab)payTab.style.display="none";
+    // بطاقة حالة الاشتراك في «نظرة عامة» (تعرض الخطة النشطة/الترقية)
+    var sc=document.getElementById("subStatusCard"); if(sc)sc.style.display="none";
+    var dc=document.getElementById("subDetailCard"); if(dc)dc.style.display="none";
     // أي زر ترقية/اشتراك/دفع أينما كان
     document.querySelectorAll("[onclick]").forEach(function(el){
       var oc=el.getAttribute("onclick")||"";
