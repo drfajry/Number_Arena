@@ -35,7 +35,7 @@ body{font-family:"Tajawal",sans-serif;background:var(--bg);color:var(--text);min
 body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(ellipse 120% 50% at 50% -5%,rgba(10,50,200,.4),transparent 65%),
   radial-gradient(ellipse 50% 40% at 0% 100%,rgba(0,229,255,.09),transparent 55%);}
-.scr{display:none;flex-direction:column;min-height:100vh;position:relative;z-index:1;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);box-sizing:border-box;}
+.scr{display:none;flex-direction:column;min-height:100vh;position:relative;z-index:1;padding-top:max(env(safe-area-inset-top), 22px);padding-bottom:max(env(safe-area-inset-bottom), 10px);padding-left:max(env(safe-area-inset-left), 10px);padding-right:max(env(safe-area-inset-right), 10px);box-sizing:border-box;}
 .scr.on{display:flex;}
 
 /* ── BUTTONS ── */
