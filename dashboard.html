@@ -186,6 +186,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="js/firebase-config.js"></script>
+<script src="js/capacitor-bridge.js"></script>
 <script src="js/db.js"></script>
 </head>
 <body>
@@ -896,28 +897,39 @@ _bootDashboard();
 
 /* ── iOS: أخفِ الاشتراك/الترقية (يُضاف لـ iOS لاحقاً) + معالجة goto=delete ── */
 (function(){
-  var isIOSApp=false;
-  try{ isIOSApp = !!(window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform()==="ios"); }catch(e){}
-  window._IS_IOS_APP = isIOSApp;
+  function detectIOS(){
+    // موثوق: الجسر يضبط IS_IOS، مع احتياط عبر Capacitor+userAgent
+    if(window.IS_IOS===true) return true;
+    try{
+      if(window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform()==="ios") return true;
+      if(window.Capacitor!==undefined && /iPhone|iPad|iPod/i.test(navigator.userAgent||"")) return true;
+    }catch(e){}
+    return false;
+  }
 
   function cleanIOS(){
-    if(!isIOSApp) return;
+    if(!detectIOS()) return;   // يُعاد الفحص كل مرة (Capacitor قد يتأخر)
     // تبويب «اشتراكي» ومحتواه
     document.querySelectorAll(".tab").forEach(function(t){
       if((t.getAttribute("onclick")||"").indexOf("subscription")>-1) t.style.display="none";
     });
     var subTab=document.getElementById("tab-subscription"); if(subTab)subTab.style.display="none";
-    // أي زر ترقية/اشتراك أينما كان
+    var payTab=document.getElementById("tab-payments"); if(payTab)payTab.style.display="none";
+    // أي زر ترقية/اشتراك/دفع أينما كان
     document.querySelectorAll("[onclick]").forEach(function(el){
       var oc=el.getAttribute("onclick")||"";
-      if(oc.indexOf("showTab('subscription')")>-1 || oc.indexOf('showTab("subscription")')>-1 || oc.indexOf("doCheckout")>-1){
+      if(oc.indexOf("subscription")>-1 || oc.indexOf("doCheckout")>-1 || oc.indexOf("openSubscribe")>-1){
         el.style.display="none";
       }
     });
+    // لو المستخدم على تبويب الاشتراك، أعِده للرئيسية
+    try{ if(subTab && subTab.style.display!=="none"){} }catch(e){}
   }
   window._cleanIOS = cleanIOS;
-  // شغّلها عدة مرات لالتقاط الأزرار المُولّدة ديناميكياً بعد تحميل اللوحة
-  [200,700,1400,2500].forEach(function(d){ setTimeout(cleanIOS, d); });
+  // شغّلها فوراً وعدة مرات لالتقاط الأزرار المُولّدة ديناميكياً وتأخّر Capacitor
+  cleanIOS();
+  [150,500,1000,1800,2800].forEach(function(d){ setTimeout(cleanIOS, d); });
+  document.addEventListener("DOMContentLoaded", cleanIOS);
 
   // goto=delete: افتح «حسابي» وأبرز زر الحذف
   try{
