@@ -2,10 +2,19 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover">
 <title>طلب حذف الحساب والبيانات — تحدي الأرقام</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
+/* دعم المنطقة الآمنة في iPhone (الكاميرا/النتوء وشريط الإيماءات) */
+body{
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+  box-sizing:border-box;
+}
+
   :root{
     --bg:#070B1F;--bg2:#0C1130;--card:rgba(255,255,255,.04);
     --border:rgba(0,229,255,.14);--cyan:#00E5FF;--cyan2:#00B8CC;--gold:#FFD046;
@@ -81,7 +90,9 @@
   </div>
 
   <div class="intro">
-    <p style="margin:0">يحق لك طلب حذف حسابك وجميع البيانات المرتبطة به في أي وقت. املأ النموذج أدناه أو راسلنا مباشرةً، وسنعالج طلبك خلال مدة أقصاها <strong>30 يوماً</strong>.</p>
+    <p style="margin:0 0 .8rem"><strong>الطريقة الأسرع — احذف حسابك فوراً من داخل التطبيق:</strong></p>
+    <p style="margin:0 0 .4rem">افتح تطبيق «تحدي الأرقام» ← القائمة (☰) ← <strong>«🗑️ حذف الحساب»</strong> (أو: لوحتي ← حسابي ← «🗑️ حذف حسابي نهائياً») ← أكّد بكلمة مرورك ← يُحذف حسابك وكل بياناتك <strong>فوراً ونهائياً</strong>.</p>
+    <p style="margin:.8rem 0 0;font-size:.9rem;color:var(--dim)">إن لم تتمكن من الوصول للتطبيق، يمكنك تقديم طلب حذف عبر النموذج أدناه وسنعالجه خلال مدة أقصاها <strong>30 يوماً</strong>.</p>
   </div>
 
   <div class="card">
