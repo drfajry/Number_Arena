@@ -636,9 +636,9 @@ select.inp option{background:#0C1440;}
         <div class="footer-brand-name">تحدي <span>الأرقام</span></div>
         <div class="footer-brand-desc">منصة الألعاب الجماعية التنافسية. اختبر معلوماتك مع أصدقائك من أي مكان.</div>
       </div>
-      <div class="footer-col"><h4>المنصة</h4><ul><li><a onclick="goSec('features')" class="guest-link">المميزات</a></li><li><a onclick="goSec('how')" class="guest-link">كيف تعمل</a></li><li><a onclick="goSec('pricing')">الأسعار</a></li></ul></div>
+      <div class="footer-col" id="footerPlatform"><h4>المنصة</h4><ul><li><a onclick="goSec('features')" class="guest-link">المميزات</a></li><li><a onclick="goSec('how')" class="guest-link">كيف تعمل</a></li><li><a onclick="goSec('pricing')">الأسعار</a></li></ul></div>
       <div class="footer-col"><h4>اللعب</h4><ul><li><a onclick="openCreate()">لعبة أونلاين</a></li><li><a onclick="openJoin()">انضمام بالرمز</a></li><li><a onclick="openOffline()">على نفس الجهاز</a></li></ul></div>
-      <div class="footer-col"><h4>الدعم</h4><ul><li><a onclick="goSec('faq')" class="guest-link">الأسئلة الشائعة</a></li><li><a href="dashboard.html">لوحتي</a></li><li><a onclick="openContact()">تواصل معنا</a></li><li><a href="privacy-policy.html" target="_blank">سياسة الخصوصية</a></li><li><a href="terms.html" target="_blank">شروط الاستخدام</a></li><li><a href="data-deletion.html" target="_blank">حذف الحساب والبيانات</a></li></ul></div>
+      <div class="footer-col"><h4>الدعم</h4><ul><li><a onclick="goSec('faq')" class="guest-link">الأسئلة الشائعة</a></li><li><a href="dashboard.html">لوحتي</a></li><li><a onclick="openContact()">تواصل معنا</a></li><li><a href="privacy-policy.html">سياسة الخصوصية</a></li><li><a href="terms.html">شروط الاستخدام</a></li><li><a href="dashboard.html?goto=delete">حذف الحساب والبيانات</a></li></ul></div>
     </div>
     <div class="footer-btm">
       <div class="footer-copy">© 2026 تحدي الأرقام. جميع الحقوق محفوظة.</div>
@@ -2234,8 +2234,10 @@ function openContact(){document.getElementById("contactModal").classList.add("on
       // أخفِ روابط أونلاين في التذييل (عناصر a)
       document.querySelectorAll("a[onclick]").forEach(function(a){
         var oc=a.getAttribute("onclick")||"";
-        if(oc.indexOf("openCreate")>-1 || oc.indexOf("openJoin")>-1 || oc.indexOf("openQuickMatch")>-1){ a.style.display="none"; }
+        if(oc.indexOf("openCreate")>-1 || oc.indexOf("openJoin")>-1 || oc.indexOf("openQuickMatch")>-1 || oc.indexOf("goSec('pricing')")>-1 || oc.indexOf("goSec('features')")>-1){ a.style.display="none"; }
       });
+      // أخفِ عمود «المنصة» في التذييل (روابط تسويقية تؤدي لأقسام مخفية)
+      var _fp=document.getElementById("footerPlatform"); if(_fp)_fp.style.display="none";
 
       // أخفِ أسئلة FAQ وبطاقات الميزات التي تذكر «أونلاين»
       document.querySelectorAll(".faq-item").forEach(function(el){
