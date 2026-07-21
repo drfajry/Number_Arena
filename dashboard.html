@@ -875,16 +875,31 @@ function _bootDashboard(){
   }
   TahadiAuth.onChange(function(fbUser){
     var loader = document.getElementById('dashLoader');
-    if(loader) loader.style.display = 'none';
-    if(fbUser && fbUser.emailVerified){
-      // مسجّل ومفعّل — افتح اللوحة
+    if(fbUser){
+      // مستخدم موجود (مسجّل دخول) — افتح اللوحة
+      if(loader) loader.style.display = 'none';
       initDash();
-    } else {
-      // غير مسجّل — وجّهه للرئيسية للدخول
-      document.getElementById('authWrap').style.display = 'block';
-      document.getElementById('dashWrap').style.display = 'none';
-      var aw = document.getElementById('authWrap');
-      if(aw) aw.innerHTML = '<div style="text-align:center;padding:3rem 1.5rem">'+
+      return;
+    }
+    // لا مستخدم من Firebase بعد — لكن هل توجد جلسة محلية؟ (قادم من الرئيسية)
+    var hasLocal = localStorage.getItem('tahadi_token') || sessionStorage.getItem('tahadi_token');
+    if(hasLocal){
+      // الجلسة تُستعاد — أظهر التحميل وانتظر، ولا تعرض شاشة الدخول
+      if(loader) loader.style.display = 'flex';
+      setTimeout(function(){
+        var u = (window.firebase && firebase.auth) ? firebase.auth().currentUser : null;
+        if(u){ if(loader) loader.style.display='none'; initDash(); }
+        // إن بقيت null فسيُطلق onChange تلقائياً عند اكتمال الاستعادة
+      }, 1400);
+      return;
+    }
+    // لا جلسة إطلاقاً — اعرض شاشة الدخول
+    if(loader) loader.style.display = 'none';
+    document.getElementById('dashWrap').style.display = 'none';
+    var aw = document.getElementById('authWrap');
+    if(aw){
+      aw.style.display = 'block';
+      aw.innerHTML = '<div style="text-align:center;padding:3rem 1.5rem">'+
         '<div style="font-size:2.5rem;margin-bottom:1rem">🔒</div>'+
         '<div style="font-weight:900;font-size:1.1rem;margin-bottom:.6rem">سجّل دخولك أولاً</div>'+
         '<div style="color:var(--dim);font-size:.85rem;margin-bottom:1.4rem">تحتاج تسجيل الدخول للوصول إلى لوحتك</div>'+
