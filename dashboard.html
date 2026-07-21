@@ -921,7 +921,7 @@ _bootDashboard();
     // أي زر ترقية/اشتراك/دفع أينما كان
     document.querySelectorAll("[onclick]").forEach(function(el){
       var oc=el.getAttribute("onclick")||"";
-      if(oc.indexOf("subscription")>-1 || oc.indexOf("doCheckout")>-1 || oc.indexOf("openSubscribe")>-1){
+      if(oc.indexOf("subscription")>-1 || oc.indexOf("doCheckout")>-1 || oc.indexOf("openSubscribe")>-1 || oc.indexOf("cancelAutoRenew")>-1){
         el.style.display="none";
       }
     });
