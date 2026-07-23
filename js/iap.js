@@ -20,7 +20,7 @@
 
   // مفاتيح RevenueCat العامة (Public SDK Keys) — تُملأ من لوحة RevenueCat
   // آمنة للوضع في كود العميل (هي مفاتيح عامة للقراءة فقط)
-  var RC_APPLE_KEY   = "appl_XXXXXXXXXXXXXXXXXXXXXXXX";   // ← استبدله بمفتاح Apple من RevenueCat
+  var RC_APPLE_KEY   = "appl_oAPhSozgCpyIvEhcUzESDKRsgfC";   // مفتاح Apple من RevenueCat
   var RC_GOOGLE_KEY  = "goog_OTSxRoaUFhrTyjpGidzAScpYFqX";   // ← مفتاح Google من RevenueCat
 
   // معرّفات المنتجات (يجب أن تطابق ما في المتجرين)
@@ -131,14 +131,24 @@
             return { pkg:p.identifier, product:(p.product && p.product.identifier) };
           }));
         }catch(e){}
-        // مطابقة مرنة: Google قد يرجع "pro_yearly" أو "pro_yearly:pro-yearly"
-        var pkg = offering.availablePackages.filter(function(p){
-          var id = (p.product && p.product.identifier) || "";
-          var base = id.split(":")[0];               // "pro_yearly:pro-yearly" -> "pro_yearly"
-          return id === productId || base === productId || id.indexOf(productId) === 0;
-        })[0];
+        // مطابقة موحّدة للمنصتين:
+        // 1) بمعرّف الحزمة (pro_yearly / elite_yearly) — موحّد بين iOS و Android
+        // 2) بمعرّف المنتج (Android: pro_yearly / pro_yearly:pro-yearly)
+        // 3) بكلمة مفتاحية داخل معرّف المنتج (iOS: ...hero.yearly / ...legend.yearly)
+        var keyword = (planKey === "elite") ? "legend" : "hero";
+        var pkgs = offering.availablePackages;
+        var pkg =
+          pkgs.filter(function(p){ return (p.identifier||"") === productId; })[0] ||
+          pkgs.filter(function(p){
+            var id = (p.product && p.product.identifier) || "";
+            return id === productId || id.split(":")[0] === productId || id.indexOf(productId) === 0;
+          })[0] ||
+          pkgs.filter(function(p){
+            var id = ((p.product && p.product.identifier) || "").toLowerCase();
+            return id.indexOf(keyword) > -1;   // iOS: hero / legend
+          })[0];
         if(!pkg){
-          return Promise.reject({ _cfg:true, message:"المنتج "+productId+" غير موجود في العرض. الحزم المتاحة: "+offering.availablePackages.map(function(p){return (p.product&&p.product.identifier)||p.identifier;}).join(", ") });
+          return Promise.reject({ _cfg:true, message:"الخطة غير متاحة حالياً. الحزم: "+pkgs.map(function(p){return p.identifier+"/"+((p.product&&p.product.identifier)||"");}).join(", ") });
         }
         console.log("[IAP] شراء الحزمة:", pkg.identifier, pkg.product && pkg.product.identifier);
         return _purchases.purchasePackage({ aPackage: pkg });
@@ -199,8 +209,8 @@
         // ابحث أيضاً في productIdentifier داخل الصلاحيات النشطة
         var entA = info.entitlements && (info.entitlements.active || {});
         if(entA){ Object.keys(entA).forEach(function(k){ var p=entA[k] && entA[k].productIdentifier; if(p) joined += ","+p; }); }
-        if(/elite/i.test(joined)) return "elite";
-        if(/pro/i.test(joined))   return "pro";
+        if(/elite|legend/i.test(joined)) return "elite";
+        if(/pro|hero/i.test(joined))    return "pro";
       }catch(e){}
       // 2) احتياط: من أسماء الصلاحيات
       var ent = info.entitlements && (info.entitlements.active || info.entitlements);
