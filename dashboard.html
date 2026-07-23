@@ -409,22 +409,26 @@ async function initDash() {
     ntf('❌ نظام الدخول غير متاح','#FF3D5A'); return;
   }
   var fbUser = TahadiAuth.currentUser();
-  if(!fbUser){
-    // لم تُستعد الجلسة بعد — انتظر onChange
+  // إن لم تُستعد جلسة Firebase، اعتمد البيانات المحلية (يظهر الحذف ويعمل عبر تسجيل دخول جديد)
+  var localUser = null;
+  try{ localUser = JSON.parse(localStorage.getItem('tahadi_user') || sessionStorage.getItem('tahadi_user') || 'null'); }catch(e){}
+  if(!fbUser && !localUser){
+    // لا جلسة إطلاقاً — انتظر onChange
     return;
   }
 
-  var uid = fbUser.uid;
+  var uid = fbUser ? fbUser.uid : (localUser && localUser.uid);
+  var email = fbUser ? fbUser.email : (localUser && localUser.email) || "";
   var prof = null;
   try{
-    if(window.TahadiDB && TahadiDB.getUser){ prof = await TahadiDB.getUser(uid); }
+    if(uid && window.TahadiDB && TahadiDB.getUser){ prof = await TahadiDB.getUser(uid); }
   }catch(e){}
 
   me = {
     uid: uid,
-    email: fbUser.email,
-    name: (prof && prof.name) || (fbUser.displayName) || fbUser.email.split('@')[0],
-    phone: (prof && prof.phone) || ""
+    email: email,
+    name: (prof && prof.name) || (fbUser && fbUser.displayName) || (localUser && localUser.name) || (email ? email.split('@')[0] : "لاعب"),
+    phone: (prof && prof.phone) || (localUser && localUser.phone) || ""
   };
 
   // اقرأ الخطة (الاشتراك) — بمعرّف Auth أولاً ثم بالبريد (مطابقة لمنطق الرئيسية)
@@ -433,7 +437,7 @@ async function initDash() {
     if(window.TahadiDB){
       var plan = null;
       if(uid && TahadiDB.getPlanByUid){ plan = await TahadiDB.getPlanByUid(uid); }
-      if((!plan || !plan.plan) && TahadiDB.getPlanByEmail){ plan = await TahadiDB.getPlanByEmail(fbUser.email); }
+      if((!plan || !plan.plan) && email && TahadiDB.getPlanByEmail){ plan = await TahadiDB.getPlanByEmail(email); }
       if(plan && plan.plan && plan.plan !== 'free'){
         me.isPro = true;
         me.subscription = { plan: 'yearly', expires_at: plan.expiresAt, tier: plan.plan };
@@ -884,13 +888,23 @@ function _bootDashboard(){
     // لا مستخدم من Firebase بعد — لكن هل توجد جلسة محلية؟ (قادم من الرئيسية)
     var hasLocal = localStorage.getItem('tahadi_token') || sessionStorage.getItem('tahadi_token');
     if(hasLocal){
-      // الجلسة تُستعاد — أظهر التحميل وانتظر، ولا تعرض شاشة الدخول
+      // الجلسة تُستعاد — أظهر التحميل وحاول عدة مرات ثم افتح اللوحة
       if(loader) loader.style.display = 'flex';
-      setTimeout(function(){
+      var _tries = 0;
+      var _iv = setInterval(function(){
+        _tries++;
         var u = (window.firebase && firebase.auth) ? firebase.auth().currentUser : null;
-        if(u){ if(loader) loader.style.display='none'; initDash(); }
-        // إن بقيت null فسيُطلق onChange تلقائياً عند اكتمال الاستعادة
-      }, 1400);
+        if(u){
+          clearInterval(_iv);
+          if(loader) loader.style.display='none';
+          initDash();
+        } else if(_tries >= 8){
+          // انتهت المحاولات (~4ث) والجلسة المحلية موجودة — افتح اللوحة بالاعتماد على الجلسة المحلية
+          clearInterval(_iv);
+          if(loader) loader.style.display='none';
+          initDash();
+        }
+      }, 500);
       return;
     }
     // لا جلسة إطلاقاً — اعرض شاشة الدخول
@@ -923,25 +937,8 @@ _bootDashboard();
   }
 
   function cleanIOS(){
-    if(!detectIOS()) return;   // يُعاد الفحص كل مرة (Capacitor قد يتأخر)
-    // تبويب «اشتراكي» ومحتواه
-    document.querySelectorAll(".tab").forEach(function(t){
-      if((t.getAttribute("onclick")||"").indexOf("subscription")>-1) t.style.display="none";
-    });
-    var subTab=document.getElementById("tab-subscription"); if(subTab)subTab.style.display="none";
-    var payTab=document.getElementById("tab-payments"); if(payTab)payTab.style.display="none";
-    // بطاقة حالة الاشتراك في «نظرة عامة» (تعرض الخطة النشطة/الترقية)
-    var sc=document.getElementById("subStatusCard"); if(sc)sc.style.display="none";
-    var dc=document.getElementById("subDetailCard"); if(dc)dc.style.display="none";
-    // أي زر ترقية/اشتراك/دفع أينما كان
-    document.querySelectorAll("[onclick]").forEach(function(el){
-      var oc=el.getAttribute("onclick")||"";
-      if(oc.indexOf("subscription")>-1 || oc.indexOf("doCheckout")>-1 || oc.indexOf("openSubscribe")>-1 || oc.indexOf("cancelAutoRenew")>-1){
-        el.style.display="none";
-      }
-    });
-    // لو المستخدم على تبويب الاشتراك، أعِده للرئيسية
-    try{ if(subTab && subTab.style.display!=="none"){} }catch(e){}
+    // تحديث 1.1: الاشتراكات مفعّلة على iOS عبر StoreKit — لا نخفي شيئاً
+    return;
   }
   window._cleanIOS = cleanIOS;
   // شغّلها فوراً وعدة مرات لالتقاط الأزرار المُولّدة ديناميكياً وتأخّر Capacitor
