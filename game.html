@@ -335,6 +335,7 @@ select.inp option{background:#0C1440;}
 @media(max-height:660px){#game{gap:.28rem;padding:.38rem;}.qwrap{padding:.55rem;}}
 </style>
 <script src="js/capacitor-bridge.js"></script>
+<script src="js/trial.js"></script>
 </head>
 <body>
 
@@ -1051,7 +1052,7 @@ const QB = [
   {id:370,text:"كم يساوي 3^7 (3 مرفوعة للقوة 7)؟",A:"2187",B:"6561",C:"729",D:"243",correct:"A",cat:"رياضيات"},
   {id:371,text:"كم يساوي 20 × 15؟",A:"290",B:"300",C:"310",D:"320",correct:"B",cat:"رياضيات"},
   {id:372,text:"كم يساوي 5 × 19؟",A:"90",B:"95",C:"100",D:"105",correct:"B",cat:"رياضيات"},
-  {id:373,text:"كم يساوي 7^3 (7 مرفوعة للقوة 3)؟",A:"343",B:"243",C:"344",D:"443",correct:"A",cat:"رياضيات"},
+  {id:373,text:"كم يساوي 7^3 (7 مرفوعة للقوة 3)؟",A:"343",B:"243",C:"216",D:"443",correct:"A",cat:"رياضيات"},
   {id:374,text:"كم يساوي 9 × 16؟",A:"134",B:"144",C:"154",D:"164",correct:"B",cat:"رياضيات"},
   {id:375,text:"كم يساوي 11 × 16؟",A:"166",B:"176",C:"186",D:"196",correct:"B",cat:"رياضيات"},
   {id:376,text:"كم يساوي 2^8 (2 مرفوعة للقوة 8)؟",A:"128",B:"256",C:"512",D:"1024",correct:"B",cat:"رياضيات"},
@@ -1861,7 +1862,7 @@ const QB = [
   {id:1317,text:"ما مفرد كلمة سقوف؟",A:"سقف",B:"سقفة",C:"سقاف",D:"سقفان",correct:"A",cat:"لغة عربية"},
   {id:1318,text:"ما جمع كلمة نجمة؟",A:"نجوم",B:"نجمات",C:"أنجم",D:"جميع ما سبق",correct:"D",cat:"لغة عربية"},
   {id:1319,text:"ما مضاد كلمة جديد؟",A:"قديم",B:"عتيق",C:"بال",D:"جميع ما سبق",correct:"D",cat:"لغة عربية"},
-  {id:1320,text:"ما جمع كلمة سقف؟",A:"سقوف",B:"أسقف",C:"سقيفة",D:"سقافات",correct:"A",cat:"لغة عربية"},
+  {id:1320,text:"ما جمع كلمة \"بيت\"؟",A:"بيوت",B:"بيتان",C:"أبيات",D:"بيتات",correct:"A",cat:"لغة عربية"},
   {id:1336,text:"إعراب كلمة المعلمون في جملة جاء المعلمون",A:"فاعل مرفوع وعلامة رفعه الواو",B:"مبتدأ مرفوع",C:"خبر مرفوع",D:"مفعول به منصوب",correct:"A",cat:"لغة عربية"},
   {id:1337,text:"وزن الفعل انطلق في الميزان الصرفي",A:"انفعل",B:"استفعل",C:"تفاعل",D:"افتعل",correct:"A",cat:"لغة عربية"},
   {id:1338,text:"أسلوب جملة إنما المؤمنون إخوة",A:"قصر",B:"نفي",C:"نهي",D:"أمر",correct:"A",cat:"لغة عربية"},
@@ -3144,7 +3145,16 @@ function pickQs(catFilter){
   if(TIERS.elite||TIERS.pro){
     pool=QB.slice(); // المشترك: البنك كامل
   } else {
-    pool=QB.slice(0,FM); // المجاني: نفس أول 200 سؤال دائماً (مقصود — حافز للاشتراك)
+    // المجاني: 200 سؤال ثابتة لكن موزّعة على كل الفئات (بدل أول 200 المتحيّزة للرياضيات)
+    var _byCat={};
+    QB.forEach(function(q){ (_byCat[q.cat]=_byCat[q.cat]||[]).push(q); });
+    var _cats=Object.keys(_byCat).sort();
+    pool=[];
+    var _i=0;
+    while(pool.length<FM && _i<500){
+      _cats.forEach(function(c){ if(pool.length<FM && _byCat[c][_i]) pool.push(_byCat[c][_i]); });
+      _i++;
+    }
   }
   if(catFilter)pool=pool.filter(function(q){return q.cat===catFilter;});
   var used=new Set(getUsed());
@@ -3155,7 +3165,26 @@ function pickQs(catFilter){
     avail=pool;
     if(!isOff){ try{ ntf("🎉 أكملت كل الأسئلة! تبدأ مرحلة جديدة",COLORS.cyan.h); }catch(e){} }
   }
-  var result=shuf(avail).slice(0,TOT);
+  // اختيار متوازن: وزّع الأسئلة على الفئات بالتناوب بدل العشوائية المحضة
+  var byCat={};
+  avail.forEach(function(q){ (byCat[q.cat]=byCat[q.cat]||[]).push(q); });
+  var cats=shuf(Object.keys(byCat));
+  cats.forEach(function(c){ byCat[c]=shuf(byCat[c]); });
+  var result=[], guard=0;
+  while(result.length<TOT && guard<TOT*40){
+    guard++;
+    var progressed=false;
+    for(var i=0;i<cats.length && result.length<TOT;i++){
+      var arr=byCat[cats[i]];
+      if(arr && arr.length){ result.push(arr.shift()); progressed=true; }
+    }
+    if(!progressed) break;
+  }
+  if(result.length<TOT){ // احتياط: أكمل من أي متاح
+    var rest=shuf(avail.filter(function(q){return result.indexOf(q)===-1;}));
+    result=result.concat(rest.slice(0,TOT-result.length));
+  }
+  result=shuf(result);   // اخلط الترتيب النهائي حتى لا تتوالى الفئات
   markUsed(result.map(function(q){return q.id;}));
   return result;
 }
@@ -4276,6 +4305,7 @@ function endGame(){
     return b.points-a.points;
   });
   recordUserStats(sorted); // سجّل إحصائيات المستخدم المسجّل دخوله (أونلاين فقط)
+  try{ if(window.TRIAL && TRIAL.active()){ var _l=TRIAL.consume(); ntf(_l>0?("🎁 تبقّى "+_l+" لوحة من التجربة"):"انتهت التجربة المجانية","#FFD046"); } }catch(e){}
   ss("results");
   // زر "جولة جديدة بنفس الفرق" للأونلاين فقط (المضيف يبدأها، الجميع ينتقل)
   var rb=document.getElementById("rematchBtn");
