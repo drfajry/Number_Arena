@@ -1051,7 +1051,7 @@ const QB = [
   {id:370,text:"كم يساوي 3^7 (3 مرفوعة للقوة 7)؟",A:"2187",B:"6561",C:"729",D:"243",correct:"A",cat:"رياضيات"},
   {id:371,text:"كم يساوي 20 × 15؟",A:"290",B:"300",C:"310",D:"320",correct:"B",cat:"رياضيات"},
   {id:372,text:"كم يساوي 5 × 19؟",A:"90",B:"95",C:"100",D:"105",correct:"B",cat:"رياضيات"},
-  {id:373,text:"كم يساوي 7^3 (7 مرفوعة للقوة 3)؟",A:"343",B:"243",C:"343",D:"443",correct:"A",cat:"رياضيات"},
+  {id:373,text:"كم يساوي 7^3 (7 مرفوعة للقوة 3)؟",A:"343",B:"243",C:"344",D:"443",correct:"A",cat:"رياضيات"},
   {id:374,text:"كم يساوي 9 × 16؟",A:"134",B:"144",C:"154",D:"164",correct:"B",cat:"رياضيات"},
   {id:375,text:"كم يساوي 11 × 16؟",A:"166",B:"176",C:"186",D:"196",correct:"B",cat:"رياضيات"},
   {id:376,text:"كم يساوي 2^8 (2 مرفوعة للقوة 8)؟",A:"128",B:"256",C:"512",D:"1024",correct:"B",cat:"رياضيات"},
@@ -3590,6 +3590,8 @@ function shareVia(kind){
    GAME CORE
 ════════════════════════════════════════ */
 function initGame(){
+  // صفّر حارس التقدّم عند بدء أي جولة (يمنع تعليق دور الفريق الأول في الجولات التالية)
+  if(G.qi===0){ _lastAdvancedQi=-1; _gameStatsSaved=false; }
   initRoomState();
   if(!G.board)G.board=shuf([...BT]).map(function(t,i){return{i:i,n:i+1,t:t,used:false,by:null};});
   if(!G.qs)G.qs=pickQs();
@@ -3946,7 +3948,10 @@ function nextT(){
   if(_lastAdvancedQi===G.qi){return;}
   _lastAdvancedQi=G.qi;
   G.qi++;
-  if(G.qi>=TOT){endGame();return;}
+  // نهاية الجولة تعتمد على الخلايا المستخدمة فعلياً (يضمن قبول الرقم الأخير)
+  var _usedCells=(G.board||[]).filter(function(c){return c&&c.used;}).length;
+  if(_usedCells>=TOT || G.qi>TOT){endGame();return;}
+  if(G.qi>=TOT){ G.qi=TOT-1; }   // لا تتجاوز آخر سؤال قبل استهلاك كل الخلايا
   // تقدّم للفريق التالي، متخطياً أي فريق منسحب
   G.ci=(G.ci+1)%G.teams.length;
   var _guard=0;
