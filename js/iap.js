@@ -177,6 +177,15 @@
       return _purchases.restorePurchases().then(function(res){
         var info = res && res.customerInfo;
         var tier = self._tierFromCustomerInfo(info);
+        if(!tier){
+          // لا اشتراك نشط — امسح كل مزايا IAP فوراً
+          try{
+            localStorage.removeItem("tahadi_iap_tier");
+            localStorage.removeItem("tahadi_pro"); sessionStorage.removeItem("tahadi_pro");
+            localStorage.removeItem("tahadi_elite"); sessionStorage.removeItem("tahadi_elite");
+          }catch(e){}
+          if(typeof window.renderUserBar === "function"){ try{ renderUserBar(); }catch(e){} }
+        }
         return self.syncToFirebase(tier).then(function(){
           return {success:true, tier:tier, customerInfo:info};
         });
