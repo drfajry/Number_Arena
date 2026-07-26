@@ -197,32 +197,11 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   <div style="color:var(--dim);font-size:.9rem">جارٍ التحميل...</div>
 </div>
 <div id="authWrap" class="auth-wrap" style="display:none">
-  <!-- LOGIN -->
-  <div id="loginBox" class="auth-box">
-    <div class="auth-logo">
-      <img id="authLogo" src="" alt="" onerror="this.style.display='none';document.getElementById('authLogoFb').style.display='block'">
-      <div id="authLogoFb" class="auth-logo-fb" style="display:none">🏆</div>
-    </div>
-    <div class="auth-title">تحدي الأرقام</div>
-    <div class="auth-sub">سجّل دخولك للمتابعة</div>
-    <div id="loginErr" class="err-box" style="display:none"></div>
-    <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="loginEmail" placeholder="name@example.com"></div>
-    <div class="form-group"><label>كلمة المرور</label><input type="password" id="loginPwd" placeholder="••••••••"></div>
-    <button class="btn btn-cyan" id="loginBtn" onclick="doLogin()">تسجيل الدخول</button>
-    <div class="auth-switch">ليس لديك حساب؟ <a onclick="showRegister()">إنشاء حساب</a></div>
-  </div>
-
-  <!-- REGISTER -->
-  <div id="registerBox" class="auth-box" style="display:none">
-    <div class="auth-logo"><div class="auth-logo-fb">🏆</div></div>
-    <div class="auth-title">إنشاء حساب</div>
-    <div class="auth-sub">انضم إلى تحدي الأرقام</div>
-    <div id="regErr" class="err-box" style="display:none"></div>
-    <div class="form-group"><label>الاسم</label><input type="text" id="regName" placeholder="اسمك الكامل"></div>
-    <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="regEmail" placeholder="name@example.com"></div>
-    <div class="form-group"><label>كلمة المرور</label><input type="password" id="regPwd" placeholder="6 أحرف على الأقل"></div>
-    <button class="btn btn-gold" id="regBtn" onclick="doRegister()">إنشاء الحساب</button>
-    <div class="auth-switch">لديك حساب؟ <a onclick="showLogin()">تسجيل الدخول</a></div>
+  <div class="auth-box" style="text-align:center">
+    <div class="auth-logo"><div class="auth-logo-fb">🔒</div></div>
+    <div class="auth-title">سجّل دخولك أولاً</div>
+    <div class="auth-sub">تحتاج تسجيل الدخول للوصول إلى لوحتك</div>
+    <a href="index.html" class="btn btn-gold" style="text-decoration:none;display:inline-block;margin-top:1rem">العودة للرئيسية →</a>
   </div>
 </div>
 
@@ -366,8 +345,8 @@ let selPlan = 'monthly';
 document.getElementById('authLogo').src = LOGO;
 
 /* ═══ AUTH ════════════════════════════ */
-function showLogin()    { document.getElementById('registerBox').style.display='none'; document.getElementById('loginBox').style.display='block'; }
-function showRegister() { document.getElementById('loginBox').style.display='none'; document.getElementById('registerBox').style.display='block'; }
+function showLogin()    { location.href='index.html'; }
+function showRegister() { location.href='index.html'; }
 
 async function doLogin() {
   // dashboard لم يعد فيه دخول مستقل — التوجيه للرئيسية
@@ -961,6 +940,7 @@ _bootDashboard();
 document.addEventListener('keydown', e => {
   if (e.key==='Enter') {
     const lp=document.getElementById('loginBox'); const rp=document.getElementById('registerBox');
+    if(!lp||!rp) return;
     if (lp.style.display!=='none') doLogin();
     else if (rp.style.display!=='none') doRegister();
   }
