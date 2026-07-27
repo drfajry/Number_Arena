@@ -342,7 +342,7 @@ let token   = localStorage.getItem('tahadi_token');
 let me      = null;
 let selPlan = 'monthly';
 
-document.getElementById('authLogo').src = LOGO;
+var _al=document.getElementById('authLogo'); if(_al) _al.src = LOGO;
 
 /* ═══ AUTH ════════════════════════════ */
 function showLogin()    { location.href='index.html'; }
