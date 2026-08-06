@@ -1654,6 +1654,7 @@ function authVerify(){
 
 function loginUser(user,skipStep){
   window._forceLoggedOut=false; // دخول جديد — أعد تفعيل درع الجلسة
+  try{ setTimeout(function(){ if(typeof renderTrialBtn==="function") renderTrialBtn(); }, 300); }catch(e){}
   var uid=user.uid;
   var sessionId="s_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
   var rememberEl=document.getElementById("authRemember");
@@ -1775,6 +1776,12 @@ function syncPlanFromDB(cb){
         authSetOne("tahadi_pro","1");
         if(_t==="elite")authSetOne("tahadi_elite","1");
         console.log("[Plan] from IAP (RevenueCat):",_t);
+      } else if(localStorage.getItem("tahadi_trial_tier") && window.TRIAL && TRIAL.active()){
+        // تجربة أسطوري نشطة (لا تُكتب كخطة حقيقية في Firebase) — لا تُمسح
+        var _tt=localStorage.getItem("tahadi_trial_tier");
+        authSetOne("tahadi_pro","1");
+        if(_tt==="elite")authSetOne("tahadi_elite","1");
+        console.log("[Plan] from trial:",_tt);
       } else {
         authClearAll(["tahadi_pro","tahadi_elite"]);
         console.log("[Plan] no active plan (free)");
@@ -1802,6 +1809,10 @@ function syncFromAdminLocal(user){
       authSetOne("tahadi_pro","1");
       if(sub.plan.indexOf("elite")>-1)authSetOne("tahadi_elite","1");
       else authClearAll(["tahadi_elite"]);
+    } else if(localStorage.getItem("tahadi_trial_tier") && window.TRIAL && TRIAL.active()){
+      var _tt=localStorage.getItem("tahadi_trial_tier");
+      authSetOne("tahadi_pro","1");
+      if(_tt==="elite")authSetOne("tahadi_elite","1");
     } else {
       authClearAll(["tahadi_pro","tahadi_elite"]);
     }
