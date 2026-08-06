@@ -401,6 +401,7 @@ select.inp option{background:#0C1440;}
 <script src="js/trial.js"></script>
 </head>
 <body>
+<div id="trialBox" style="display:none;position:fixed;top:calc(.7rem + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:500;width:min(92vw,420px)"></div>
 
 <!-- NAVBAR -->
 <nav>
@@ -552,7 +553,6 @@ select.inp option{background:#0C1440;}
   <div class="container">
     <div class="sec-badge">💳 الأسعار</div>
     <h2 class="sec-title">ابدأ مجاناً، <span class="hl2">ارقَ متى ما أردت</span></h2>
-    <div id="trialBox" style="display:none;max-width:420px;margin:1rem auto 0"></div>
         <div class="price-grid">
       <div class="price-card"><div class="price-ico">🚀</div><div class="price-plan">منطلق</div><div class="price-amt">مجاناً</div><div class="price-per">للأبد</div><button class="price-btn gh" onclick="openOffline()">ابدأ مجاناً</button><ul class="price-feats"><li>200 سؤال شهرياً</li><li>لعب أوفلاين على نفس الجهاز</li><li>وسيلة مساعدة واحدة (بنك الحظ)</li><li>2-4 فرق</li></ul></div>
       <div class="price-card"><div class="price-ico">👑</div><div class="price-plan">بطل</div><div class="price-amt" id="pAmt">9 <span style="font-size:.9rem">ر.س</span></div><div class="price-per" id="pPer">/ سنة</div><button class="price-btn c" onclick="openSubscribe('pro')">اشترك الآن</button><ul class="price-feats"><li>2300+ سؤال</li><li>أونلاين مع أجهزة مختلفة</li><li>3 وسائل مساعدة</li><li>الجمهور + إعادة الوقت</li></ul></div>
@@ -1758,6 +1758,14 @@ function sendOTPEmail(email,name,code,cb){
 function syncPlanFromDB(cb){
   var user=JSON.parse(authGet("tahadi_user")||"null");
   if(!user||!user.email){if(cb)cb();return;}
+  // تجربة أسطوري نشطة؟ فعّلها فوراً بلا استعلام Firebase (يمنع أي كتابة خطأ تلغيها)
+  if(window.TRIAL && TRIAL.active()){
+    var _tt=localStorage.getItem("tahadi_trial_tier")||"elite";
+    authSetOne("tahadi_pro","1");
+    if(_tt==="elite")authSetOne("tahadi_elite","1");
+    if(cb)cb();
+    return;
+  }
   if(window.TahadiDB&&window.firebase&&firebase.apps&&firebase.apps.length){
     // اقرأ الخطة بمعرّف Auth الحقيقي (النظام الجديد)، مع تراجع للبريد
     var planPromise = (user.uid&&TahadiDB.getPlanByUid)
@@ -1951,13 +1959,22 @@ function renderTrialBtn(){
   if(!window.TRIAL) return;
   var box=document.getElementById("trialBox");
   if(!box) return;
+  if(localStorage.getItem("tahadi_trial_banner_dismissed")==="1" && !TRIAL.active()){ box.style.display="none"; return; }
   if(TRIAL.active()){
-    box.innerHTML='<div style="background:rgba(255,208,70,.1);border:1px solid rgba(255,208,70,.35);border-radius:12px;padding:.8rem;text-align:center;color:#FFD046;font-weight:700">🎁 تجربة أسطوري نشطة — تبقّى '+TRIAL.left()+' لوحة</div>';
+    box.innerHTML='<div style="background:linear-gradient(135deg,#1a1400,#241a00);border:1.5px solid rgba(255,208,70,.5);border-radius:14px;padding:.85rem 1rem;display:flex;align-items:center;gap:.6rem;box-shadow:0 8px 24px rgba(0,0,0,.4)">'
+      +'<span style="font-size:1.3rem">🎁</span>'
+      +'<span style="flex:1;color:#FFD046;font-weight:700;font-size:.85rem">تجربة أسطوري نشطة — تبقّى '+TRIAL.left()+' لوحة</span>'
+      +'<button onclick="document.getElementById(\'trialBox\').style.display=\'none\'" style="background:none;border:none;color:#FFD046;font-size:1.1rem;cursor:pointer;padding:.2rem .4rem;line-height:1">✕</button>'
+      +'</div>';
     box.style.display="block"; return;
   }
   TRIAL.eligible().then(function(ok){
     if(!ok){ box.style.display="none"; return; }
-    box.innerHTML='<button class="btn-p" onclick="startEliteTrial()" style="width:100%;padding:.8rem;font-size:.95rem">🎁 جرّب أسطوري مجاناً — 3 لوحات</button>';
+    box.innerHTML='<div style="background:linear-gradient(135deg,#071640,#0d2068);border:1.5px solid var(--cyan);border-radius:14px;padding:.85rem 1rem;display:flex;align-items:center;gap:.6rem;box-shadow:0 8px 24px rgba(0,0,0,.4)">'
+      +'<span style="font-size:1.3rem">🎁</span>'
+      +'<button onclick="startEliteTrial()" style="flex:1;background:none;border:none;color:var(--cyan);font-weight:800;font-size:.85rem;cursor:pointer;text-align:right;font-family:inherit">جرّب أسطوري مجاناً — 3 لوحات</button>'
+      +'<button onclick="localStorage.setItem(\'tahadi_trial_banner_dismissed\',\'1\');document.getElementById(\'trialBox\').style.display=\'none\'" style="background:none;border:none;color:var(--cyan);font-size:1.1rem;cursor:pointer;padding:.2rem .4rem;line-height:1">✕</button>'
+      +'</div>';
     box.style.display="block";
   }).catch(function(){ box.style.display="none"; });
 }
