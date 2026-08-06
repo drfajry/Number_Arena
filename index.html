@@ -764,6 +764,12 @@ function onlineGate(){
   }
   var isPro=authGet("tahadi_pro")==="1";
   var isElite=authGet("tahadi_elite")==="1";
+  // تجربة أسطوري نشطة؟ تفتح الأونلاين مباشرة
+  try{
+    var _tA=localStorage.getItem("tahadi_trial_active")==="1";
+    var _tL=parseInt(localStorage.getItem("tahadi_trial_left")||"0",10);
+    if(_tA && _tL>0){ isElite=true; isPro=true; }
+  }catch(e){}
   if(!isPro&&!isElite){
     if(window.IS_APP){
       // داخل التطبيق: رسالة محايدة بلا أي توجيه للشراء (سياسة Google Play)
@@ -1836,6 +1842,12 @@ function renderUserBar(){
   var user =JSON.parse(authGet("tahadi_user")||"null");
   var isPro   =authGet("tahadi_pro")==="1";
   var isElite =authGet("tahadi_elite")==="1";
+  // تجربة أسطوري نشطة؟ مصدر مستقل (لا يعتمد على أعلام قد تُمسح من أي مسار)
+  try{
+    var _tA=localStorage.getItem("tahadi_trial_active")==="1";
+    var _tL=parseInt(localStorage.getItem("tahadi_trial_left")||"0",10);
+    if(_tA && _tL>0){ isElite=true; isPro=true; }
+  }catch(e){}
 
   // Update navbar button
   var navBtn=document.getElementById("navAuthBtn");
