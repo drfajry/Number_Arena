@@ -84,7 +84,7 @@ select.inp option{background:#0C1440;}
 .co.sel::after{opacity:1;}
 
 /* ══ WAITING ══ */
-#waiting{padding:1.1rem;gap:.8rem;}
+#waiting{padding:max(env(safe-area-inset-top), 1.1rem) 1.1rem max(env(safe-area-inset-bottom), 1.1rem);gap:.8rem;}
 .wt{font-family:"Cairo",sans-serif;font-weight:900;font-size:1.15rem;color:var(--cyan);text-align:center;}
 .cbox{background:linear-gradient(135deg,rgba(0,229,255,.05),rgba(255,208,70,.03));
   border:1.5px solid rgba(0,229,255,.24);border-radius:13px;padding:1rem;
@@ -107,7 +107,7 @@ select.inp option{background:#0C1440;}
 .tslot.filled{border-style:solid;}
 
 /* ══ GAME LAYOUT ══ */
-#game{padding:.5rem;gap:.42rem;height:100vh;max-height:100vh;overflow:hidden;box-sizing:border-box;}
+#game{padding:max(env(safe-area-inset-top), 22px) max(env(safe-area-inset-right), .5rem) max(env(safe-area-inset-bottom), .5rem) max(env(safe-area-inset-left), .5rem);gap:.42rem;height:100vh;max-height:100vh;overflow:hidden;box-sizing:border-box;}
 
 /* Header */
 .ghdr{display:flex;align-items:center;justify-content:space-between;
@@ -266,7 +266,7 @@ select.inp option{background:#0C1440;}
 .anscor{font-size:.76rem;color:rgba(255,255,255,.4);max-width:270px;}
 
 /* Results */
-#results{padding:1.4rem;align-items:center;justify-content:center;}
+#results{padding:max(env(safe-area-inset-top), 1.4rem) 1.4rem max(env(safe-area-inset-bottom), 1.4rem);align-items:center;justify-content:center;}
 .rbox{width:100%;max-width:480px;}
 .rtit{font-family:"Cairo",sans-serif;font-size:1.7rem;font-weight:900;text-align:center;
   color:var(--gold);text-shadow:0 0 18px rgba(255,208,70,.38);margin-bottom:.2rem;}
