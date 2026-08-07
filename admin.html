@@ -213,7 +213,9 @@ select.inp option{background:#0C1440;}
         <option value="elite">أسطوري (Elite)</option>
         <option value="expired">منتهي</option>
       </select>
+      <button class="btn-primary" onclick="backfillIapSubs()" title="يفحص كل المستخدمين ويضيف سجلات اللوحة لأي مشترك عبر آبل/قوقل ظهر مسبقاً بلا سجل — مرة واحدة، آمن التكرار">🔄 استرجاع اشتراكات المتجر القديمة</button>
     </div>
+    <div id="subsTotalBar" style="display:flex;gap:1.2rem;flex-wrap:wrap;margin:.6rem 0 .9rem;font-size:.85rem;color:var(--dim)"></div>
     <div class="table-wrap">
       <table class="tbl">
         <thead><tr><th>المستخدم</th><th>الخطة</th><th>المبلغ</th><th>البداية</th><th>الانتهاء</th><th>أيام متبقية</th><th>الحالة</th><th>إجراء</th></tr></thead>
@@ -633,10 +635,10 @@ function loadDashboard(){
 
   var stats=[
     {val:data.users.length,      lbl:"إجمالي المستخدمين", col:"var(--cyan)", id:"stat-users"},
-    {val:activeSubs.length,      lbl:"اشتراكات نشطة",      col:"var(--green)"},
+    {val:activeSubs.length,      lbl:"اشتراكات نشطة",      col:"var(--green)", id:"stat-active-subs"},
     {val:proCount,               lbl:"مشتركو Pro",          col:"var(--cyan)"},
     {val:eliteCount,             lbl:"مشتركو Elite",        col:"#C084FC"},
-    {val:revenue+" ر.س",        lbl:"إجمالي الإيرادات",    col:"var(--gold)"},
+    {val:revenue+" ر.س",        lbl:"إجمالي الإيرادات",    col:"var(--gold)", id:"stat-revenue"},
     {val:data.grants.length,     lbl:"منح يدوية",           col:"var(--dim)"},
   ];
   var sg=document.getElementById("statsGrid");sg.innerHTML="";
@@ -652,6 +654,41 @@ function loadDashboard(){
       var el=document.getElementById("stat-users");
       if(el&&fbUsers)el.textContent=fbUsers.length;
     }).catch(function(){});
+  }
+  // ── الإيرادات الحقيقية: تدمج اشتراكات Firebase (يشمل IAP) مع المحلية — لا تعتمد على localStorage فقط ──
+  if(window.TahadiDB&&TahadiDB.getAllSubscriptions){
+    TahadiDB.getAllSubscriptions().then(function(fbSubs){
+      var merged=fbSubs.slice();
+      (data.subscriptions||[]).forEach(function(s){
+        if(!merged.find(function(x){return x.id===s.id;})) merged.push(s);
+      });
+      // أحدث سجل لكل مستخدم فقط (تجنب عدّ نفس الاشتراك مرتين بين IAP والمحلي)
+      var byKey={};
+      merged.forEach(function(s){
+        var key=s.email||s.phone||s.uid||s.id;
+        if(!byKey[key]||new Date(s.createdAt||0)>new Date(byKey[key].createdAt||0))byKey[key]=s;
+      });
+      var dedup=Object.keys(byKey).map(function(k){return byKey[k];});
+      var priceProDefault  =parseInt((document.getElementById("sPriceProM")  &&document.getElementById("sPriceProM").value)  ||9,10);
+      var priceEliteDefault=parseInt((document.getElementById("sPriceEliteM")&&document.getElementById("sPriceEliteM").value)||19,10);
+      var liveActive=dedup.filter(function(s){return new Date(s.expiresAt)>now;});
+      var liveRevenue=liveActive.reduce(function(a,s){
+        var amt=s.amount>0?s.amount:(s.plan.startsWith("elite")?priceEliteDefault:priceProDefault);
+        return a+amt;
+      },0);
+      var elRev=document.getElementById("stat-revenue");
+      var elActive=document.getElementById("stat-active-subs");
+      if(elRev)elRev.textContent=liveRevenue+" ر.س";
+      if(elActive)elActive.textContent=liveActive.length;
+      // خزّن نسخة مدمجة (Firebase + محلي) ليستخدمها جدول المستخدمين أيضاً، وأعد رسمه إذا كان مفتوحاً
+      window._fbSubsCache=dedup;
+      var usersPageEl=document.getElementById("pg-users");
+      if(usersPageEl && usersPageEl.classList.contains("active")) renderUsers();
+    }).catch(function(e){
+      console.warn("[Dashboard] فشل جلب اشتراكات Firebase (subscriptions/):",e);
+      var elRev=document.getElementById("stat-revenue");
+      if(elRev) elRev.title="⚠️ تعذّر جلب اشتراكات المتجر من Firebase — راجع Console (F12)";
+    });
   }
   var recent=data.subscriptions.slice(-10).reverse();
   var tbody=document.getElementById("recentSubs");tbody.innerHTML="";
@@ -743,10 +780,18 @@ function renderUsersTable(users,q){
   users.forEach(function(u){
     var now=new Date();
     var sub=data.subscriptions.filter(function(s){return (s.phone===u.phone||s.uid===u.uid)&&new Date(s.expiresAt)>now;}).pop();
+    // fallback: تحقق أيضاً من اشتراكات المتجر (Firebase) المخزّنة مؤقتاً — تشمل IAP
+    if(!sub && window._fbSubsCache){
+      sub=window._fbSubsCache.filter(function(s){
+        return (s.uid===u.uid||s.email===u.email)&&new Date(s.expiresAt)>now;
+      }).pop();
+    }
     var planBadge=sub?"<span class=\"badge badge-"+(sub.plan.startsWith("elite")?"elite":"pro")+"\">"+sub.plan+"</span>":"<span class=\"badge badge-free\">مجاني</span>";
     var uid=u.uid||u.id||"";
     _userCache[uid]={uid:uid,name:u.name||"",email:u.email||"",phone:u.phone||""};
-    tbody.innerHTML+="<tr><td>"+(u.name||"—")+"</td><td dir=\"ltr\">"+(u.email||"—")+"</td><td dir=\"ltr\">"+(u.phone||"—")+"</td><td>"+planBadge+"</td><td>"+fmtDate(u.createdAt)+"</td><td><button class=\"btn-primary\" style=\"padding:.3rem .7rem;font-size:.72rem;margin-left:4px\" onclick=\"openEditUser('"+uid+"')\">✏️ تعديل</button><button class=\"btn-danger\" style=\"padding:.3rem .7rem;font-size:.72rem\" onclick=\"deleteUser('"+(u.id||uid)+"','"+uid+"')\">حذف</button></td></tr>";
+    // اسم افتراضي من البريد إذا المستخدم ما سجّل اسمه (بدل عرض "—")
+    var displayName=u.name || (u.email?u.email.split("@")[0]:"") || "—";
+    tbody.innerHTML+="<tr><td>"+displayName+"</td><td dir=\"ltr\">"+(u.email||"—")+"</td><td dir=\"ltr\">"+(u.phone||"—")+"</td><td>"+planBadge+"</td><td>"+fmtDate(u.createdAt)+"</td><td><button class=\"btn-primary\" style=\"padding:.3rem .7rem;font-size:.72rem;margin-left:4px\" onclick=\"openEditUser('"+uid+"')\">✏️ تعديل</button><button class=\"btn-danger\" style=\"padding:.3rem .7rem;font-size:.72rem\" onclick=\"deleteUser('"+(u.id||uid)+"','"+uid+"')\">حذف</button></td></tr>";
   });
 }
 
@@ -842,7 +887,33 @@ function renderSubsTable(allSubs,q){
     return match&&planMatch;
   });
   var tbody=document.getElementById("subsTable");tbody.innerHTML="";
-  if(!subs.length){tbody.innerHTML="<tr><td colspan=\"8\" class=\"empty-state\">لا توجد اشتراكات</td></tr>";return;}
+  var totalBar=document.getElementById("subsTotalBar");
+  if(!subs.length){
+    tbody.innerHTML="<tr><td colspan=\"8\" class=\"empty-state\">لا توجد اشتراكات</td></tr>";
+    if(totalBar)totalBar.innerHTML="";
+    return;
+  }
+  // سعر افتراضي لأي سجل بلا مبلغ محفوظ (مثلاً IAP قديم قبل التسعير، أو منح يدوي بلا سعر) — من إعدادات الأسعار الحالية
+  var priceProDefault  =parseInt((document.getElementById("sPriceProM")  &&document.getElementById("sPriceProM").value)  ||9,10);
+  var priceEliteDefault=parseInt((document.getElementById("sPriceEliteM")&&document.getElementById("sPriceEliteM").value)||19,10);
+  function displayAmount(s){
+    if(s.amount>0) return s.amount;
+    return s.plan.startsWith("elite")?priceEliteDefault:priceProDefault;
+  }
+  // ── إجماليات (للقائمة المفلترة/المعروضة حالياً) ──
+  var totalAll=0, totalActive=0, activeCount=0;
+  subs.forEach(function(s){
+    var amt=displayAmount(s);
+    totalAll+=amt;
+    if(new Date(s.expiresAt)>now){ totalActive+=amt; activeCount++; }
+  });
+  if(totalBar){
+    totalBar.innerHTML=
+      "<span>📋 عدد الاشتراكات المعروضة: <b style=\"color:var(--cyan)\">"+subs.length+"</b></span>"
+      +"<span>✅ النشطة: <b style=\"color:var(--green)\">"+activeCount+"</b></span>"
+      +"<span>💰 إجمالي مبالغ النشطة: <b style=\"color:var(--gold)\">"+totalActive+" ر.س</b></span>"
+      +"<span>Σ إجمالي الكل (شامل المنتهي): <b style=\"color:var(--dim)\">"+totalAll+" ر.س</b></span>";
+  }
   subs.slice().reverse().forEach(function(s){
     var expDate=new Date(s.expiresAt);
     var active=expDate>now;
@@ -856,13 +927,61 @@ function renderSubsTable(allSubs,q){
     tbody.innerHTML+="<tr>"
       +"<td dir=\"ltr\">"+(s.email||s.phone||"—")+"</td>"
       +"<td><span class=\"badge badge-"+(s.plan.startsWith("elite")?"elite":"pro")+"\">"+s.plan+"</span></td>"
-      +"<td>"+(s.amount||"—")+" ر.س</td>"
+      +"<td>"+displayAmount(s)+" ر.س</td>"
       +"<td>"+fmtDate(s.createdAt)+"</td>"
       +"<td>"+fmtDate(s.expiresAt)+"</td>"
       +"<td><span "+dClass+">"+daysLbl+"</span></td>"
       +"<td><span class=\"badge badge-"+(active?"active":"expired")+"\">"+(active?"نشط":"منتهي")+"</span></td>"
       +"<td style=\"display:flex;gap:.4rem\"><button class=\"btn-success\" onclick=\"editSub('"+(s.email||s.phone)+"')\" title=\"تعديل\">✏️</button><button class=\"btn-danger\" onclick=\"revokeSubByPhone('"+(s.email||s.phone)+"')\">إلغاء</button></td>"
       +"</tr>";
+  });
+}
+
+/* ── سكربت مرة واحدة: استرجاع اشتراكات IAP (آبل/قوقل) القديمة التي اشتُرِيت
+   قبل إضافة الكتابة لعقدة subscriptions/ ولذلك لم تظهر أبداً في هذه اللوحة.
+   يفحص عقدة currentPlan تحت كل مستخدم ويضيف سجل subscriptions/iap_UID مطابق
+   لكل حالة source هي iap. آمن للتشغيل أكثر من مرة (مفتاح ثابت يُحدَّث فقط). ── */
+function backfillIapSubs(){
+  if(!window.TahadiDB || !window.firebase){ntf("❌ Firebase غير جاهز","#FF3D5A");return;}
+  if(!confirm("سيفحص هذا كل المستخدمين ويضيف سجل اشتراك في اللوحة لأي مشترك عبر آبل/قوقل ما ظهر سابقاً.\nآمن ويمكن تكراره. متابعة؟"))return;
+  ntf("⏳ جاري الفحص...","#00E5FF");
+  var settingsPromise = TahadiDB.getSettings ? TahadiDB.getSettings().catch(function(){return{};}) : Promise.resolve({});
+  settingsPromise.then(function(settings){
+    var priceProM  = settings.priceProM   || 9;
+    var priceEliteM= settings.priceEliteM || 19;
+    return firebase.database().ref("users").once("value").then(function(snap){
+      var updates={};
+      var count=0;
+      snap.forEach(function(c){
+        var uid=c.key;
+        var v=c.val();
+        var plan=v && v.currentPlan;
+        if(!plan || plan.source!=="iap") return;      // فقط اشتراكات المتجر
+        if(!plan.plan || !plan.expiresAt) return;
+        var amount = plan.plan==="elite" ? priceEliteM : priceProM;
+        updates["subscriptions/iap_"+uid]={
+          id: "iap_"+uid,
+          uid: uid,
+          email: plan.email || (v.profile && v.profile.email) || "",
+          phone: "",
+          plan: plan.plan+"_yearly",
+          amount: amount,
+          note: "اشتراك متجر (Apple/Google) — مُسترجَع",
+          manual: false,
+          source: "iap",
+          createdAt: plan.updatedAt || new Date().toISOString(),
+          expiresAt: plan.expiresAt
+        };
+        count++;
+      });
+      if(!count){ntf("ℹ️ ما فيه اشتراكات IAP قديمة تحتاج استرجاع","#FFD046");return;}
+      return firebase.database().ref().update(updates).then(function(){
+        ntf("✅ تم استرجاع "+count+" اشتراك من المتجر","#00E676");
+        renderSubs();loadDashboard();
+      });
+    });
+  }).catch(function(e){
+    ntf("❌ فشل: "+(e&&e.message||e),"#FF3D5A");
   });
 }
 
