@@ -2817,6 +2817,18 @@ const QB = [
 var SFX=(function(){
   var ctx=null,en=localStorage.getItem("tahadi_sound")!=="0";
   function init(){if(ctx)return ctx;try{ctx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){ctx=null;}return ctx;}
+  // ملف صوت حقيقي (sounds/wrong.mp3) بدل النغمة المولّدة — مع تراجع آمن للنغمة لو فشل التحميل/التشغيل
+  var _clips={};
+  function playClip(name,path,fallback){
+    if(!en)return;
+    var base=_clips[name];
+    if(!base){ try{ base=new Audio(path); base.preload="auto"; _clips[name]=base; }catch(e){ if(fallback)fallback(); return; } }
+    try{
+      var node=base.cloneNode();
+      var p=node.play();
+      if(p&&p.catch)p.catch(function(){ if(fallback)fallback(); });
+    }catch(e){ if(fallback)fallback(); }
+  }
   function beep(cfg){
     if(!en)return;var c=init();if(!c)return;
     if(c.state==="suspended")c.resume();
@@ -2838,7 +2850,7 @@ var SFX=(function(){
   }
   return{
     correct:function(){beep({notes:[{freq:600,dur:.1,time:0,vol:.32},{freq:900,dur:.15,time:.1,vol:.38}]});},
-    wrong:  function(){beep({type:"sawtooth",freq:300,freq2:150,dur:.25,vol:.22,attack:.01,decay:.1});},
+    wrong:  function(){playClip("wrong","sounds/wrong.mp3",function(){beep({type:"sawtooth",freq:300,freq2:150,dur:.25,vol:.22,attack:.01,decay:.1});});},
     bonus:  function(){beep({notes:[{freq:523,dur:.08,time:0,vol:.28},{freq:659,dur:.08,time:.08,vol:.28},{freq:784,dur:.14,time:.16,vol:.34}]});},
     timeout:function(){beep({type:"square",notes:[{freq:400,dur:.07,time:0,vol:.28},{freq:400,dur:.07,time:.1,vol:.28},{freq:280,dur:.16,time:.2,vol:.32}]});},
     click:  function(){beep({freq:800,freq2:400,dur:.06,vol:.18,attack:.002,decay:.02});},
