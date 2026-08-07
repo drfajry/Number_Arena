@@ -282,15 +282,45 @@
           // حدّث العرض فوراً (لا نعتمد على نجاح كتابة Firebase)
           if(typeof window.renderUserBar === "function"){ try{ renderUserBar(); }catch(e){} }
           // اكتب في Firebase (أفضل جهد — قد تمنعها قواعد الأمان، والعرض محدّث أصلاً)
-          return firebase.database().ref("users/"+uid+"/currentPlan").set({
-            plan: tier,
-            email: email,
-            expiresAt: expires.toISOString(),
-            source: "iap",
-            updatedAt: new Date().toISOString()
-          }).then(function(){
-            if(typeof window.renderUserBar === "function"){ try{ renderUserBar(); }catch(e){} }
-          }).catch(function(){});
+          // كتابة مزدوجة: currentPlan (يفعّل المزايا للمستخدم) + subscriptions/iap_{uid}
+          // (يجعلها تظهر في لوحة تحكم الأدمن — تبويب "الاشتراكات" يقرأ من هنا فقط،
+          //  ولم يكن يُكتب إليه سابقاً من مسار IAP إطلاقاً). مفتاح ثابت بدل push()
+          // حتى يُحدَّث نفس السجل عند كل تجديد بدل تكديس سجلات مكررة.
+          var nowIso = new Date().toISOString();
+          // اجلب السعر الحالي المضبوط من لوحة الأدمن (priceProM/priceEliteM) ليظهر مبلغ حقيقي
+          // في جدول الاشتراكات بدل 0 — أفضل جهد، مع سعر افتراضي احتياطي إن فشلت القراءة
+          var priceLookup = (window.TahadiDB && TahadiDB.getSettings)
+            ? TahadiDB.getSettings().catch(function(){ return {}; })
+            : Promise.resolve({});
+          return priceLookup.then(function(settings){
+            var amount = tier === "elite"
+              ? (settings && settings.priceEliteM) || 19
+              : (settings && settings.priceProM)   || 9;
+            var subUpdates = {};
+            subUpdates["users/"+uid+"/currentPlan"] = {
+              plan: tier,
+              email: email,
+              expiresAt: expires.toISOString(),
+              source: "iap",
+              updatedAt: nowIso
+            };
+            subUpdates["subscriptions/iap_"+uid] = {
+              id: "iap_"+uid,
+              uid: uid,
+              email: email,
+              phone: "",
+              plan: tier+"_yearly",
+              amount: amount,
+              note: "اشتراك متجر (Apple/Google)",
+              manual: false,
+              source: "iap",
+              createdAt: nowIso,
+              expiresAt: expires.toISOString()
+            };
+            return firebase.database().ref().update(subUpdates).then(function(){
+              if(typeof window.renderUserBar === "function"){ try{ renderUserBar(); }catch(e){} }
+            }).catch(function(){});
+          });
         } else {
           // لا اشتراك نشط. إن كان المصدر IAP (اشتراك انتهى/أُلغي فعلياً) → امسح مزايا IAP.
           // (لا نمسح اشتراكات الأدمن اليدوية — تلك ليست عليها علامة tahadi_iap_tier)
@@ -301,8 +331,15 @@
               localStorage.removeItem("tahadi_elite"); sessionStorage.removeItem("tahadi_elite");
             }catch(e){}
             if(typeof window.renderUserBar === "function"){ try{ renderUserBar(); }catch(e){} }
-            // امسح الخطة من Firebase أيضاً (أفضل جهد)
-            try{ return firebase.database().ref("users/"+uid+"/currentPlan").remove().catch(function(){}); }catch(e){}
+            // امسح الخطة من Firebase أيضاً (أفضل جهد) + علّم سجل الاشتراك في اللوحة كمنتهي
+            // (لا نحذفه — يبقى بالتاريخ، فقط expiresAt يصبح الآن فتظهر "منتهي" في اللوحة)
+            try{
+              var _now = new Date().toISOString();
+              var _cancelUpdates = {};
+              _cancelUpdates["users/"+uid+"/currentPlan"] = null;
+              _cancelUpdates["subscriptions/iap_"+uid+"/expiresAt"] = _now;
+              return firebase.database().ref().update(_cancelUpdates).catch(function(){});
+            }catch(e){}
           }
           return Promise.resolve();
         }
