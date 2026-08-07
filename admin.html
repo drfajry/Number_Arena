@@ -252,6 +252,9 @@ select.inp option{background:#0C1440;}
       <button class="btn-primary" onclick="doGrant()">✅ منح الاشتراك</button>
     </div>
     <div class="section-title">📋 سجل المنح اليدوي</div>
+    <div style="margin-bottom:.7rem">
+      <button class="btn-primary" onclick="migrateLocalGrants()" title="يرفع المنح المحفوظة في هذا المتصفح فقط إلى Firebase لتظهر من أي جهاز — آمن التكرار">☁️ رفع المنح المحلية إلى السحابة</button>
+    </div>
     <div class="table-wrap">
       <table class="tbl">
         <thead><tr><th>البريد</th><th>الخطة</th><th>المدة</th><th>التاريخ</th><th>الملاحظة</th><th>إجراء</th></tr></thead>
@@ -1047,6 +1050,23 @@ function doGrant(){
     activatePlanForEmail(email, plan, expiresAt);
   }
 
+  // Firebase — اكتب المنحة والاشتراك في السحابة أيضاً (لا تعتمد على متصفح واحد)
+  // مفتاح ثابت مشتق من البريد: يمنع التكرار ويجعل السجل متاحاً من أي جهاز
+  if(window.firebase && firebase.apps && firebase.apps.length){
+    var gk="g_"+email.replace(/[.#$/\[\]@]/g,"_");
+    var gUpdates={};
+    gUpdates["grants/"+gk]={email:email,uid:uid,plan:plan,days:days,note:note,
+      date:new Date().toISOString(),expiresAt:expiresAt};
+    gUpdates["subscriptions/"+gk]={id:gk,uid:uid,email:email,phone:"",plan:plan,amount:0,
+      note:"منح يدوي"+(note?" - "+note:""),manual:true,source:"grant",
+      createdAt:new Date().toISOString(),expiresAt:expiresAt};
+    firebase.database().ref().update(gUpdates).then(function(){
+      renderGrantLog();loadDashboard();renderSubs();
+    }).catch(function(e){
+      ntf("⚠️ حُفظت محلياً لكن فشل الحفظ السحابي: "+(e&&e.message||e),"#FFD046");
+    });
+  }
+
   renderGrantLog();loadDashboard();renderSubs();
   document.getElementById("grantEmail").value="";
   document.getElementById("grantNote").value="";
@@ -1055,24 +1075,85 @@ function doGrant(){
 
 function renderGrantLog(){
   var data=db();
+  // ادمج المنح المحلية مع منح Firebase (تشمل ما مُنح من أجهزة/مصادر أخرى)
+  if(window.firebase && firebase.apps && firebase.apps.length){
+    firebase.database().ref("grants").once("value").then(function(snap){
+      var fbGrants=[];
+      snap.forEach(function(c){ var v=c.val(); if(v&&v.email) fbGrants.push(v); });
+      var merged=fbGrants.slice();
+      (data.grants||[]).forEach(function(g){
+        if(!merged.find(function(x){return x.email===g.email;})) merged.push(g);
+      });
+      merged.sort(function(a,b){return new Date(a.date||0)-new Date(b.date||0);});
+      _drawGrantLog(merged,data);
+    }).catch(function(){ _drawGrantLog(data.grants||[],data); });
+    return;
+  }
+  _drawGrantLog(data.grants||[],data);
+}
+
+function _drawGrantLog(grants,data){
   var tbody=document.getElementById("grantLog");tbody.innerHTML="";
-  if(!data.grants.length){tbody.innerHTML="<tr><td colspan=\"6\" class=\"empty-state\">لا يوجد سجل منح</td></tr>";return;}
+  if(!grants.length){tbody.innerHTML="<tr><td colspan=\"6\" class=\"empty-state\">لا يوجد سجل منح</td></tr>";return;}
   var now=Date.now();
-  data.grants.slice().reverse().forEach(function(g,i){
-    // احسب المتبقي من تاريخ الانتهاء الفعلي للاشتراك المطابق
-    var sub=data.subscriptions.filter(function(s){return s.email===g.email;}).pop();
+  grants.slice().reverse().forEach(function(g,i){
+    // احسب المتبقي من تاريخ الانتهاء الفعلي (من المنحة نفسها أو الاشتراك المطابق)
+    var sub=(data.subscriptions||[]).filter(function(s){return s.email===g.email;}).pop();
+    var expiresAt=(sub&&sub.expiresAt)||g.expiresAt;
     var durCell=(g.days||0)+" يوم";
-    if(sub&&sub.expiresAt){
-      var rem=Math.ceil((new Date(sub.expiresAt)-now)/86400000);
+    if(expiresAt){
+      var rem=Math.ceil((new Date(expiresAt)-now)/86400000);
       if(rem>0) durCell="<span style=\"color:var(--gold)\">"+rem+" يوم متبقٍ</span> <span style=\"color:var(--dim);font-size:.75em\">/ "+(g.days||0)+"</span>";
       else durCell="<span style=\"color:var(--red)\">منتهٍ</span> <span style=\"color:var(--dim);font-size:.75em\">/ "+(g.days||0)+"</span>";
     }
-    tbody.innerHTML+="<tr><td dir=\"ltr\">"+(g.email||g.phone||"—")+"</td><td>"+g.plan+"</td><td>"+durCell+"</td><td>"+fmtDate(g.date)+"</td><td>"+(g.note||"—")+"</td><td><button class=\"btn-danger\" onclick=\"removeGrant("+(data.grants.length-1-i)+")\">حذف</button></td></tr>";
+    tbody.innerHTML+="<tr><td dir=\"ltr\">"+(g.email||g.phone||"—")+"</td><td>"+g.plan+"</td><td>"+durCell+"</td><td>"+fmtDate(g.date)+"</td><td>"+(g.note||"—")+"</td><td><button class=\"btn-danger\" onclick=\"removeGrantByEmail('"+(g.email||"")+"')\">حذف</button></td></tr>";
   });
 }
 
-function removeGrant(idx){
-  var data=db();data.grants.splice(idx,1);saveDB(data);renderGrantLog();
+/* رفع المنح المحفوظة في هذا المتصفح فقط إلى Firebase — مرة واحدة، آمن التكرار.
+   ضروري لأن localStorage منفصل لكل عنوان (الموقع / الملف المحلي / تصفح خفي)،
+   فالمنح القديمة تفرّقت بين مصادر مختلفة ولا تظهر كلها في مكان واحد. */
+function migrateLocalGrants(){
+  if(!window.firebase || !firebase.apps || !firebase.apps.length){ntf("❌ Firebase غير متصل","#FF3D5A");return;}
+  var data=db();
+  var local=data.grants||[];
+  if(!local.length){ntf("ℹ️ لا توجد منح محلية في هذا المتصفح","#FFD046");return;}
+  if(!confirm("سيتم رفع "+local.length+" منحة محفوظة في هذا المتصفح إلى Firebase لتظهر من أي جهاز.\nآمن ويمكن تكراره. متابعة؟"))return;
+  var updates={}, count=0;
+  local.forEach(function(g){
+    if(!g.email)return;
+    var gk="g_"+g.email.replace(/[.#$/\[\]@]/g,"_");
+    var sub=(data.subscriptions||[]).filter(function(s){return s.email===g.email;}).pop();
+    var exp=(sub&&sub.expiresAt)||g.expiresAt||
+            new Date(new Date(g.date||Date.now()).getTime()+(g.days||365)*86400000).toISOString();
+    updates["grants/"+gk]={email:g.email,uid:g.uid||"",plan:g.plan,days:g.days||365,
+      note:g.note||"",date:g.date||new Date().toISOString(),expiresAt:exp};
+    updates["subscriptions/"+gk]={id:gk,uid:g.uid||"",email:g.email,phone:"",plan:g.plan,amount:0,
+      note:"منح يدوي"+(g.note?" - "+g.note:""),manual:true,source:"grant",
+      createdAt:g.date||new Date().toISOString(),expiresAt:exp};
+    count++;
+  });
+  if(!count){ntf("ℹ️ لا توجد منح صالحة للرفع","#FFD046");return;}
+  firebase.database().ref().update(updates).then(function(){
+    ntf("✅ تم رفع "+count+" منحة إلى السحابة","#00E676");
+    renderGrantLog();loadDashboard();renderSubs();
+  }).catch(function(e){
+    ntf("❌ فشل الرفع: "+(e&&e.message||e),"#FF3D5A");
+  });
+}
+
+// حذف المنحة بالبريد (لا بالفهرس) — الفهرس غير موثوق بعد الدمج مع Firebase
+function removeGrantByEmail(email){
+  if(!email){ntf("تعذّر تحديد المنحة","#FF3D5A");return;}
+  if(!confirm("حذف سجل المنحة لـ "+email+"؟\n(هذا يحذف السجل فقط ولا يلغي اشتراك المستخدم)"))return;
+  var data=db();
+  data.grants=(data.grants||[]).filter(function(g){return g.email!==email;});
+  saveDB(data);
+  if(window.firebase && firebase.apps && firebase.apps.length){
+    var gk="g_"+email.replace(/[.#$/\[\]@]/g,"_");
+    firebase.database().ref("grants/"+gk).remove().catch(function(){});
+  }
+  renderGrantLog();
 }
 
 /* ── SETTINGS ── */
