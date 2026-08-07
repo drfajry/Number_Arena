@@ -1760,6 +1760,30 @@ function sendOTPEmail(email,name,code,cb){
   }).then(function(){cb(true);}).catch(function(e){console.log("EmailJS error:",e);cb(false);});
 }
 
+/* ── انتظار جاهزية جلسة Firebase Auth الفعلية (لا الكاش المحلي فقط) ──
+   يحل سباق التوقيت: قراءة RTDB بمعرّف uid قد تصل قبل اكتمال استعادة
+   جلسة Firebase Auth (خصوصاً على متصفح الجوال/بدء بارد)، فتُرفض
+   بـ permission_denied رغم أن الاشتراك حقيقي وموجود في قاعدة البيانات. */
+function _authUidReady(uid, timeoutMs){
+  return new Promise(function(resolve){
+    try{
+      if(!window.firebase || typeof firebase.auth!=="function"){ resolve(false); return; }
+      var _a=firebase.auth();
+      if(_a.currentUser && _a.currentUser.uid===uid){ resolve(true); return; }
+      var done=false;
+      var unsub=_a.onAuthStateChanged(function(u){
+        if(done)return;
+        if(u && u.uid===uid){ done=true; try{unsub();}catch(e){} resolve(true); }
+      });
+      setTimeout(function(){
+        if(done)return;
+        done=true; try{unsub();}catch(e){}
+        resolve(false);
+      }, timeoutMs||4000);
+    }catch(e){ resolve(false); }
+  });
+}
+
 /* ── Render user bar ── */
 function syncPlanFromDB(cb){
   var user=JSON.parse(authGet("tahadi_user")||"null");
@@ -1774,40 +1798,57 @@ function syncPlanFromDB(cb){
   }
   if(window.TahadiDB&&window.firebase&&firebase.apps&&firebase.apps.length){
     // اقرأ الخطة بمعرّف Auth الحقيقي (النظام الجديد)، مع تراجع للبريد
-    var planPromise = (user.uid&&TahadiDB.getPlanByUid)
-      ? TahadiDB.getPlanByUid(user.uid)
-      : TahadiDB.getPlanByEmail(user.email);
-    planPromise.then(function(plan){
-      // Firebase هو المصدر النهائي — لا fallback بعد نجاح القراءة
-      if(plan&&plan.plan){
-        authSetOne("tahadi_pro","1");
-        if(plan.plan.indexOf("elite")>-1)authSetOne("tahadi_elite","1");
-        else authClearAll(["tahadi_elite"]);
-        console.log("[Plan] from Firebase:",plan.plan);
-      } else if(localStorage.getItem("tahadi_iap_tier")){
-        // لا خطة في Firebase لكن يوجد اشتراك IAP — لا نمسح، RevenueCat يؤكّده عند التحميل
-        var _t=localStorage.getItem("tahadi_iap_tier");
-        authSetOne("tahadi_pro","1");
-        if(_t==="elite")authSetOne("tahadi_elite","1");
-        console.log("[Plan] from IAP (RevenueCat):",_t);
-      } else if(localStorage.getItem("tahadi_trial_tier") && window.TRIAL && TRIAL.active()){
-        // تجربة أسطوري نشطة (لا تُكتب كخطة حقيقية في Firebase) — لا تُمسح
-        var _tt=localStorage.getItem("tahadi_trial_tier");
-        authSetOne("tahadi_pro","1");
-        if(_tt==="elite")authSetOne("tahadi_elite","1");
-        console.log("[Plan] from trial:",_tt);
-      } else {
-        authClearAll(["tahadi_pro","tahadi_elite"]);
-        console.log("[Plan] no active plan (free)");
-      }
-      if(cb)cb();
-    }).catch(function(e){
-      console.log("[Plan] Firebase error, using local:",e);
-      syncFromAdminLocal(user);if(cb)cb();
-    });
+    var readPlan=function(){
+      return (user.uid&&TahadiDB.getPlanByUid)
+        ? TahadiDB.getPlanByUid(user.uid)
+        : TahadiDB.getPlanByEmail(user.email);
+    };
+    var proceed=function(authConfirmed){
+      readPlan().then(function(plan){
+        // Firebase هو المصدر النهائي — لا fallback بعد نجاح القراءة
+        if(plan&&plan.plan){
+          authSetOne("tahadi_pro","1");
+          if(plan.plan.indexOf("elite")>-1)authSetOne("tahadi_elite","1");
+          else authClearAll(["tahadi_elite"]);
+          console.log("[Plan] from Firebase:",plan.plan);
+        } else if(localStorage.getItem("tahadi_iap_tier")){
+          // لا خطة في Firebase لكن يوجد اشتراك IAP — لا نمسح، RevenueCat يؤكّده عند التحميل
+          var _t=localStorage.getItem("tahadi_iap_tier");
+          authSetOne("tahadi_pro","1");
+          if(_t==="elite")authSetOne("tahadi_elite","1");
+          console.log("[Plan] from IAP (RevenueCat):",_t);
+        } else if(localStorage.getItem("tahadi_trial_tier") && window.TRIAL && TRIAL.active()){
+          // تجربة أسطوري نشطة (لا تُكتب كخطة حقيقية في Firebase) — لا تُمسح
+          var _tt=localStorage.getItem("tahadi_trial_tier");
+          authSetOne("tahadi_pro","1");
+          if(_tt==="elite")authSetOne("tahadi_elite","1");
+          console.log("[Plan] from trial:",_tt);
+        } else if(authConfirmed){
+          // قراءة موثوقة (جلسة Auth مؤكدة) ولا خطة فعلاً ⇒ آمن نمسح
+          authClearAll(["tahadi_pro","tahadi_elite"]);
+          console.log("[Plan] no active plan (free)");
+        } else {
+          // لم نتأكد من جلسة Auth بعد (سباق توقيت محتمل) ⇒ لا تمسح خطة قد تكون حقيقية،
+          // أبقِ الحالة المحلية الحالية كما هي وسيُعاد الفحص الحقيقي عند نجاح القراءة لاحقاً
+          console.log("[Plan] auth not confirmed yet, keeping current local state");
+        }
+        if(cb)cb();
+      }).catch(function(e){
+        console.log("[Plan] Firebase error, using local:",e);
+        // لا تمسح اشتراكاً حقيقياً موجوداً محلياً بسبب فشل قراءة عابر (صلاحيات/شبكة)
+        if(!(authGet("tahadi_pro")==="1")) syncFromAdminLocal(user);
+        if(cb)cb();
+      });
+    };
+    if(user.uid){
+      // انتظر تأكيد جلسة Auth الحقيقية قبل القراءة (يمنع permission_denied المبكر)
+      _authUidReady(user.uid, 4000).then(proceed);
+    } else {
+      proceed(false);
+    }
   } else {
     console.log("[Plan] Firebase not ready, using local admin DB");
-    syncFromAdminLocal(user);
+    if(!(authGet("tahadi_pro")==="1")) syncFromAdminLocal(user);
     if(cb)cb();
   }
 }
@@ -2380,7 +2421,7 @@ function openContact(){document.getElementById("contactModal").classList.add("on
     if(pricing && !document.getElementById("restoreBtn")){
       var rb=document.createElement("div");
       rb.style.cssText="text-align:center;margin-top:1rem";
-      rb.innerHTML='<button id="restoreBtn" onclick="restorePurchases()" style="background:none;border:1px solid var(--bd);color:var(--cyan);padding:.55rem 1.4rem;border-radius:10px;font-size:.82rem;cursor:pointer">🔄 استعادة المشتريات</button>';
+      rb.innerHTML='<button id="restoreBtn" onclick="restorePurchases()" style="background:none;border:1px solid var(--bd);color:var(--cyan);padding:.55rem 1.4rem;border-radius:10px;font-size:.82rem;cursor:pointer">🔄 لديك اشتراك سابق؟ استعادة</button>';
       pricing.appendChild(rb);
     }
   }
