@@ -5,7 +5,7 @@
 
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyBeLF_kjOqZXa7X9E8XQUF1zPDK1IMwyhM",   // ← من Firebase Console
-  authDomain:            "numberarena-26cf0.firebaseapp.com",
+  authDomain:            "tahadi-app.uk",
   databaseURL:            "https://numberarena-26cf0-default-rtdb.firebaseio.com",   // يجب أن يحتوي .firebaseio.com
   projectId:            "numberarena-26cf0",
   storageBucket:            "numberarena-26cf0.firebasestorage.app",
