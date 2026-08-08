@@ -69,13 +69,14 @@
     // هل يستحق التجربة؟ (لم يستخدمها على هذا الجهاز ولا بهذا الحساب)
     eligible: function(){
       var self = this;
+      var _diag=function(reason){ try{ if(window._TRIAL_DEBUG) alert("تشخيص التجربة: "+reason); }catch(e){} };
       // مشترك فعلاً؟ لا حاجة للتجربة
-      if(localStorage.getItem("tahadi_elite") === "1") return Promise.resolve(false);
-      if(self.left() === 0) return Promise.resolve(false);   // استُهلكت هنا
+      if(localStorage.getItem("tahadi_elite") === "1"){ _diag("مشترك أسطوري فعلاً (tahadi_elite=1)"); return Promise.resolve(false); }
+      if(self.left() === 0){ _diag("left()=0 — استُهلكت التجربة سابقاً على هذا المتصفح/التخزين"); return Promise.resolve(false); }
       var uid = _uid();
-      if(!uid) return Promise.resolve(false);                // التسجيل شرط
+      if(!uid){ _diag("لا يوجد uid — التسجيل شرط. تحقق من tahadi_user في localStorage"); return Promise.resolve(false); }
       var db = _db();
-      if(!db) return Promise.resolve(self.left() !== 0);
+      if(!db){ _diag("Firebase غير متاح (db=null)"); return Promise.resolve(self.left() !== 0); }
       return deviceId().then(function(dev){
         var dk = _safeKey(dev);
         return Promise.all([
@@ -84,9 +85,10 @@
         ]).then(function(snaps){
           var byDevice = snaps[0].val();
           var byUser   = snaps[1].val();
-          if(byDevice || byUser) return false;   // استُخدمت سابقاً
+          if(byDevice || byUser){ _diag("مستخدمة سابقاً: جهاز="+(byDevice?"نعم":"لا")+" | حساب="+(byUser?"نعم":"لا")+" | uid="+uid+" | dev="+dk); return false; }
+          _diag("مؤهّل ✅ uid="+uid+" | dev="+dk);
           return true;
-        }).catch(function(){ return self.left() !== 0; });
+        }).catch(function(err){ _diag("فشل قراءة Firebase: "+(err&&err.message||err)); return self.left() !== 0; });
       });
     },
 
@@ -144,6 +146,51 @@
         }
       }catch(e){}
       if(typeof window.renderUserBar === "function"){ try{ renderUserBar(); }catch(e){} }
+    },
+
+    // امسح مؤشرات التجربة المحلية فقط (تُستدعى عند تسجيل الخروج)
+    // لا تمسح tahadi_device_id إطلاقاً — بصمة الجهاز يجب أن تبقى دائمة لمنع تكرار
+    // التجربة بحساب ثاني على نفس الجهاز/المتصفح.
+    clearLocalOnly: function(){
+      try{
+        localStorage.removeItem(LS_ACTIVE);
+        localStorage.removeItem(LS_LEFT);
+        localStorage.removeItem("tahadi_trial_tier");
+      }catch(e){}
+    },
+
+    // استعد حالة التجربة الحقيقية لهذا الحساب تحديداً من Firebase (تُستدعى بعد كل تسجيل دخول).
+    // ضروري لأن مؤشرات localStorage عامة على مستوى المتصفح، فلو حساب سابق على نفس
+    // الجهاز عنده تجربة نشطة برصيد متبقٍ، حساب جديد يسجّل دخول على نفس المتصفح
+    // لازم ما يرث رصيدها — لازم نتحقق من فايربيس بحساب المستخدم الحالي تحديداً.
+    restoreForCurrentUser: function(){
+      var self = this;
+      var uid = _uid();
+      // بدون حساب لا يوجد شيء نستعيده — امسح أي أثر محلي عالق تحسباً
+      if(!uid){ self.clearLocalOnly(); return Promise.resolve(false); }
+      var db = _db();
+      if(!db){ self.clearLocalOnly(); return Promise.resolve(false); }
+      return db.ref("trials/users/" + uid).once("value").then(function(snap){
+        var rec = snap.val();
+        if(!rec){ self.clearLocalOnly(); return false; }
+        var total = rec.boards || TRIAL_BOARDS;
+        var left  = (rec.left !== undefined && rec.left !== null) ? rec.left : total;
+        if(left > 0){
+          try{
+            localStorage.setItem(LS_LEFT, String(left));
+            localStorage.setItem(LS_ACTIVE, "1");
+            localStorage.setItem("tahadi_trial_tier", "elite");
+            if(!localStorage.getItem("tahadi_iap_tier")){
+              localStorage.setItem("tahadi_pro", "1");
+              localStorage.setItem("tahadi_elite", "1");
+            }
+          }catch(e){}
+          return true;
+        } else {
+          self.clearLocalOnly();
+          return false;
+        }
+      }).catch(function(){ self.clearLocalOnly(); return false; });
     }
   };
 
