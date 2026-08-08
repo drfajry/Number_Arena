@@ -1712,6 +1712,9 @@ function loginUser(user,skipStep){
   // Firebase
   if(window.TahadiDB){
     TahadiDB.saveUser({name:user.name,email:user.email,uid:uid}).then(function(){
+      // استعد حالة التجربة الحقيقية لهذا الحساب تحديداً (يمنع وراثة رصيد حساب سابق
+      // كان مسجّلاً دخوله على نفس المتصفح، ويستعيد رصيد هذا الحساب الفعلي إن وُجد)
+      if(window.TRIAL && TRIAL.restoreForCurrentUser){ TRIAL.restoreForCurrentUser().catch(function(){}); }
       // اقرأ الخطة بمعرّف Auth الحقيقي (كما يكتبها الأدمن) — مع تراجع للبريد
       var planPromise = (uid&&TahadiDB.getPlanByUid)
         ? TahadiDB.getPlanByUid(uid)
@@ -1970,6 +1973,9 @@ function doLogout(){
   // خروج من Firebase Auth
   if(window.TahadiAuth&&TahadiAuth.ready()){ TahadiAuth.signOut().catch(function(){}); }
   authClearAll(["tahadi_token","tahadi_session","tahadi_user","tahadi_pro","tahadi_elite"]);
+  // امسح مؤشرات التجربة المحلية (لا تمسح بصمة الجهاز) — تمنع تسرّب رصيد تجربة
+  // حساب سابق لحساب جديد يسجّل دخول على نفس المتصفح/الجهاز
+  if(window.TRIAL && TRIAL.clearLocalOnly) TRIAL.clearLocalOnly();
   try{
     var Prefs=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Preferences;
     if(Prefs){["tahadi_token","tahadi_user","tahadi_pro","tahadi_elite"].forEach(function(k){Prefs.remove({key:k});});}
