@@ -656,6 +656,18 @@ function loadDashboard(){
     TahadiDB.getAllUsers().then(function(fbUsers){
       var el=document.getElementById("stat-users");
       if(el&&fbUsers)el.textContent=fbUsers.length;
+      // خريطة اسم لكل مستخدم (بريد/معرّف → اسم أو بديله من البريد) — تُستخدم بجداول
+      // الاشتراكات ولوحة التحكم لعرض اسم بدل بريد/جوال خام فقط
+      var nameMap={};
+      (fbUsers||[]).forEach(function(u){
+        var display=u.name || (u.email?u.email.split("@")[0]:"") || "";
+        if(display){
+          if(u.email) nameMap[u.email]=display;
+          if(u.uid)   nameMap[u.uid]=display;
+          if(u.phone) nameMap[u.phone]=display;
+        }
+      });
+      window._userNameMap=nameMap;
     }).catch(function(){});
   }
   // ── الإيرادات الحقيقية: تدمج اشتراكات Firebase (يشمل IAP) مع المحلية — لا تعتمد على localStorage فقط ──
@@ -676,6 +688,7 @@ function loadDashboard(){
       var priceEliteDefault=parseInt((document.getElementById("sPriceEliteM")&&document.getElementById("sPriceEliteM").value)||19,10);
       var liveActive=dedup.filter(function(s){return new Date(s.expiresAt)>now;});
       var liveRevenue=liveActive.reduce(function(a,s){
+        if(s.manual || s.source==="grant") return a; // المنح اليدوية مجانية عمداً — لا تُحتسب إيراد
         var amt=s.amount>0?s.amount:(s.plan.startsWith("elite")?priceEliteDefault:priceProDefault);
         return a+amt;
       },0);
@@ -706,7 +719,9 @@ function loadDashboard(){
         recentLive.forEach(function(s){
           var act=new Date(s.expiresAt)>now;
           var d=act?Math.ceil((new Date(s.expiresAt)-now)/86400000):0;
-          rt.innerHTML+="<tr><td dir=\"ltr\">"+(s.email||s.phone||"—")+"</td>"
+          var ident=s.email||s.phone||"—";
+          var dispName=userDisplayName(s);
+          rt.innerHTML+="<tr><td>"+dispName+" <span style=\"color:var(--dim);font-size:.78em\" dir=\"ltr\">("+ident+")</span></td>"
             +"<td><span class=\"badge badge-"+(s.plan.startsWith("elite")?"elite":"pro")+"\">"+s.plan+"</span></td>"
             +"<td><span class=\"badge badge-"+(act?"active":"expired")+"\">"+(act?"نشط — "+d+" يوم":"منتهي")+"</span></td>"
             +"<td>"+fmtDate(s.createdAt)+"</td></tr>";
@@ -912,6 +927,14 @@ function renderSubs(){
   }
   renderSubsTable(db().subscriptions,q);
 }
+/* اسم عرض موحّد لأي سجل اشتراك/منحة: اسم المستخدم الحقيقي إن وُجد بخريطة الأسماء
+   المبنية من قائمة المستخدمين، وإلا الجزء الأول من البريد كبديل، وإلا "—" */
+function userDisplayName(s){
+  var map=window._userNameMap||{};
+  return (s.email&&map[s.email]) || (s.uid&&map[s.uid]) || (s.phone&&map[s.phone])
+    || (s.email?s.email.split("@")[0]:"") || "—";
+}
+
 function renderSubsTable(allSubs,q){
   var data=db();
   // عرض أحدث اشتراك فقط لكل بريد (تجنب التكرار)
@@ -924,7 +947,10 @@ function renderSubsTable(allSubs,q){
   var f=document.getElementById("subFilter").value;
   var now=new Date();
   var subs=allSubs.filter(function(s){
-    var match=!q||(s.phone||"").includes(q);
+    var q2=(q||"").toLowerCase();
+    var match=!q2 || (s.phone||"").toLowerCase().includes(q2)
+                   || (s.email||"").toLowerCase().includes(q2)
+                   || userDisplayName(s).toLowerCase().includes(q2);
     var planMatch=!f||(f==="expired"?new Date(s.expiresAt)<=now:s.plan.startsWith(f));
     return match&&planMatch;
   });
@@ -935,10 +961,12 @@ function renderSubsTable(allSubs,q){
     if(totalBar)totalBar.innerHTML="";
     return;
   }
-  // سعر افتراضي لأي سجل بلا مبلغ محفوظ (مثلاً IAP قديم قبل التسعير، أو منح يدوي بلا سعر) — من إعدادات الأسعار الحالية
+  // سعر افتراضي لأي سجل بلا مبلغ محفوظ (مثلاً IAP قديم قبل التسعير) — من إعدادات الأسعار الحالية.
+  // لا يُطبَّق على المنح اليدوية إطلاقاً — هذي مجانية عمداً (تجربة/هدية)، مبلغها 0 حقيقي وليس ناقصاً.
   var priceProDefault  =parseInt((document.getElementById("sPriceProM")  &&document.getElementById("sPriceProM").value)  ||9,10);
   var priceEliteDefault=parseInt((document.getElementById("sPriceEliteM")&&document.getElementById("sPriceEliteM").value)||19,10);
   function displayAmount(s){
+    if(s.manual || s.source==="grant") return 0;
     if(s.amount>0) return s.amount;
     return s.plan.startsWith("elite")?priceEliteDefault:priceProDefault;
   }
@@ -967,7 +995,7 @@ function renderSubsTable(allSubs,q){
     else if(active&&daysLeft<=7) dClass='style="color:var(--red)"';
     else if(active&&daysLeft<=30&&s.plan.includes("yearly")) dClass='style="color:var(--gold)"';
     tbody.innerHTML+="<tr>"
-      +"<td dir=\"ltr\">"+(s.email||s.phone||"—")+"</td>"
+      +"<td>"+userDisplayName(s)+" <span style=\"color:var(--dim);font-size:.78em\" dir=\"ltr\">("+(s.email||s.phone||"—")+")</span></td>"
       +"<td><span class=\"badge badge-"+(s.plan.startsWith("elite")?"elite":"pro")+"\">"+s.plan+"</span></td>"
       +"<td>"+displayAmount(s)+" ر.س</td>"
       +"<td>"+fmtDate(s.createdAt)+"</td>"
