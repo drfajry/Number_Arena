@@ -937,6 +937,9 @@ function userDisplayName(s){
 
 function renderSubsTable(allSubs,q){
   var data=db();
+  // استبعد المنح اليدوية من هذا التبويب — مكانها الوحيد "منح اشتراك" (سجل المنح)،
+  // عشان هذا الجدول يبقى مخصصاً للاشتراكات المدفوعة الحقيقية فقط (من المتجر)
+  allSubs=(allSubs||[]).filter(function(s){ return !(s.manual || s.source==="grant"); });
   // عرض أحدث اشتراك فقط لكل بريد (تجنب التكرار)
   var byKey={};
   (allSubs||[]).forEach(function(s){
