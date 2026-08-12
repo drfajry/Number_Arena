@@ -639,10 +639,10 @@ function loadDashboard(){
   var stats=[
     {val:data.users.length,      lbl:"إجمالي المستخدمين", col:"var(--cyan)", id:"stat-users"},
     {val:activeSubs.length,      lbl:"اشتراكات نشطة",      col:"var(--green)", id:"stat-active-subs"},
-    {val:proCount,               lbl:"مشتركو Pro",          col:"var(--cyan)"},
-    {val:eliteCount,             lbl:"مشتركو Elite",        col:"#C084FC"},
+    {val:proCount,               lbl:"مشتركو Pro",          col:"var(--cyan)", id:"stat-pro"},
+    {val:eliteCount,             lbl:"مشتركو Elite",        col:"#C084FC", id:"stat-elite"},
     {val:revenue+" ر.س",        lbl:"إجمالي الإيرادات",    col:"var(--gold)", id:"stat-revenue"},
-    {val:data.grants.length,     lbl:"منح يدوية",           col:"var(--dim)"},
+    {val:data.grants.length,     lbl:"منح يدوية",           col:"var(--dim)", id:"stat-grants"},
   ];
   var sg=document.getElementById("statsGrid");sg.innerHTML="";
   stats.forEach(function(s){
@@ -683,6 +683,35 @@ function loadDashboard(){
       var elActive=document.getElementById("stat-active-subs");
       if(elRev)elRev.textContent=liveRevenue+" ر.س";
       if(elActive)elActive.textContent=liveActive.length;
+      // حدّث بقية البطاقات من نفس المصدر الحيّ (كانت محلية فقط فتظهر صفراً)
+      var elPro  =document.getElementById("stat-pro");
+      var elElite=document.getElementById("stat-elite");
+      if(elPro)  elPro.textContent  =liveActive.filter(function(s){return s.plan.startsWith("pro");}).length;
+      if(elElite)elElite.textContent=liveActive.filter(function(s){return s.plan.startsWith("elite");}).length;
+      // عدّاد المنح اليدوية من Firebase أيضاً
+      var elGrants=document.getElementById("stat-grants");
+      if(elGrants){
+        firebase.database().ref("grants").once("value").then(function(gs){
+          var n=0; gs.forEach(function(){n++;});
+          elGrants.textContent=Math.max(n,(data.grants||[]).length);
+        }).catch(function(){});
+      }
+      // جدول "آخر المشتركين" من المصدر المدمج
+      var recentLive=dedup.slice().sort(function(a,b){
+        return new Date(b.createdAt||0)-new Date(a.createdAt||0);
+      }).slice(0,10);
+      var rt=document.getElementById("recentSubs");
+      if(rt&&recentLive.length){
+        rt.innerHTML="";
+        recentLive.forEach(function(s){
+          var act=new Date(s.expiresAt)>now;
+          var d=act?Math.ceil((new Date(s.expiresAt)-now)/86400000):0;
+          rt.innerHTML+="<tr><td dir=\"ltr\">"+(s.email||s.phone||"—")+"</td>"
+            +"<td><span class=\"badge badge-"+(s.plan.startsWith("elite")?"elite":"pro")+"\">"+s.plan+"</span></td>"
+            +"<td><span class=\"badge badge-"+(act?"active":"expired")+"\">"+(act?"نشط — "+d+" يوم":"منتهي")+"</span></td>"
+            +"<td>"+fmtDate(s.createdAt)+"</td></tr>";
+        });
+      }
       // خزّن نسخة مدمجة (Firebase + محلي) ليستخدمها جدول المستخدمين أيضاً، وأعد رسمه إذا كان مفتوحاً
       window._fbSubsCache=dedup;
       var usersPageEl=document.getElementById("pg-users");
@@ -782,11 +811,21 @@ function renderUsersTable(users,q){
   if(!users.length){tbody.innerHTML="<tr><td colspan=\"6\" class=\"empty-state\">لا يوجد مستخدمون</td></tr>";return;}
   users.forEach(function(u){
     var now=new Date();
-    var sub=data.subscriptions.filter(function(s){return (s.phone===u.phone||s.uid===u.uid)&&new Date(s.expiresAt)>now;}).pop();
+    // مطابقة صارمة: بالجوال فقط إذا موجود فعلاً (وليس فاضي)، وإلا بمعرّف الحساب/البريد.
+    // الخلل السابق: مقارنة "" === "" كانت تُطابق أي مستخدم بلا جوال مع أي اشتراك بلا جوال
+    // خطأً (تطابق كاذب)، فتُظهر خطة مدفوعة زوراً لمستخدمين مجانيين فعلياً.
+    var sub=data.subscriptions.filter(function(s){
+      var phoneMatch = !!(s.phone && u.phone && s.phone===u.phone);
+      var uidMatch   = !!(s.uid && u.uid && s.uid===u.uid);
+      var emailMatch = !!(s.email && u.email && s.email===u.email);
+      return (phoneMatch||uidMatch||emailMatch) && new Date(s.expiresAt)>now;
+    }).pop();
     // fallback: تحقق أيضاً من اشتراكات المتجر (Firebase) المخزّنة مؤقتاً — تشمل IAP
     if(!sub && window._fbSubsCache){
       sub=window._fbSubsCache.filter(function(s){
-        return (s.uid===u.uid||s.email===u.email)&&new Date(s.expiresAt)>now;
+        var uidMatch   = !!(s.uid && u.uid && s.uid===u.uid);
+        var emailMatch = !!(s.email && u.email && s.email===u.email);
+        return (uidMatch||emailMatch) && new Date(s.expiresAt)>now;
       }).pop();
     }
     var planBadge=sub?"<span class=\"badge badge-"+(sub.plan.startsWith("elite")?"elite":"pro")+"\">"+sub.plan+"</span>":"<span class=\"badge badge-free\">مجاني</span>";
