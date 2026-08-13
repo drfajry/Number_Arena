@@ -1176,7 +1176,7 @@ function _drawGrantLog(grants,data){
       if(rem>0) durCell="<span style=\"color:var(--gold)\">"+rem+" يوم متبقٍ</span> <span style=\"color:var(--dim);font-size:.75em\">/ "+(g.days||0)+"</span>";
       else durCell="<span style=\"color:var(--red)\">منتهٍ</span> <span style=\"color:var(--dim);font-size:.75em\">/ "+(g.days||0)+"</span>";
     }
-    tbody.innerHTML+="<tr><td dir=\"ltr\">"+(g.email||g.phone||"—")+"</td><td>"+g.plan+"</td><td>"+durCell+"</td><td>"+fmtDate(g.date)+"</td><td>"+(g.note||"—")+"</td><td><button class=\"btn-danger\" onclick=\"removeGrantByEmail('"+(g.email||"")+"')\">حذف</button></td></tr>";
+    tbody.innerHTML+="<tr><td dir=\"ltr\">"+(g.email||g.phone||"—")+"</td><td>"+g.plan+"</td><td>"+durCell+"</td><td>"+fmtDate(g.date)+"</td><td>"+(g.note||"—")+"</td><td style=\"display:flex;gap:.4rem\"><button class=\"btn-danger\" onclick=\"revokeGrantByEmail('"+(g.email||"")+"')\" title=\"يسحب الوصول فعلياً من المستخدم\">إلغاء الاشتراك</button><button class=\"btn-success\" onclick=\"removeGrantByEmail('"+(g.email||"")+"')\" title=\"يحذف السجل فقط، لا يمس الاشتراك\">حذف السجل</button></td></tr>";
   });
 }
 
@@ -1212,7 +1212,44 @@ function migrateLocalGrants(){
   });
 }
 
+// إلغاء المنحة فعلياً: يحذف السجل + سجل الاشتراك بالسحابة + يسحب الوصول الفعلي
+// (currentPlan) من حساب المستخدم — بعكس removeGrantByEmail اللي يحذف السجل فقط.
+// هذا هو الزر المطلوب لإلغاء منح يدوية (تجربة/هدية)، لا يُستخدم أبداً لاشتراكات المتجر.
+function revokeGrantByEmail(email){
+  if(!email){ntf("تعذّر تحديد المنحة","#FF3D5A");return;}
+  if(!confirm("إلغاء منحة "+email+" فعلياً؟\nهذا يسحب وصوله للمزايا المدفوعة فوراً، ويحذف سجل المنحة أيضاً."))return;
+  var data=db();
+  data.grants=(data.grants||[]).filter(function(g){return g.email!==email;});
+  saveDB(data);
+  var gk="g_"+email.replace(/[.#$/\[\]@]/g,"_");
+  var cleanup=function(realUid){
+    var updates={};
+    updates["grants/"+gk]=null;
+    updates["subscriptions/"+gk]=null;
+    if(realUid) updates["users/"+realUid+"/currentPlan"]=null;
+    return firebase.database().ref().update(updates);
+  };
+  if(window.TahadiDB && TahadiDB.uidByEmail){
+    TahadiDB.uidByEmail(email).then(function(realUid){
+      return cleanup(realUid);
+    }).then(function(){
+      ntf("✅ أُلغيت منحة "+email+" وسُحب وصوله","#00E676");
+      renderGrantLog();loadDashboard();renderSubs();
+    }).catch(function(e){
+      ntf("❌ فشل الإلغاء: "+(e&&e.message||e),"#FF3D5A");
+    });
+  } else {
+    cleanup(null).then(function(){
+      ntf("✅ أُلغيت منحة "+email,"#00E676");
+      renderGrantLog();loadDashboard();renderSubs();
+    }).catch(function(e){
+      ntf("❌ فشل الإلغاء: "+(e&&e.message||e),"#FF3D5A");
+    });
+  }
+}
+
 // حذف المنحة بالبريد (لا بالفهرس) — الفهرس غير موثوق بعد الدمج مع Firebase
+// هذا يحذف السجل فقط (التاريخ/الملاحظة) — لا يمس اشتراك المستخدم الفعلي إطلاقاً
 function removeGrantByEmail(email){
   if(!email){ntf("تعذّر تحديد المنحة","#FF3D5A");return;}
   if(!confirm("حذف سجل المنحة لـ "+email+"؟\n(هذا يحذف السجل فقط ولا يلغي اشتراك المستخدم)"))return;
