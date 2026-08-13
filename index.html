@@ -2018,6 +2018,9 @@ function renderTrialBtn(){
   if(!window.TRIAL) return;
   var box=document.getElementById("trialBox");
   if(!box) return;
+  // اشتراك حقيقي فعلي (متجر) — لا داعي لأي بانر تجربة إطلاقاً، حتى لو كانت
+  // التجربة "نشطة" تقنياً محلياً (بدأها المستخدم قبل الاشتراك الحقيقي ولم يستهلكها)
+  if(localStorage.getItem("tahadi_iap_tier")){ box.style.display="none"; return; }
   if(localStorage.getItem("tahadi_trial_banner_dismissed")==="1" && !TRIAL.active()){ box.style.display="none"; return; }
   if(TRIAL.active()){
     box.innerHTML='<div style="background:linear-gradient(135deg,#1a1400,#241a00);border:1.5px solid rgba(255,208,70,.5);border-radius:14px;padding:.85rem 1rem;display:flex;align-items:center;gap:.6rem;box-shadow:0 8px 24px rgba(0,0,0,.4)">'

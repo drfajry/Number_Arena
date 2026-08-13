@@ -378,6 +378,30 @@ async function apiCall(path, opts={}) {
   }
 }
 
+/* ── انتظار جاهزية جلسة Firebase Auth الفعلية قبل قراءة الخطة من قاعدة البيانات ──
+   نفس الإصلاح المطبَّق بالصفحة الرئيسية: على أندرويد تحديداً، استعادة الجلسة عند
+   بدء تشغيل بارد للتطبيق أبطأ، فقراءة الخطة بمعرّف غير مؤكَّد تُرفض بصمت (قواعد
+   الأمان) وتظهر "مجاني" خطأً رغم اشتراك حقيقي. */
+function _dashAuthUidReady(uid, timeoutMs){
+  return new Promise(function(resolve){
+    try{
+      if(!window.firebase || typeof firebase.auth!=="function"){ resolve(false); return; }
+      var _a=firebase.auth();
+      if(_a.currentUser && _a.currentUser.uid===uid){ resolve(true); return; }
+      var done=false;
+      var unsub=_a.onAuthStateChanged(function(u){
+        if(done)return;
+        if(u && u.uid===uid){ done=true; try{unsub();}catch(e){} resolve(true); }
+      });
+      setTimeout(function(){
+        if(done)return;
+        done=true; try{unsub();}catch(e){}
+        resolve(false);
+      }, timeoutMs||4000);
+    }catch(e){ resolve(false); }
+  });
+}
+
 /* ═══ INIT DASHBOARD ══════════════════ */
 async function initDash() {
   document.getElementById('authWrap').style.display = 'none';
@@ -411,7 +435,10 @@ async function initDash() {
   };
 
   // اقرأ الخطة (الاشتراك) — بمعرّف Auth أولاً ثم بالبريد (مطابقة لمنطق الرئيسية)
+  // انتظر تأكيد جلسة Auth الحقيقية أول (حتى 4 ثوانٍ) — يمنع رفض القراءة صامتاً
+  // على بدء تشغيل بارد بطيء (أندرويد تحديداً) وظهور "مجاني" خطأً
   me.subscription = null; me.isPro = false;
+  var _authConfirmed = uid ? await _dashAuthUidReady(uid, 4000) : false;
   try{
     if(window.TahadiDB){
       var plan = null;
