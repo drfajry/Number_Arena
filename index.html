@@ -1724,11 +1724,11 @@ function loginUser(user,skipStep){
           authSetOne("tahadi_pro","1");
           if(plan.plan.indexOf("elite")>-1)authSetOne("tahadi_elite","1");
           else authClearAll(["tahadi_elite"]);
-          renderUserBar();
+          renderUserBar(); try{ renderTrialBtn(); }catch(e){}
         } else {
           // لا خطة نشطة — تأكد أنه مجاني (يمنع بقاء حالة قديمة)
           authClearAll(["tahadi_pro","tahadi_elite"]);
-          renderUserBar();
+          renderUserBar(); try{ renderTrialBtn(); }catch(e){}
         }
         resumePendingRoom();
       }).catch(function(){resumePendingRoom();});
@@ -2102,7 +2102,7 @@ function _initApp(){
   }
 
   // مزامنة الخطة من قاعدة البيانات ثم عرض الشريط
-  syncPlanFromDB(function(){ renderUserBar(); });
+  syncPlanFromDB(function(){ renderUserBar(); try{ renderTrialBtn(); }catch(e){} });
   renderUserBar();
   // Close modals on backdrop (بحماية — إن لم يوجد العنصر لا ننهار)
   var _am=document.getElementById("authModal");
