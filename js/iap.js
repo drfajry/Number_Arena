@@ -120,6 +120,23 @@
         return Promise.resolve({success:false, error:"خطة غير معروفة"});
       }
 
+      // مطابقة موحّدة للمنصتين — دالة مشتركة تُستخدم للخطة الهدف وأيضاً للخطة القديمة
+      // (عند الترقية) عشان نضمن نفس صيغة معرّف المنتج بالضبط زي ما يرجعها المتجر فعلياً
+      // (مثلاً على أندرويد قد يكون فيها لاحقة basePlanId زي ":pro-yearly")
+      function findPkg(pkgs, key){
+        var pid = PRODUCTS[key];
+        var kw = (key === "elite") ? "legend" : "hero";
+        return pkgs.filter(function(p){ return (p.identifier||"") === pid; })[0] ||
+          pkgs.filter(function(p){
+            var id = (p.product && p.product.identifier) || "";
+            return id === pid || id.split(":")[0] === pid || id.indexOf(pid) === 0;
+          })[0] ||
+          pkgs.filter(function(p){
+            var id = ((p.product && p.product.identifier) || "").toLowerCase();
+            return id.indexOf(kw) > -1;
+          })[0];
+      }
+
       // اجلب العرض (Offering) ثم اشترِ الحزمة المطابقة
       return self.getOfferings().then(function(offering){
         console.log("[IAP] Offering =", offering);
@@ -131,40 +148,46 @@
             return { pkg:p.identifier, product:(p.product && p.product.identifier) };
           }));
         }catch(e){}
-        // مطابقة موحّدة للمنصتين:
-        // 1) بمعرّف الحزمة (pro_yearly / elite_yearly) — موحّد بين iOS و Android
-        // 2) بمعرّف المنتج (Android: pro_yearly / pro_yearly:pro-yearly)
-        // 3) بكلمة مفتاحية داخل معرّف المنتج (iOS: ...hero.yearly / ...legend.yearly)
-        var keyword = (planKey === "elite") ? "legend" : "hero";
         var pkgs = offering.availablePackages;
-        var pkg =
-          pkgs.filter(function(p){ return (p.identifier||"") === productId; })[0] ||
-          pkgs.filter(function(p){
-            var id = (p.product && p.product.identifier) || "";
-            return id === productId || id.split(":")[0] === productId || id.indexOf(productId) === 0;
-          })[0] ||
-          pkgs.filter(function(p){
-            var id = ((p.product && p.product.identifier) || "").toLowerCase();
-            return id.indexOf(keyword) > -1;   // iOS: hero / legend
-          })[0];
+        var pkg = findPkg(pkgs, planKey);
         if(!pkg){
           return Promise.reject({ _cfg:true, message:"الخطة غير متاحة حالياً. الحزم: "+pkgs.map(function(p){return p.identifier+"/"+((p.product&&p.product.identifier)||"");}).join(", ") });
         }
         console.log("[IAP] شراء الحزمة:", pkg.identifier, pkg.product && pkg.product.identifier);
         // ── ترقية/تخفيض (Android فقط): لو عنده اشتراك نشط بخطة مختلفة، مرّر معلومات
-        // الترقية لقوقل بلاي حتى يخصم الفرق المتبقي فقط (Proration) بدل سعر كامل جديد ──
+        // الترقية لقوقل بلاي حتى يخصم الفرق المتبقي فقط (Proration) بدل سعر كامل جديد.
+        // نعتمد أولاً على tahadi_iap_tier المحلي (يُكتب فوراً عند كل شراء ناجح — مصدر
+        // مؤكَّد وفوري)، لأن customerInfo من RevenueCat قد يرجع نسخة مخزّنة مؤقتاً
+        // (cached) لا تعكس شراءً حصل قبل لحظات بنفس الجلسة، فيفشل اكتشاف الترقية.
         var isAndroid = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform()==="android";
+        var newProductId = (pkg.product && pkg.product.identifier) || productId;
+        var localOldTier = null;
+        try{ localOldTier = localStorage.getItem("tahadi_iap_tier"); }catch(e){}
+        if(isAndroid && localOldTier && localOldTier !== planKey){
+          var oldPkg = findPkg(pkgs, localOldTier);
+          var oldProductId = oldPkg && oldPkg.product && oldPkg.product.identifier;
+          if(oldProductId){
+            console.log("[IAP] ترقية (من المصدر المحلي) من", oldProductId, "إلى", newProductId);
+            return _purchases.purchasePackage({
+              aPackage: pkg,
+              googleProductChangeInfo: {
+                oldProductIdentifier: oldProductId,
+                prorationMode: "IMMEDIATE_WITH_TIME_PRORATION"
+              }
+            });
+          }
+        }
         if(!isAndroid || !_purchases.getCustomerInfo){
           return _purchases.purchasePackage({ aPackage: pkg });
         }
+        // احتياطي: لو ما فيه تير محلي معروف (مثلاً بعد إعادة تثبيت)، اسأل RevenueCat مباشرة
         return _purchases.getCustomerInfo().then(function(res){
           var info = res && res.customerInfo;
           var active = (info && info.entitlements && info.entitlements.active) || {};
           var otherKey = planKey === "elite" ? "pro" : "elite";
           var oldEnt = active[ENTITLEMENTS[otherKey]];
-          var newProductId = (pkg.product && pkg.product.identifier) || productId;
           if(oldEnt && oldEnt.productIdentifier && oldEnt.productIdentifier !== newProductId){
-            console.log("[IAP] ترقية من", oldEnt.productIdentifier, "إلى", newProductId);
+            console.log("[IAP] ترقية (من customerInfo) من", oldEnt.productIdentifier, "إلى", newProductId);
             return _purchases.purchasePackage({
               aPackage: pkg,
               googleProductChangeInfo: {
