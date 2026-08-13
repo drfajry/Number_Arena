@@ -151,7 +151,33 @@
           return Promise.reject({ _cfg:true, message:"الخطة غير متاحة حالياً. الحزم: "+pkgs.map(function(p){return p.identifier+"/"+((p.product&&p.product.identifier)||"");}).join(", ") });
         }
         console.log("[IAP] شراء الحزمة:", pkg.identifier, pkg.product && pkg.product.identifier);
-        return _purchases.purchasePackage({ aPackage: pkg });
+        // ── ترقية/تخفيض (Android فقط): لو عنده اشتراك نشط بخطة مختلفة، مرّر معلومات
+        // الترقية لقوقل بلاي حتى يخصم الفرق المتبقي فقط (Proration) بدل سعر كامل جديد ──
+        var isAndroid = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform()==="android";
+        if(!isAndroid || !_purchases.getCustomerInfo){
+          return _purchases.purchasePackage({ aPackage: pkg });
+        }
+        return _purchases.getCustomerInfo().then(function(res){
+          var info = res && res.customerInfo;
+          var active = (info && info.entitlements && info.entitlements.active) || {};
+          var otherKey = planKey === "elite" ? "pro" : "elite";
+          var oldEnt = active[ENTITLEMENTS[otherKey]];
+          var newProductId = (pkg.product && pkg.product.identifier) || productId;
+          if(oldEnt && oldEnt.productIdentifier && oldEnt.productIdentifier !== newProductId){
+            console.log("[IAP] ترقية من", oldEnt.productIdentifier, "إلى", newProductId);
+            return _purchases.purchasePackage({
+              aPackage: pkg,
+              googleProductChangeInfo: {
+                oldProductIdentifier: oldEnt.productIdentifier,
+                prorationMode: "IMMEDIATE_WITH_TIME_PRORATION"
+              }
+            });
+          }
+          return _purchases.purchasePackage({ aPackage: pkg });
+        }).catch(function(){
+          // فشل جلب معلومات العميل — أفضل جهد: شراء عادي بدل ما نمنع العملية بالكامل
+          return _purchases.purchasePackage({ aPackage: pkg });
+        });
       }).then(function(result){
         // الشراء نجح. الخطة المشتراة (planKey) هي المصدر اليقيني، مع كشف احتياطي.
         var info = result && result.customerInfo;
