@@ -3101,10 +3101,14 @@ var _usedCache = null;         // نسخة في الذاكرة
 var _usedPhase = 0;            // رقم المرحلة الحالية (يزيد عند نفاد كل الأسئلة)
 
 function _usedKey(){
-  // معرّف المستخدم إن كان مسجّلاً، وإلا محلي عام
+  // لازم معرّف Firebase Auth الحقيقي المباشر (auth.currentUser.uid) — لا الكاش المحلي
+  // (tahadi_user.uid قد يكون معرّفاً قديماً مشتقاً من البريد لا يطابق auth.uid الحقيقي،
+  // فترفضه قواعد الأمان permission_denied دائماً). بدون جلسة حقيقية مؤكَّدة، نتجاهل
+  // المزامنة السحابية بأمان ونكتفي بالتخزين المحلي — ما يوقف اللعبة أبداً.
   try{
-    var u=JSON.parse(localStorage.getItem("tahadi_user")||sessionStorage.getItem("tahadi_user")||"null");
-    if(u&&u.uid) return u.uid;
+    if(window.firebase && firebase.auth && firebase.auth().currentUser){
+      return firebase.auth().currentUser.uid;
+    }
   }catch(e){}
   return null;
 }
