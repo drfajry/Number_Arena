@@ -2944,7 +2944,7 @@ try{ if(typeof syncUsedFromFirebase==="function") syncUsedFromFirebase(); }catch
    STATE
 ════════════════════════════════════════ */
 var G=null, myId=null, isHost=false, isOff=false;
-var _fbConnected=true, _wasDisconnected=false, _lastAnsSeen=0, _odCancelled=false, _lastAdvancedQi=-1;
+var _fbConnected=true, _wasDisconnected=false, _lastAnsSeen=0, _odCancelled=false, _lastAdvancedQi=-1, _stuckWatchdog=null;
 var tiv=null, tleft=TS, frozen=false, ftout=null;
 var yqPend=false, dblPts=false;
 var ansTO=null, fbDB=null, fbRef=null, pollIv=null, ntout=null;
@@ -3034,6 +3034,20 @@ function listenRoom(code){
           ntf("❌ الغرفة غير موجودة","#FF3D5A");setTimeout(goHome,2000);
         });
         return;
+      }
+      // ── حارس التعليق: لو الجولة علقت بطور "ans" (كشف الإجابة) لفترة أطول من الطبيعي
+      // (جهاز اللاعب اللي جاوب واجه مشكلة قبل ما يقدر يقدّم الدور)، أي جهاز ثاني متصل
+      // بنفس الغرفة يتكفّل بإنقاذ اللعبة وتقديم الدور بنفسه — محمي بنفس حارس التكرار
+      // الموجود أصلاً بـnextT()، فآمن حتى لو أكثر من جهاز حاول بنفس اللحظة.
+      if(!_stuckWatchdog){
+        _stuckWatchdog=setInterval(function(){
+          if(!G||G.status!=="playing"||G.phase!=="ans")return;
+          var stuckSince=G._ansPhaseStamp||0;
+          if(stuckSince && (Date.now()-stuckSince)>7000){
+            console.log("[Watchdog] الجولة عالقة بطور الإجابة — محاولة إنقاذ");
+            nextT();
+          }
+        },3000);
       }
       // تحويل زائر غير عضو لصفحة الانضمام — مرة واحدة فقط وفي طور الانتظار فقط
       if(!_joinChecked){
@@ -3785,7 +3799,7 @@ function selCell(i){
   var cell=G.board[i];if(!cell||cell.used)return;
   stopSelT();G.selDeadline=null;
   SFX.click();
-  G.cc=cell;G.phase="ans";G.cq=G.qs[G.qi];
+  G.cc=cell;G.phase="ans";G.cq=G.qs[G.qi];G._ansPhaseStamp=Date.now();
   saveState();rBoard();
   var cells=document.querySelectorAll(".cell");
   if(cells[i])cells[i].className="cell sel";
@@ -4266,18 +4280,18 @@ function showYovModal(){
       if(shielded){ntf("🛡️ "+t.name+" محمي!","#00E676");
         // Remove shield after use
         delete G._roomState.shieldTeams[t.id];
-        closeYov();nextT();return;
+        closeYov();return;
       }
       t.points=Math.max(0,t.points-10);t.yqc++;
       bump(t);rBar();saveState();
       ntf("⚡ خُصمت 10 نقاط من "+t.name+"!","#FF3D5A");
-      closeYov();nextT();
+      closeYov();
     };
     yl.appendChild(b);
   });
   document.getElementById("yov").classList.add("on");
 }
-function closeYov(){document.getElementById("yov").classList.remove("on");}
+function closeYov(){document.getElementById("yov").classList.remove("on");nextT();}
 
 /* ════════════════════════════════════════
    USER STATS — تُكتب في users/uid/stats (أونلاين فقط، للمسجّل دخوله)
