@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>تحدي الأرقام — وضع فردي</title>
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+html{background:#070B1F;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#070B1F;--bg2:#0C1130;--card:rgba(255,255,255,.04);--card2:rgba(255,255,255,.07);
+  --cyan:#00E5FF;--gold:#FFD046;--green:#00E676;--red:#FF3D5A;--silver:#8AB8FF;
+  --border:rgba(255,255,255,.09);
+}
+body{
+  font-family:'Tajawal',sans-serif;background:var(--bg);color:#fff;min-height:100vh;
+  background-image:radial-gradient(ellipse 120% 50% at 50% -5%,rgba(10,50,200,.4),transparent 65%);
+  padding-top:max(env(safe-area-inset-top), 22px);padding-bottom:max(env(safe-area-inset-bottom), 10px);
+  padding-left:max(env(safe-area-inset-left), 10px);padding-right:max(env(safe-area-inset-right), 10px);
+}
+html.is-android body{padding-top:max(env(safe-area-inset-top), 44px);}
+.wrap{max-width:720px;margin:0 auto;padding:1rem}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.hdr h1{font-family:'Cairo',sans-serif;font-size:1.3rem;color:var(--gold)}
+.btn{border:none;border-radius:12px;padding:.7rem 1.3rem;font-weight:800;font-size:.95rem;cursor:pointer;font-family:'Tajawal',sans-serif}
+.btn-cyan{background:var(--cyan);color:#031318}
+.btn-gold{background:var(--gold);color:#2b1c00}
+.btn-red{background:var(--red);color:#fff}
+.btn-ghost{background:var(--card);color:#fff;border:1px solid var(--border)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.card{background:var(--card2);border:1px solid var(--border);border-radius:16px;padding:1.1rem;margin-bottom:1rem}
+.row{display:flex;gap:.6rem;flex-wrap:wrap}
+input[type=text],input[type=number]{
+  background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;color:#fff;
+  padding:.7rem .9rem;font-size:1rem;font-family:'Tajawal',sans-serif;flex:1;min-width:140px
+}
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;margin:1rem 0}
+.cell{
+  aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-family:'Cairo',sans-serif;font-weight:900;font-size:1.2rem;cursor:pointer;
+  background:var(--card);border:1px solid var(--border);transition:.15s
+}
+.cell.used-win{background:rgba(0,230,118,.18);border-color:var(--green);color:var(--green)}
+.cell.used-lose{background:rgba(255,61,90,.18);border-color:var(--red);color:var(--red)}
+.cell.picked{outline:2px solid var(--gold)}
+.opts{display:flex;flex-direction:column;gap:.6rem;margin-top:1rem}
+.opt{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.9rem 1rem;
+  display:flex;align-items:center;gap:.7rem;cursor:pointer;font-size:1.02rem
+}
+.opt .lbl{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.08);
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0}
+.opt.correct{background:rgba(0,230,118,.2);border-color:var(--green)}
+.opt.wrong{background:rgba(255,61,90,.2);border-color:var(--red)}
+.opt.disabled{pointer-events:none;opacity:.55}
+.qtext{font-size:1.15rem;font-weight:700;line-height:1.6;margin-bottom:.3rem}
+.qcat{color:var(--cyan);font-size:.8rem;margin-bottom:.6rem}
+.pill{display:inline-block;background:var(--card);border:1px solid var(--border);border-radius:99px;
+  padding:.25rem .8rem;font-size:.8rem;color:var(--gold)}
+.winlist{display:flex;flex-direction:column;gap:.4rem;max-height:280px;overflow:auto}
+.winrow{display:flex;justify-content:space-between;align-items:center;background:var(--card);
+  border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem}
+.dim{color:rgba(255,255,255,.5);font-size:.85rem}
+.center{text-align:center}
+.drawResult{
+  font-family:'Cairo',sans-serif;font-size:2rem;font-weight:900;color:var(--gold);
+  text-align:center;padding:1.5rem 0
+}
+a.back{color:var(--cyan);text-decoration:none;font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <h1>🎙️ وضع فردي</h1>
+    <a class="back" href="index.html">← الرئيسية</a>
+  </div>
+
+  <!-- ═══ إعداد الفعالية (قبل البدء) ═══ -->
+  <div class="card" id="setupCard">
+    <div class="dim" style="margin-bottom:.8rem">
+      كل متصل يختار رقمًا، يجاوب على السؤال — صح يدخل السحب، غلط يخرج. جولات متعددة، سحب تراكمي بالنهاية.
+    </div>
+    <div class="row" style="margin-bottom:.7rem">
+      <input type="text" id="eventName" placeholder="اسم الفعالية (اختياري)">
+    </div>
+    <button class="btn btn-cyan" onclick="startEvent()" style="width:100%">🚀 ابدأ الفعالية</button>
+  </div>
+
+  <!-- ═══ شاشة الجولة الجارية ═══ -->
+  <div id="roundCard" style="display:none">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:.6rem">
+        <span class="pill" id="roundPill">جولة 1</span>
+        <span class="dim" id="remainPill">20 رقم متبقي</span>
+      </div>
+      <div class="board" id="board"></div>
+      <div class="row" style="margin-top:.5rem">
+        <button class="btn btn-ghost" onclick="endRoundNow()" style="flex:1">⏹️ إنهاء الجولة الآن</button>
+        <button class="btn btn-gold" onclick="newRound()" style="flex:1">➕ جولة جديدة</button>
+      </div>
+    </div>
+
+    <!-- إدخال اسم المتصل قبل عرض سؤاله -->
+    <div class="card" id="nameCard" style="display:none">
+      <div class="dim" style="margin-bottom:.6rem">الرقم <b id="pickedNumLbl" style="color:var(--gold)"></b> — اسم المتصل:</div>
+      <div class="row">
+        <input type="text" id="callerName" placeholder="اسم المتصل">
+        <button class="btn btn-cyan" onclick="confirmCaller()">عرض السؤال</button>
+      </div>
+    </div>
+
+    <!-- السؤال -->
+    <div class="card" id="qCard" style="display:none">
+      <div class="qcat" id="qCat"></div>
+      <div class="qtext" id="qText"></div>
+      <div class="opts" id="qOpts"></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:.5rem">
+        <b>🏆 قائمة السحب (<span id="winCount">0</span>)</b>
+      </div>
+      <div class="winlist" id="winList"><div class="dim center">ولا أحد بعد</div></div>
+    </div>
+
+    <button class="btn btn-gold" onclick="openDraw()" style="width:100%" id="drawBtn" disabled>🎉 اسحب الفائزين</button>
+  </div>
+
+  <!-- ═══ نافذة السحب ═══ -->
+  <div class="card" id="drawCard" style="display:none">
+    <div class="row" style="margin-bottom:.8rem">
+      <input type="number" id="drawCount" value="1" min="1" style="max-width:100px">
+      <button class="btn btn-cyan" onclick="doDraw()" style="flex:1">🎲 اسحب الآن</button>
+      <button class="btn btn-ghost" onclick="closeDraw()">إغلاق</button>
+    </div>
+    <div id="drawOut"></div>
+  </div>
+</div>
+
+<script src="js/question-bank.js"></script>
+<script src="js/capacitor-bridge.js"></script>
+<script>
+"use strict";
+
+var STORE_KEY = "tahadi_audience_v1";
+var TOTAL_CELLS = 20;
+
+var S = {
+  eventName: "",
+  round: 1,
+  used: {},        // {cellIndex: {name, result:'win'|'lose'}}
+  winners: [],      // [{name, round}]
+  pickedCell: null,
+  currentQ: null
+};
+
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){}
+}
+function load(){
+  try{
+    var raw = localStorage.getItem(STORE_KEY);
+    if(raw){ var d = JSON.parse(raw); if(d && d.winners) S = d; return true; }
+  }catch(e){}
+  return false;
+}
+
+function startEvent(){
+  S.eventName = document.getElementById("eventName").value.trim();
+  S.round = 1; S.used = {}; S.winners = []; S.pickedCell = null; S.currentQ = null;
+  save();
+  document.getElementById("setupCard").style.display = "none";
+  document.getElementById("roundCard").style.display = "block";
+  renderAll();
+}
+
+function resumeIfAny(){
+  if(load()){
+    document.getElementById("setupCard").style.display = "none";
+    document.getElementById("roundCard").style.display = "block";
+    renderAll();
+  }
+}
+
+function renderBoard(){
+  var b = document.getElementById("board");
+  b.innerHTML = "";
+  var usedCount = 0;
+  for(var i=0;i<TOTAL_CELLS;i++){
+    var st = S.used[i];
+    var cls = "cell";
+    if(st){ cls += st.result==="win" ? " used-win" : " used-lose"; usedCount++; }
+    if(S.pickedCell===i) cls += " picked";
+    var div = document.createElement("div");
+    div.className = cls;
+    div.textContent = i+1;
+    if(!st && S.pickedCell===null){
+      div.onclick = function(idx){ return function(){ pickCell(idx); }; }(i);
+    }
+    b.appendChild(div);
+  }
+  document.getElementById("remainPill").textContent = (TOTAL_CELLS-usedCount)+" رقم متبقٍ";
+  document.getElementById("roundPill").textContent = "جولة "+S.round;
+}
+
+function pickCell(i){
+  if(S.used[i] || S.pickedCell!==null) return;
+  S.pickedCell = i;
+  save();
+  renderBoard();
+  document.getElementById("pickedNumLbl").textContent = (i+1);
+  document.getElementById("callerName").value = "";
+  document.getElementById("nameCard").style.display = "block";
+  document.getElementById("qCard").style.display = "none";
+  document.getElementById("callerName").focus();
+}
+
+function pickRandomQuestion(){
+  if(!window.QB || !QB.length) return null;
+  return QB[Math.floor(Math.random()*QB.length)];
+}
+
+function confirmCaller(){
+  var name = document.getElementById("callerName").value.trim();
+  if(!name){ alert("اكتب اسم المتصل أول"); return; }
+  S.currentQ = { q: pickRandomQuestion(), name: name };
+  save();
+  renderQuestion();
+  document.getElementById("nameCard").style.display = "none";
+  document.getElementById("qCard").style.display = "block";
+}
+
+function renderQuestion(){
+  var q = S.currentQ.q;
+  document.getElementById("qCat").textContent = q.cat || "";
+  document.getElementById("qText").textContent = q.text;
+  var opts = document.getElementById("qOpts");
+  opts.innerHTML = "";
+  ["A","B","C","D"].forEach(function(k){
+    var div = document.createElement("div");
+    div.className = "opt";
+    div.innerHTML = '<span class="lbl">'+k+'</span><span>'+q[k]+'</span>';
+    div.onclick = function(){ answerPicked(k); };
+    div.id = "opt-"+k;
+    opts.appendChild(div);
+  });
+}
+
+function answerPicked(choice){
+  var q = S.currentQ.q, name = S.currentQ.name, cell = S.pickedCell;
+  var correct = (choice === q.correct);
+  ["A","B","C","D"].forEach(function(k){
+    var el = document.getElementById("opt-"+k);
+    el.classList.add("disabled");
+    if(k===q.correct) el.classList.add("correct");
+    else if(k===choice && !correct) el.classList.add("wrong");
+  });
+  S.used[cell] = { name: name, result: correct ? "win" : "lose" };
+  if(correct){ S.winners.push({ name: name, round: S.round }); }
+  S.pickedCell = null;
+  save();
+  setTimeout(function(){
+    document.getElementById("qCard").style.display = "none";
+    renderBoard();
+    renderWinners();
+  }, 1400);
+}
+
+function renderWinners(){
+  var list = document.getElementById("winList");
+  document.getElementById("winCount").textContent = S.winners.length;
+  document.getElementById("drawBtn").disabled = S.winners.length===0;
+  if(!S.winners.length){ list.innerHTML = '<div class="dim center">ولا أحد بعد</div>'; return; }
+  list.innerHTML = "";
+  S.winners.slice().reverse().forEach(function(w){
+    var row = document.createElement("div");
+    row.className = "winrow";
+    row.innerHTML = '<span>'+w.name+'</span><span class="dim">جولة '+w.round+'</span>';
+    list.appendChild(row);
+  });
+}
+
+function endRoundNow(){
+  if(!confirm("إنهاء الجولة الحالية؟ الفائزون بها يبقون بالسحب.")) return;
+  S.pickedCell = null; S.currentQ = null;
+  document.getElementById("qCard").style.display = "none";
+  document.getElementById("nameCard").style.display = "none";
+  save();
+}
+
+function newRound(){
+  if(!confirm("بدء جولة جديدة؟ اللوحة ترجع فاضية، الفائزون السابقون يبقون بالسحب.")) return;
+  S.round++; S.used = {}; S.pickedCell = null; S.currentQ = null;
+  save();
+  renderAll();
+}
+
+function openDraw(){
+  document.getElementById("drawCard").style.display = "block";
+  document.getElementById("drawOut").innerHTML = "";
+  document.getElementById("drawCard").scrollIntoView({behavior:"smooth"});
+}
+function closeDraw(){
+  document.getElementById("drawCard").style.display = "none";
+}
+function doDraw(){
+  var n = Math.max(1, parseInt(document.getElementById("drawCount").value,10)||1);
+  var pool = S.winners.slice();
+  if(!pool.length){ document.getElementById("drawOut").innerHTML = '<div class="dim center">ولا أحد بقائمة السحب</div>'; return; }
+  var picks = [];
+  for(var i=0;i<n && pool.length;i++){
+    var idx = Math.floor(Math.random()*pool.length);
+    picks.push(pool.splice(idx,1)[0]);
+  }
+  var out = document.getElementById("drawOut");
+  out.innerHTML = "";
+  picks.forEach(function(p,i){
+    var div = document.createElement("div");
+    div.className = "drawResult";
+    div.textContent = "🏆 "+p.name;
+    out.appendChild(div);
+  });
+}
+
+function renderAll(){
+  renderBoard();
+  renderWinners();
+  document.getElementById("nameCard").style.display = "none";
+  document.getElementById("qCard").style.display = "none";
+}
+
+resumeIfAny();
+</script>
+</body>
+</html>

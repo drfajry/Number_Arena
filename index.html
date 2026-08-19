@@ -55,7 +55,12 @@ body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
 nav{position:fixed;top:0;left:0;right:0;z-index:100;
   background:rgba(7,11,31,.9);backdrop-filter:blur(16px);
   border-bottom:1px solid var(--border);
-  padding-top:env(safe-area-inset-top);}
+  padding-top:max(env(safe-area-inset-top), 0px);}
+/* أندرويد: احتياطي أكبر لشريط الحالة — env() غالباً يرجّع صفر بدون إعداد أصلي
+   إضافي (edge-to-edge)، فتتراكب العناصر مع شريط الحالة بهواوي/جالكسي وغيرها. */
+html.is-android nav{padding-top:max(env(safe-area-inset-top), 24px);}
+html.is-android .ntf{top:calc(1rem + max(env(safe-area-inset-top), 24px));}
+html.is-android #trialBox{top:calc(.7rem + max(env(safe-area-inset-top), 24px));}
 .nav-inner{max-width:1140px;margin:0 auto;padding:.72rem 1.5rem;
   display:flex;align-items:center;justify-content:space-between;gap:1rem;}
 .nav-logo{display:flex;align-items:center;gap:.6rem;text-decoration:none;cursor:pointer;}
@@ -695,9 +700,22 @@ select.inp option{background:#0C1440;}
 <div class="mo" id="offMo">
   <div class="mb">
     <div class="mt_">📱 لعب على نفس الجهاز</div>
-    <div class="fg"><label>عدد الفرق</label><select id="offCount" class="inp" onchange="buildOff()"><option value="2">2 فرق</option><option value="3">3 فرق</option><option value="4">4 فرق</option></select></div>
-    <div id="offForms"></div>
-    <div class="mo-btns"><button class="btn-p" onclick="doOff()">ابدأ اللعب</button><button class="btn-s" onclick="closeM('offMo')">إلغاء</button></div>
+    <div class="mo-btns" style="margin-bottom:1rem">
+      <button class="btn-p" id="offModeTeams" onclick="setOffMode('teams')">👥 فرق</button>
+      <button class="btn-s" id="offModeSolo" onclick="setOffMode('solo')">🎙️ فردي</button>
+    </div>
+    <div id="offTeamsUI">
+      <div class="fg"><label>عدد الفرق</label><select id="offCount" class="inp" onchange="buildOff()"><option value="2">2 فرق</option><option value="3">3 فرق</option><option value="4">4 فرق</option></select></div>
+      <div id="offForms"></div>
+      <div class="mo-btns"><button class="btn-p" onclick="doOff()">ابدأ اللعب</button><button class="btn-s" onclick="closeM('offMo')">إلغاء</button></div>
+    </div>
+    <div id="offSoloUI" style="display:none">
+      <p style="color:var(--dim);font-size:.88rem;line-height:1.7;margin-bottom:1rem">
+        وضع فردي: كل متصل/مشارك يختار رقمًا، يجاوب على سؤاله — صح يدخل قائمة السحب، غلط يخرج.
+        جولات متعددة، وسحب فائزين بالنهاية. مناسب لفصل دراسي أو فعالية جماهيرية بشاشة واحدة.
+      </p>
+      <div class="mo-btns"><button class="btn-p" onclick="location.href='audience.html'">ابدأ الوضع الفردي</button><button class="btn-s" onclick="closeM('offMo')">إلغاء</button></div>
+    </div>
   </div>
 </div>
 
@@ -786,7 +804,18 @@ function onlineGate(){
 function openCreate(){if(!onlineGate())return;document.getElementById("cName").value="";document.getElementById("createMo").classList.add("on");setTimeout(()=>document.getElementById("cName").focus(),300);}
 function openJoin(){if(!onlineGate())return;document.getElementById("jName").value="";document.getElementById("joinMo").classList.add("on");}
 function openJoinDirect(){document.getElementById("joinMo").classList.add("on");}
-function openOffline(){buildOff();document.getElementById("offMo").classList.add("on");}
+function openOffline(){buildOff();setOffMode('teams');document.getElementById("offMo").classList.add("on");}
+function setOffMode(m){
+  var teamsBtn=document.getElementById("offModeTeams"), soloBtn=document.getElementById("offModeSolo");
+  var teamsUI=document.getElementById("offTeamsUI"), soloUI=document.getElementById("offSoloUI");
+  if(m==="solo"){
+    teamsBtn.className="btn-s"; soloBtn.className="btn-p";
+    teamsUI.style.display="none"; soloUI.style.display="block";
+  } else {
+    teamsBtn.className="btn-p"; soloBtn.className="btn-s";
+    teamsUI.style.display="block"; soloUI.style.display="none";
+  }
+}
 function _bindModalBackdrops(){document.querySelectorAll(".mo").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("on");}));}
 
 function toggleNav(){
