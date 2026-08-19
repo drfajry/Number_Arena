@@ -58,6 +58,10 @@ input[type=text],input[type=number]{
 .opt.wrong{background:rgba(255,61,90,.2);border-color:var(--red)}
 .opt.disabled{pointer-events:none;opacity:.55}
 .qtext{font-size:1.15rem;font-weight:700;line-height:1.6;margin-bottom:.3rem}
+.timerBar{width:100%;height:6px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin-bottom:.7rem}
+.timerBarFill{height:100%;background:var(--cyan);width:100%;transition:width 1s linear,background .3s}
+.timerBarFill.warn{background:var(--gold)}
+.timerBarFill.danger{background:var(--red)}
 .qcat{color:var(--cyan);font-size:.8rem;margin-bottom:.6rem}
 .pill{display:inline-block;background:var(--card);border:1px solid var(--border);border-radius:99px;
   padding:.25rem .8rem;font-size:.8rem;color:var(--gold)}
@@ -116,10 +120,15 @@ a.back{color:var(--cyan);text-decoration:none;font-size:.85rem}
 
     <!-- السؤال -->
     <div class="card" id="qCard" style="display:none">
-      <div class="qcat" id="qCat"></div>
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:.4rem">
+        <div class="qcat" id="qCat" style="margin-bottom:0"></div>
+        <div id="timerBox" style="font-family:'Cairo',sans-serif;font-weight:900;font-size:1.1rem;color:var(--cyan)">⏱️ <span id="timerNum">30</span></div>
+      </div>
+      <div class="timerBar"><div class="timerBarFill" id="timerBarFill"></div></div>
       <div class="qtext" id="qText"></div>
       <div class="opts" id="qOpts"></div>
     </div>
+
 
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:.5rem">
@@ -260,6 +269,9 @@ function confirmCaller(){
 }
 
 function showMabrookCelebration(name){
+  stopQuestionTimer();
+  document.getElementById("timerBox").style.display = "none";
+  document.getElementById("timerBarFill").parentElement.style.display = "none";
   var q = document.getElementById("qCard");
   q.style.display = "block";
   document.getElementById("qCat").textContent = "";
@@ -276,8 +288,13 @@ function showMabrookCelebration(name){
   }, 2200);
 }
 
+var QUESTION_SECONDS = 30;
+var _qTimer = null, _qTimeLeft = QUESTION_SECONDS;
+
 function renderQuestion(){
   var q = S.currentQ.q;
+  document.getElementById("timerBox").style.display = "";
+  document.getElementById("timerBarFill").parentElement.style.display = "";
   document.getElementById("qCat").textContent = q.cat || "";
   document.getElementById("qText").textContent = q.text;
   var opts = document.getElementById("qOpts");
@@ -290,11 +307,38 @@ function renderQuestion(){
     div.id = "opt-"+k;
     opts.appendChild(div);
   });
+  startQuestionTimer();
+}
+
+function startQuestionTimer(){
+  stopQuestionTimer();
+  _qTimeLeft = QUESTION_SECONDS;
+  updateTimerUI();
+  _qTimer = setInterval(function(){
+    _qTimeLeft--;
+    updateTimerUI();
+    if(_qTimeLeft<=0){
+      stopQuestionTimer();
+      answerPicked(null); // انتهى الوقت — يُعامل كإجابة خاطئة
+    }
+  }, 1000);
+}
+function stopQuestionTimer(){
+  if(_qTimer){ clearInterval(_qTimer); _qTimer = null; }
+}
+function updateTimerUI(){
+  var numEl = document.getElementById("timerNum");
+  var fillEl = document.getElementById("timerBarFill");
+  if(!numEl||!fillEl) return;
+  numEl.textContent = _qTimeLeft;
+  fillEl.style.width = Math.max(0,(_qTimeLeft/QUESTION_SECONDS*100))+"%";
+  fillEl.className = "timerBarFill" + (_qTimeLeft<=10 ? " danger" : _qTimeLeft<=20 ? " warn" : "");
 }
 
 function answerPicked(choice){
+  stopQuestionTimer();
   var q = S.currentQ.q, name = S.currentQ.name, cell = S.pickedCell;
-  var correct = (choice === q.correct);
+  var correct = (choice !== null && choice === q.correct);
   ["A","B","C","D"].forEach(function(k){
     var el = document.getElementById("opt-"+k);
     el.classList.add("disabled");
@@ -328,6 +372,7 @@ function renderWinners(){
 
 function endRoundNow(){
   if(!confirm("إنهاء الجولة الحالية؟ الفائزون بها يبقون بالسحب.")) return;
+  stopQuestionTimer();
   S.pickedCell = null; S.currentQ = null;
   document.getElementById("qCard").style.display = "none";
   document.getElementById("nameCard").style.display = "none";
