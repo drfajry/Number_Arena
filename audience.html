@@ -36,14 +36,16 @@ input[type=text],input[type=number]{
   background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;color:#fff;
   padding:.7rem .9rem;font-size:1rem;font-family:'Tajawal',sans-serif;flex:1;min-width:140px
 }
-.board{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;margin:1rem 0}
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:.35rem;margin:1rem auto;max-width:min(320px,80vw)}
 .cell{
-  aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;
-  font-family:'Cairo',sans-serif;font-weight:900;font-size:1.2rem;cursor:pointer;
-  background:var(--card);border:1px solid var(--border);transition:.15s
+  aspect-ratio:1;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-family:'Cairo',sans-serif;font-weight:900;font-size:clamp(.8rem,3.4vw,1.05rem);cursor:pointer;
+  background:rgba(0,229,255,.07);border:1.5px solid rgba(0,229,255,.17);transition:.15s;user-select:none;
 }
-.cell.used-win{background:rgba(0,230,118,.18);border-color:var(--green);color:var(--green)}
-.cell.used-lose{background:rgba(255,61,90,.18);border-color:var(--red);color:var(--red)}
+.cell:hover{background:rgba(0,229,255,.17);border-color:var(--cyan);transform:scale(1.06)}
+.cell.used-win{background:rgba(0,230,118,.15);border-color:var(--green);color:var(--green);cursor:not-allowed;transform:none}
+.cell.used-lose{background:rgba(255,61,90,.12);border-color:var(--red);color:var(--red);cursor:not-allowed;transform:none}
+.cell.used-mabrook{background:rgba(255,208,70,.18);border-color:var(--gold);color:var(--gold);cursor:not-allowed;transform:none}
 .cell.picked{outline:2px solid var(--gold)}
 .opts{display:flex;flex-direction:column;gap:.6rem;margin-top:1rem}
 .opt{
@@ -103,11 +105,11 @@ a.back{color:var(--cyan);text-decoration:none;font-size:.85rem}
       </div>
     </div>
 
-    <!-- إدخال اسم المتصل قبل عرض سؤاله -->
+    <!-- إدخال اسم المتسابق قبل عرض سؤاله -->
     <div class="card" id="nameCard" style="display:none">
-      <div class="dim" style="margin-bottom:.6rem">الرقم <b id="pickedNumLbl" style="color:var(--gold)"></b> — اسم المتصل:</div>
+      <div class="dim" style="margin-bottom:.6rem">الرقم <b id="pickedNumLbl" style="color:var(--gold)"></b> — اسم المتسابق:</div>
       <div class="row">
-        <input type="text" id="callerName" placeholder="اسم المتصل">
+        <input type="text" id="callerName" placeholder="اسم المتسابق">
         <button class="btn btn-cyan" onclick="confirmCaller()">عرض السؤال</button>
       </div>
     </div>
@@ -163,14 +165,26 @@ function save(){
 function load(){
   try{
     var raw = localStorage.getItem(STORE_KEY);
-    if(raw){ var d = JSON.parse(raw); if(d && d.winners) S = d; return true; }
+    if(raw){
+      var d = JSON.parse(raw);
+      if(d && d.winners){
+        if(d.mabrookCell===undefined || d.mabrookCell===null) d.mabrookCell = pickRandomMabrookCell();
+        S = d;
+        return true;
+      }
+    }
   }catch(e){}
   return false;
+}
+
+function pickRandomMabrookCell(){
+  return Math.floor(Math.random()*TOTAL_CELLS);
 }
 
 function startEvent(){
   S.eventName = document.getElementById("eventName").value.trim();
   S.round = 1; S.used = {}; S.winners = []; S.pickedCell = null; S.currentQ = null;
+  S.mabrookCell = pickRandomMabrookCell();
   save();
   document.getElementById("setupCard").style.display = "none";
   document.getElementById("roundCard").style.display = "block";
@@ -192,7 +206,10 @@ function renderBoard(){
   for(var i=0;i<TOTAL_CELLS;i++){
     var st = S.used[i];
     var cls = "cell";
-    if(st){ cls += st.result==="win" ? " used-win" : " used-lose"; usedCount++; }
+    if(st){
+      cls += st.result==="mabrook" ? " used-mabrook" : (st.result==="win" ? " used-win" : " used-lose");
+      usedCount++;
+    }
     if(S.pickedCell===i) cls += " picked";
     var div = document.createElement("div");
     div.className = cls;
@@ -225,12 +242,38 @@ function pickRandomQuestion(){
 
 function confirmCaller(){
   var name = document.getElementById("callerName").value.trim();
-  if(!name){ alert("اكتب اسم المتصل أول"); return; }
+  if(!name){ alert("اكتب اسم المتسابق أول"); return; }
+  document.getElementById("nameCard").style.display = "none";
+  // خلية "مبروك" — فوز فوري بدون سؤال
+  if(S.pickedCell === S.mabrookCell){
+    S.used[S.pickedCell] = { name: name, result: "mabrook" };
+    S.winners.push({ name: name, round: S.round });
+    S.pickedCell = null;
+    save();
+    showMabrookCelebration(name);
+    return;
+  }
   S.currentQ = { q: pickRandomQuestion(), name: name };
   save();
   renderQuestion();
-  document.getElementById("nameCard").style.display = "none";
   document.getElementById("qCard").style.display = "block";
+}
+
+function showMabrookCelebration(name){
+  var q = document.getElementById("qCard");
+  q.style.display = "block";
+  document.getElementById("qCat").textContent = "";
+  document.getElementById("qText").innerHTML = '<div style="text-align:center;padding:1rem 0">'
+    +'<div style="font-size:2.2rem;margin-bottom:.5rem">🎊</div>'
+    +'<div style="font-family:\'Cairo\',sans-serif;font-size:1.6rem;font-weight:900;color:var(--gold)">مبروك يا '+name+'!</div>'
+    +'<div class="dim" style="margin-top:.4rem">دخلت قائمة السحب مباشرة بدون سؤال</div>'
+    +'</div>';
+  document.getElementById("qOpts").innerHTML = "";
+  setTimeout(function(){
+    document.getElementById("qCard").style.display = "none";
+    renderBoard();
+    renderWinners();
+  }, 2200);
 }
 
 function renderQuestion(){
@@ -294,6 +337,7 @@ function endRoundNow(){
 function newRound(){
   if(!confirm("بدء جولة جديدة؟ اللوحة ترجع فاضية، الفائزون السابقون يبقون بالسحب.")) return;
   S.round++; S.used = {}; S.pickedCell = null; S.currentQ = null;
+  S.mabrookCell = pickRandomMabrookCell();
   save();
   renderAll();
 }
