@@ -110,12 +110,13 @@ a.back{color:var(--cyan);text-decoration:none;font-size:.85rem}
     </div>
 
     <!-- إدخال اسم المتسابق قبل عرض سؤاله -->
-    <div class="card" id="nameCard" style="display:none">
+    <div class="card" id="nameCard" style="display:none;position:fixed;top:max(env(safe-area-inset-top), 20px);left:.7rem;right:.7rem;z-index:999;box-shadow:0 8px 30px rgba(0,0,0,.6);max-width:720px;margin:0 auto">
       <div class="dim" style="margin-bottom:.6rem">الرقم <b id="pickedNumLbl" style="color:var(--gold)"></b> — اسم المتسابق:</div>
       <div class="row">
         <input type="text" id="callerName" placeholder="اسم المتسابق">
         <button class="btn btn-cyan" onclick="confirmCaller()">عرض السؤال</button>
       </div>
+      <div style="text-align:center;margin-top:.5rem"><a href="#" onclick="return closeNameCard()" class="dim" style="text-decoration:none;font-size:.82rem">✕ إلغاء</a></div>
     </div>
 
     <!-- السؤال -->
@@ -219,6 +220,15 @@ function pickCell(i){
   document.getElementById("nameCard").style.display = "block";
   document.getElementById("qCard").style.display = "none";
   document.getElementById("callerName").focus();
+}
+
+function closeNameCard(){
+  document.getElementById("callerName").blur();
+  document.getElementById("nameCard").style.display = "none";
+  S.pickedCell = null;
+  save();
+  renderBoard();
+  return false;
 }
 
 function pickRandomQuestion(){
@@ -404,41 +414,8 @@ function renderAll(){
 }
 
 // لا حاجة لاستعادة أي حالة سابقة — الفعالية تبدأ دايماً من شاشة الإعداد
-
-/* ── إصلاح تغطية لوحة المفاتيح لحقول الإدخال (آيفون تحديداً) ──
-   آيفون (بخلاف أندرويد) ما يحرّك الصفحة تلقائياً عند ظهور لوحة المفاتيح.
-   نستخدم إضافة Keyboard الرسمية من Capacitor (مثبَّتة أصلاً) للاستماع لحدث
-   ظهور اللوحة فعلياً، وندفع الصفحة لمنتصفها وقتها — أضمن من scrollIntoView
-   وحده لأن الأخير قد يشتغل قبل ما يكتمل ارتفاع اللوحة فعلياً على iOS. */
-(function setupKeyboardFix(){
-  var focusedInput = null;
-  document.querySelectorAll('input[type="text"], input[type="number"]').forEach(function(inp){
-    inp.addEventListener("focus", function(){ focusedInput = this; });
-    inp.addEventListener("blur", function(){ if(focusedInput===this) focusedInput=null; });
-  });
-  function scrollFocused(){
-    if(focusedInput){
-      focusedInput.scrollIntoView({behavior:"smooth", block:"center"});
-    }
-  }
-  try{
-    if(window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Keyboard){
-      Capacitor.Plugins.Keyboard.addListener("keyboardWillShow", function(){
-        setTimeout(scrollFocused, 50);
-      });
-      Capacitor.Plugins.Keyboard.addListener("keyboardDidShow", function(){
-        setTimeout(scrollFocused, 50);
-      });
-    }
-  }catch(e){}
-  // احتياطي إضافي (أندرويد أو أي حالة ما فيها إضافة Keyboard): نفس السلوك القديم
-  document.querySelectorAll('input[type="text"], input[type="number"]').forEach(function(inp){
-    inp.addEventListener("focus", function(){
-      var el = this;
-      setTimeout(function(){ el.scrollIntoView({behavior:"smooth", block:"center"}); }, 300);
-    });
-  });
-})();
+// (حقل اسم المتسابق مثبَّت بأعلى الشاشة دائماً الآن — فوق أي احتمال تغطية
+// من لوحة المفاتيح، بغض النظر عن سلوك المنصة أو أي توقيت تحميل)
 </script>
 </body>
 </html>
