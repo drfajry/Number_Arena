@@ -256,7 +256,7 @@ function confirmCaller(){
   // خلية "مبروك" — فوز فوري بدون سؤال
   if(S.pickedCell === S.mabrookCell){
     S.used[S.pickedCell] = { name: name, result: "mabrook" };
-    S.winners.push({ name: name, round: S.round });
+    S.winners.push({ name: name, round: S.round, cell: S.pickedCell });
     S.pickedCell = null;
     save();
     showMabrookCelebration(name);
@@ -346,7 +346,7 @@ function answerPicked(choice){
     else if(k===choice && !correct) el.classList.add("wrong");
   });
   S.used[cell] = { name: name, result: correct ? "win" : "lose" };
-  if(correct){ S.winners.push({ name: name, round: S.round }); }
+  if(correct){ S.winners.push({ name: name, round: S.round, cell: cell }); }
   S.pickedCell = null;
   save();
   setTimeout(function(){
@@ -365,7 +365,7 @@ function renderWinners(){
   S.winners.slice().reverse().forEach(function(w){
     var row = document.createElement("div");
     row.className = "winrow";
-    row.innerHTML = '<span>'+w.name+'</span><span class="dim">جولة '+w.round+'</span>';
+    row.innerHTML = '<span>'+w.name+' <span class="dim" style="font-size:.8em">(رقم '+(w.cell+1)+')</span></span><span class="dim">جولة '+w.round+'</span>';
     list.appendChild(row);
   });
 }
@@ -409,7 +409,7 @@ function doDraw(){
   picks.forEach(function(p,i){
     var div = document.createElement("div");
     div.className = "drawResult";
-    div.textContent = "🏆 "+p.name;
+    div.innerHTML = "🏆 "+p.name+'<div style="font-size:1rem;color:var(--dim);font-weight:700;margin-top:.2rem">رقم '+(p.cell+1)+' — جولة '+p.round+'</div>';
     out.appendChild(div);
   });
 }
