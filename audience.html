@@ -163,28 +163,14 @@ var S = {
   eventName: "",
   round: 1,
   used: {},        // {cellIndex: {name, result:'win'|'lose'}}
-  winners: [],      // [{name, round}]
+  winners: [],      // [{name, round, cell}]
   pickedCell: null,
   currentQ: null
 };
 
-function save(){
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){}
-}
-function load(){
-  try{
-    var raw = localStorage.getItem(STORE_KEY);
-    if(raw){
-      var d = JSON.parse(raw);
-      if(d && d.winners){
-        if(d.mabrookCell===undefined || d.mabrookCell===null) d.mabrookCell = pickRandomMabrookCell();
-        S = d;
-        return true;
-      }
-    }
-  }catch(e){}
-  return false;
-}
+// لا حفظ بأي تخزين دائم عمداً — الفعالية جلسة حية، تُمسح تلقائياً عند إغلاق
+// التطبيق/إعادة تحميل الصفحة (لا نبي بيانات فعالية سابقة تختلط بفعالية جديدة).
+function save(){ /* no-op بالتصميم */ }
 
 function pickRandomMabrookCell(){
   return Math.floor(Math.random()*TOTAL_CELLS);
@@ -194,18 +180,9 @@ function startEvent(){
   S.eventName = document.getElementById("eventName").value.trim();
   S.round = 1; S.used = {}; S.winners = []; S.pickedCell = null; S.currentQ = null;
   S.mabrookCell = pickRandomMabrookCell();
-  save();
   document.getElementById("setupCard").style.display = "none";
   document.getElementById("roundCard").style.display = "block";
   renderAll();
-}
-
-function resumeIfAny(){
-  if(load()){
-    document.getElementById("setupCard").style.display = "none";
-    document.getElementById("roundCard").style.display = "block";
-    renderAll();
-  }
 }
 
 function renderBoard(){
@@ -412,6 +389,11 @@ function doDraw(){
     div.innerHTML = "🏆 "+p.name+'<div style="font-size:1rem;color:var(--dim);font-weight:700;margin-top:.2rem">رقم '+(p.cell+1)+' — جولة '+p.round+'</div>';
     out.appendChild(div);
   });
+  // احذف الفائزين المسحوبين نهائياً من القائمة — ما ينسحبون مرة ثانية بنفس الفعالية
+  S.winners = S.winners.filter(function(w){
+    return !picks.some(function(p){ return p===w; });
+  });
+  renderWinners();
 }
 
 function renderAll(){
@@ -421,7 +403,20 @@ function renderAll(){
   document.getElementById("qCard").style.display = "none";
 }
 
-resumeIfAny();
+// لا حاجة لاستعادة أي حالة سابقة — الفعالية تبدأ دايماً من شاشة الإعداد
+
+/* ── إصلاح تغطية لوحة المفاتيح لحقول الإدخال (آيفون تحديداً) ──
+   آيفون (بخلاف أندرويد) ما يحرّك الصفحة تلقائياً عند ظهور لوحة المفاتيح، فأي
+   حقل بأسفل الشاشة يضل مغطّى تماماً. نمرّر الحقل لمنتصف الشاشة يدوياً عند
+   التركيز عليه — يشتغل على المنصتين، بدون تعارض مع سلوك أندرويد الطبيعي. */
+document.querySelectorAll('input[type="text"], input[type="number"]').forEach(function(inp){
+  inp.addEventListener("focus", function(){
+    var el = this;
+    setTimeout(function(){
+      el.scrollIntoView({behavior:"smooth", block:"center"});
+    }, 300);
+  });
+});
 </script>
 </body>
 </html>
