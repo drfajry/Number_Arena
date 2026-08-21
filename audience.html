@@ -89,6 +89,9 @@ a.back{color:var(--cyan);text-decoration:none;font-size:.85rem}
     <div class="dim" style="margin-bottom:.8rem">
       كل متصل يختار رقمًا، يجاوب على السؤال — صح يدخل السحب، غلط يخرج. جولات متعددة، سحب تراكمي بالنهاية.
     </div>
+    <div style="background:rgba(255,208,70,.09);border:1px solid rgba(255,208,70,.25);border-radius:10px;padding:.6rem .8rem;margin-bottom:1rem;font-size:.8rem;color:var(--gold);line-height:1.6">
+      ℹ️ الحساب المجاني يستخدم دائمًا نفس 200 سؤال ثابتة — الاشتراك يفتح البنك الكامل (2400+ سؤال) هنا أيضاً.
+    </div>
     <div class="row" style="margin-bottom:.7rem">
       <input type="text" id="eventName" placeholder="اسم الفعالية (اختياري)">
     </div>
@@ -231,9 +234,34 @@ function closeNameCard(){
   return false;
 }
 
+var FREE_POOL_LIMIT = 200;
+var _freePoolCache = null;
+function getFreePool(){
+  // نفس منطق game.html بالضبط: 200 سؤال ثابتة موزّعة على كل الفئات — نفس
+  // المجموعة بالضبط بكل حساب، بدون عشوائية بينها (تُستخدم فقط للحسابات غير
+  // المشتركة؛ المشترك يفتح البنك الكامل هنا أيضاً، بلا فرق عن الأونلاين).
+  if(_freePoolCache) return _freePoolCache;
+  if(!window.QB || !QB.length) return [];
+  var _byCat={};
+  QB.forEach(function(q){ (_byCat[q.cat]=_byCat[q.cat]||[]).push(q); });
+  var _cats=Object.keys(_byCat).sort();
+  var pool=[], _i=0;
+  while(pool.length<FREE_POOL_LIMIT && _i<500){
+    _cats.forEach(function(c){ if(pool.length<FREE_POOL_LIMIT && _byCat[c][_i]) pool.push(_byCat[c][_i]); });
+    _i++;
+  }
+  _freePoolCache = pool;
+  return pool;
+}
+function isSubscribed(){
+  try{
+    return localStorage.getItem("tahadi_pro")==="1" || localStorage.getItem("tahadi_elite")==="1";
+  }catch(e){ return false; }
+}
 function pickRandomQuestion(){
-  if(!window.QB || !QB.length) return null;
-  return QB[Math.floor(Math.random()*QB.length)];
+  var pool = isSubscribed() ? QB : getFreePool();
+  if(!pool || !pool.length) return null;
+  return pool[Math.floor(Math.random()*pool.length)];
 }
 
 function confirmCaller(){

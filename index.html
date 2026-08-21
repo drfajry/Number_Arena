@@ -424,7 +424,7 @@ select.inp option{background:#0C1440;}
     <div id="navAuthBtn">
     <button class="nav-cta" onclick="showAuthModal()">👤 تسجيل الدخول</button>
   </div>
-  <button class="nav-cta" onclick="openCreate()" style="margin-right:.5rem">🎮 العب</button>
+  <a class="nav-cta" href="dashboard.html" style="margin-right:.5rem;text-decoration:none">📊 لوحتي</a>
     <button class="hamburger" onclick="toggleNav()"><span></span><span></span><span></span></button>
   </div>
 </nav>
@@ -449,7 +449,7 @@ select.inp option{background:#0C1440;}
           <button id="heroOffline" class="btn-s" onclick="openOffline()">📱 على نفس الجهاز</button>
         </div>
         <div class="hero-stats">
-          <div class="hero-stat"><div class="val">2300+</div><div class="lbl">سؤال</div></div>
+          <div class="hero-stat"><div class="val">2400+</div><div class="lbl">سؤال</div></div>
           <div class="hero-stat"><div class="val">10</div><div class="lbl">مجالات</div></div>
           <div class="hero-stat"><div class="val">20</div><div class="lbl">خلية</div></div>
           <div class="hero-stat"><div class="val">4</div><div class="lbl">فرق</div></div>
@@ -501,7 +501,7 @@ select.inp option{background:#0C1440;}
     <div class="feat-grid">
       <div class="feat-card"><div class="feat-ico" style="background:rgba(0,229,255,.1)">🌐</div><div class="feat-title">لعب أونلاين حقيقي</div><div class="feat-desc">العب مع أصدقائك من أي مكان عبر رمز الغرفة. مزامنة فورية بين الأجهزة.</div></div>
       <div class="feat-card"><div class="feat-ico" style="background:rgba(255,208,70,.1)">🏆</div><div class="feat-title">خلايا مميزة ومكافآت</div><div class="feat-desc">20 خلية مخفية بمكافآت مختلفة: ★ذهبي +20 نقطة، ◆فضي +15، 🎉مبروك +10، ⚡يحق لك!</div></div>
-      <div class="feat-card"><div class="feat-ico" style="background:rgba(0,230,118,.1)">📚</div><div class="feat-title">بنك أسئلة 2300+</div><div class="feat-desc">أسئلة في 10 مجالات متنوعة: ديني، جغرافيا، تاريخ، ألغاز، رياضيات، تقنية، لغة عربية، علوم، ثقافة، رياضة.</div></div>
+      <div class="feat-card"><div class="feat-ico" style="background:rgba(0,230,118,.1)">📚</div><div class="feat-title">بنك أسئلة 2400+</div><div class="feat-desc">أسئلة في 10 مجالات متنوعة: ديني، جغرافيا، تاريخ، ألغاز، رياضيات، تقنية، لغة عربية، علوم، ثقافة، رياضة.</div></div>
       <div class="feat-card"><div class="feat-ico" style="background:rgba(255,61,90,.1)">⚡</div><div class="feat-title">نقاط السرعة</div><div class="feat-desc">10 نقاط في أول 3 ثواني وتنقص تدريجياً. الإجابة السريعة تكافئك أكثر!</div></div>
       <div class="feat-card"><div class="feat-ico" style="background:rgba(168,85,247,.1)">🆘</div><div class="feat-title">6 وسائل مساعدة</div><div class="feat-desc">بنك الحظ، الجمهور، إعادة الوقت، تجميد الفريق، الدرع، وقلب النقاط.</div></div>
       <div class="feat-card"><div class="feat-ico" style="background:rgba(0,229,255,.08)">🔁</div><div class="feat-title">أسئلة لا تتكرر</div><div class="feat-desc">نظام ذكي يمنع تكرار الأسئلة في الجلسة، مع ترتيب مختلف لكل جهاز ومتصفح.</div></div>
@@ -559,9 +559,9 @@ select.inp option{background:#0C1440;}
     <div class="sec-badge">💳 الأسعار</div>
     <h2 class="sec-title">ابدأ مجاناً، <span class="hl2">ارقَ متى ما أردت</span></h2>
         <div class="price-grid">
-      <div class="price-card"><div class="price-ico">🚀</div><div class="price-plan">منطلق</div><div class="price-amt">مجاناً</div><div class="price-per">للأبد</div><button class="price-btn gh" onclick="openOffline()">ابدأ مجاناً</button><ul class="price-feats"><li>200 سؤال شهرياً</li><li>لعب أوفلاين على نفس الجهاز</li><li>وسيلة مساعدة واحدة (بنك الحظ)</li><li>2-4 فرق</li></ul></div>
-      <div class="price-card"><div class="price-ico">👑</div><div class="price-plan">بطل</div><div class="price-amt" id="pAmt">9 <span style="font-size:.9rem">ر.س</span></div><div class="price-per" id="pPer">/ سنة</div><button class="price-btn c" onclick="openSubscribe('pro')">اشترك الآن</button><ul class="price-feats"><li>2300+ سؤال</li><li>أونلاين مع أجهزة مختلفة</li><li>3 وسائل مساعدة</li><li>الجمهور + إعادة الوقت</li></ul></div>
-      <div class="price-card feat"><div class="feat-badge">⭐ الأكثر شعبية</div><div class="price-ico">🔥</div><div class="price-plan feat-txt">أسطوري</div><div class="price-amt" id="eAmt" style="color:var(--gold)">19 <span style="font-size:.9rem">ر.س</span></div><div class="price-per" id="ePer">/ سنة</div><button class="price-btn g" onclick="openSubscribe('elite')">اشترك الآن</button><ul class="price-feats"><li>كل ما في خطة بطل</li><li>6 وسائل مساعدة كاملة</li><li>التجميد + الدرع + قلب النقاط</li><li>أسئلة حصرية</li></ul></div>
+      <div class="price-card" id="pricingFreeCard"><div class="price-ico">🚀</div><div class="price-plan">منطلق</div><div class="price-amt">مجاناً</div><div class="price-per">للأبد</div><button class="price-btn gh" onclick="openOffline()">ابدأ مجاناً</button><ul class="price-feats"><li>200 سؤال شهرياً</li><li>لعب أوفلاين على نفس الجهاز</li><li>وسيلة مساعدة واحدة (بنك الحظ)</li><li>2-4 فرق</li></ul></div>
+      <div class="price-card" id="pricingProCard"><div class="price-ico">👑</div><div class="price-plan">بطل</div><div class="price-amt" id="pAmt">9 <span style="font-size:.9rem">ر.س</span></div><div class="price-per" id="pPer">/ سنة</div><button class="price-btn c" onclick="openSubscribe('pro')">اشترك الآن</button><ul class="price-feats"><li>2400+ سؤال</li><li>أونلاين مع أجهزة مختلفة</li><li>3 وسائل مساعدة</li><li>الجمهور + إعادة الوقت</li></ul></div>
+      <div class="price-card feat" id="pricingEliteCard"><div class="feat-badge">⭐ الأكثر شعبية</div><div class="price-ico">🔥</div><div class="price-plan feat-txt">أسطوري</div><div class="price-amt" id="eAmt" style="color:var(--gold)">19 <span style="font-size:.9rem">ر.س</span></div><div class="price-per" id="ePer">/ سنة</div><button class="price-btn g" onclick="openSubscribe('elite')">اشترك الآن</button><ul class="price-feats"><li>كل ما في خطة بطل</li><li>6 وسائل مساعدة كاملة</li><li>التجميد + الدرع + قلب النقاط</li><li>أسئلة حصرية</li></ul></div>
     </div>
   </div>
 </section>
@@ -575,7 +575,7 @@ select.inp option{background:#0C1440;}
       <div class="faq-item"><div class="faq-q" onclick="faq(0)">هل اللعبة مجانية؟<span class="faq-ico">+</span></div><div class="faq-a">نعم! خطة منطلق المجانية تشمل 200 سؤال شهرياً، لعباً على نفس الجهاز، ووسيلة مساعدة واحدة. للاستفادة الكاملة اشترك في خطة بطل أو أسطوري.</div></div>
       <div class="faq-item"><div class="faq-q" onclick="faq(1)">كيف يعمل اللعب الأونلاين؟<span class="faq-ico">+</span></div><div class="faq-a">أنشئ غرفة واحصل على رمز 6 أحرف، شاركه مع أصدقائك. يدخلون الرمز من أي جهاز ومكان. المزامنة تتم عبر Firebase فورياً في الوقت الفعلي.</div></div>
       <div class="faq-item"><div class="faq-q" onclick="faq(2)">هل تتكرر الأسئلة؟<span class="faq-ico">+</span></div><div class="faq-a">لا! نظام ذكي يتتبع الأسئلة المستخدمة في كل جلسة ويمنع تكرارها. كل جهاز يحصل على ترتيب مختلف بناءً على بصمة المتصفح.</div></div>
-      <div class="faq-item"><div class="faq-q" onclick="faq(3)">كم عدد الأسئلة في البنك؟<span class="faq-ico">+</span></div><div class="faq-a">أكثر من 2300 سؤال موزعة على 10 مجالات بالتساوي: ديني، جغرافيا، تاريخ، ألغاز، رياضيات، تقنية، لغة عربية، علوم، ثقافة عامة، رياضة.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="faq(3)">كم عدد الأسئلة في البنك؟<span class="faq-ico">+</span></div><div class="faq-a">أكثر من 2400 سؤال موزعة على 10 مجالات بالتساوي: ديني، جغرافيا، تاريخ، ألغاز، رياضيات، تقنية، لغة عربية، علوم، ثقافة عامة، رياضة.</div></div>
       <div class="faq-item"><div class="faq-q" onclick="faq(4)">ما الفرق بين أوفلاين وأونلاين؟<span class="faq-ico">+</span></div><div class="faq-a">الأوفلاين: جميع الفرق على نفس الجهاز بالتناوب. الأونلاين: كل فريق على جهازه المستقل، المزامنة عبر الإنترنت بين الأجهزة.</div></div>
     </div>
   </div>
@@ -703,6 +703,9 @@ select.inp option{background:#0C1440;}
     <div class="mo-btns" style="margin-bottom:1rem">
       <button class="btn-p" id="offModeTeams" onclick="setOffMode('teams')">👥 فرق</button>
       <button class="btn-s" id="offModeSolo" onclick="setOffMode('solo')">🎙️ فردي</button>
+    </div>
+    <div style="background:rgba(255,208,70,.09);border:1px solid rgba(255,208,70,.25);border-radius:10px;padding:.6rem .8rem;margin-bottom:1rem;font-size:.8rem;color:var(--gold);line-height:1.6">
+      ℹ️ الحساب المجاني يستخدم دائمًا نفس 200 سؤال ثابتة (فرق أو فردي، أونلاين أو نفس الجهاز) — الاشتراك يفتح البنك الكامل (2400+ سؤال) بكل الأوضاع.
     </div>
     <div id="offTeamsUI">
       <div class="fg"><label>عدد الفرق</label><select id="offCount" class="inp" onchange="buildOff()"><option value="2">2 فرق</option><option value="3">3 فرق</option><option value="4">4 فرق</option></select></div>
@@ -1906,6 +1909,32 @@ function syncFromAdminLocal(user){
   }catch(e){}
 }
 
+/* إظهار/إخفاء قسم الأسعار حسب حالة الاشتراك — يخفّف لوحة المسابقة الرئيسية:
+   غير مسجّل أو مسجّل بدون اشتراك ← يعرض كامل القسم (تسويقي)
+   مشترك "بطل" ← يعرض فقط بطاقة الترقية لـ"أسطوري" (ما يحتاج يشوف خطته الحالية/المجانية)
+   مشترك "أسطوري" ← يخفي القسم بالكامل (ما فيه شي أعلى يترقّى له) */
+function updatePricingVisibility(token, isPro, isElite){
+  var freeCard=document.getElementById("pricingFreeCard");
+  var proCard=document.getElementById("pricingProCard");
+  var eliteCard=document.getElementById("pricingEliteCard");
+  var section=document.getElementById("pricing");
+  if(!section||!freeCard||!proCard||!eliteCard) return;
+  if(isElite){
+    section.style.display="none";
+    return;
+  }
+  section.style.display="";
+  if(!token || (!isPro && !isElite)){
+    freeCard.style.display="";
+    proCard.style.display="";
+    eliteCard.style.display="";
+  } else if(isPro){
+    freeCard.style.display="none";
+    proCard.style.display="none";
+    eliteCard.style.display="";
+  }
+}
+
 function renderUserBar(){
   var token=authGet("tahadi_token");
   if(window._forceLoggedOut){ token=null; } // بعد الحذف/الخروج: لا تعرض أي اسم قديم
@@ -1947,6 +1976,7 @@ function renderUserBar(){
       +"<button class=\"btn-s full\" onclick=\"showAuthModal()\" style=\"padding:.6rem;font-size:.84rem\">"
       +(window.IAP_ENABLED===false ? "👤 تسجيل الدخول (اختياري)" : "👤 تسجيل الدخول للحفظ والاشتراك")
       +"</button></div>";
+    updatePricingVisibility(token, false, false);
     return;
   }
 
@@ -1955,6 +1985,7 @@ function renderUserBar(){
   var plan=isElite?"elite":isPro?"pro":"free";
   var planLabels={free:"خطة منطلق",pro:"مشترك بطل 👑",elite:"مشترك أسطوري 🔥"};
   var planClass={free:"free",pro:"pro",elite:"elite"};
+  updatePricingVisibility(token, isPro, isElite);
 
   // Expiry note
   var expiryNote="";

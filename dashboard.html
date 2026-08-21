@@ -14,6 +14,11 @@ body{
   padding-right:env(safe-area-inset-right);
   box-sizing:border-box;
 }
+/* أندرويد: احتياطي أكبر لشريط الحالة — env() غالباً يرجّع صفر بدون إعداد أصلي
+   إضافي (edge-to-edge)، فتتراكب العناصر مع شريط الحالة بهواوي/جالكسي وغيرها. */
+html.is-android body{padding-top:max(env(safe-area-inset-top), 44px);}
+html.is-android .notif{top:calc(.9rem + max(env(safe-area-inset-top), 44px));}
+
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
@@ -269,7 +274,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       </div>
       <div style="margin-top:1rem">
         <ul style="list-style:none;margin-bottom:1rem;">
-          <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ جميع الأسئلة (2282 سؤالاً)</li>
+          <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ جميع الأسئلة (2467 سؤالاً)</li>
           <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ أونلاين غير محدود</li>
           <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ وسائل مساعدة إضافية</li>
           <li style="font-size:.78rem;color:var(--dim);margin:.2rem 0">✅ 4 فرق في نفس اللعبة</li>
@@ -622,7 +627,7 @@ async function loadProgress() {
   const el = document.getElementById('progressBox');
   const uid = me && me.uid;
   // إجمالي البنك حسب الخطة: المشترك = كامل البنك، المجاني = 200
-  const TOTAL_BANK = me && me.isPro ? 2282 : 200;
+  const TOTAL_BANK = me && me.isPro ? 2467 : 200;
   let usedCount = 0, phase = 0;
   try{
     if(window.firebase && firebase.database && uid){

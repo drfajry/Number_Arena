@@ -892,7 +892,7 @@ function syncUsedFromFirebase(cb){
 function pickQs(catFilter){
   var pool;
   if(TIERS.elite||TIERS.pro){
-    pool=QB.slice(); // المشترك: البنك كامل
+    pool=QB.slice(); // المشترك: البنك كامل (أونلاين أو نفس الجهاز، بلا فرق)
   } else {
     // المجاني: 200 سؤال ثابتة لكن موزّعة على كل الفئات (بدل أول 200 المتحيّزة للرياضيات)
     var _byCat={};
